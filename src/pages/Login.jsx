@@ -1,6 +1,4 @@
 import { useState } from "react";
-import logoImage from "../assets/image.png";
-import backgroundImage from "../assets/nature.png";
 
 // ─── Icônes SVG ───────────────────────────────────────────────────────────────
 const EyeIcon = () => (
@@ -37,170 +35,159 @@ export default function Login() {
   // ── Soumission avec fetch ─────────────────────────────────────────────────────
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    // Validation
     const e2 = valider();
     if (Object.keys(e2).length) { setErreurs(e2); return; }
-
     setLoading(true);
-
     try {
-      alert("Tentative de connexion avec ");
       const response = await fetch("http://localhost:8080/api/auth/login", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, motDePasse: motdepasse }),
       });
-
       if (!response.ok) {
-        // Le serveur a répondu avec une erreur (401, 403, etc.)
         setErreurs({ global: "Email ou mot de passe incorrect" });
         return;
       }
-     alert("Connexion réussie, traitement de la réponse...");
       const data = await response.json();
       console.log("Connecté :", data);
-
-      // Sauvegarde le token si ton backend en renvoie un
-      // localStorage.setItem("token", data.token);
-
-      // Redirige vers le dashboard
+      localStorage.setItem("token", data.token);
       window.location.href = "/dashboard";
-
     } catch (err) {
-      // Erreur réseau (backend éteint, CORS, etc.)
       setErreurs({ global: "Impossible de contacter le serveur" });
-      alert("Erreur lors de la connexion : " );
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <>
-      {/* Fond */}
-      <div className="fixed inset-0 bg-cover bg-center bg-no-repeat z-0"
-        style={{ backgroundImage: `url(${backgroundImage})` }}>
-      </div>
-      
-      {/* Formulaire centré */}
-      <div className="fixed inset-0 flex items-center justify-center p-4 z-10">
-        <div className="bg-white rounded-2xl shadow-2xl p-10 w-full max-w-md">
+    <div
+      className="min-h-screen flex items-center justify-center p-4"
+      style={{
+        backgroundImage: "url('/src/assets/nature.png')",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundColor: "rgba(0, 0, 0, 0.55)",
+        backgroundBlendMode: "overlay",
+      }}
+    >
+      {/* ── Carte formulaire ── */}
+      <div className="rounded-2xl w-full max-w-2xl overflow-hidden"
+        style={{
+          background: "linear-gradient(160deg, rgba(255,255,255,0.97) 0%, rgba(220,252,231,0.97) 100%)",
+          boxShadow: "0 0 0 3px #15803d, 0 0 0 6px rgba(21,128,61,0.15), 0 24px 60px rgba(0,0,0,0.35)",
+          border: "1px solid rgba(21,128,61,0.3)",
+        }}>
 
-        {/* Logo centré */}
-        <div className="flex justify-center mb-2">
-          <img
-            src={logoImage}
-            alt="Logo"
-            className="w-20 h-20 object-contain"
-          />
-        </div>
-
-        {/* Titre */}
-        <h1 className="text-2xl text-center font-semibold text-gray-900 mb-1">
-          Connexion
-        </h1>
-        <p className="text-sm text-center text-gray-500 mb-6">
-          Accédez à votre espace personnel de la plateforme
-        </p>
-
-        {/* Erreur globale */}
-        {erreurs.global && (
-          <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3 mb-4">
-            ⚠️ {erreurs.global}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} noValidate>
-
-          {/* Email */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Adresse e-mail <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="email"
-              placeholder="Ex : a.traore@institution.bf"
-              value={email}
-              onChange={(e) => {
-                setEmail(e.target.value);
-                setErreurs(p => ({ ...p, email: "" }));
-              }}
-              className={`w-full h-10 px-3 rounded-lg border text-sm outline-none bg-gray-50
-                ${erreurs.email
-                  ? "border-red-300 bg-red-50"
-                  : "border-gray-300 focus:border-green-500"
-                }`}
+        {/* ── En-tête vert ── */}
+        <div className="px-8 py-6 text-center"
+          style={{ background: "linear-gradient(135deg, #15803d, #166534)" }}>
+          <div className="w-16 h-16 rounded-full mx-auto mb-2 p-1"
+            style={{ background: "rgba(255,255,255,0.25)", border: "2px solid rgba(255,255,255,0.6)" }}>
+            <img
+              src="/src/assets/image.png"
+              alt="Logo"
+              className="w-full h-full object-contain rounded-full"
             />
-            {erreurs.email && (
-              <p className="text-red-500 text-xs mt-1">{erreurs.email}</p>
-            )}
           </div>
-
-          {/* Mot de passe */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Mot de passe <span className="text-red-500">*</span>
-            </label>
-            <div className="relative">
-              <input
-                type={showPwd ? "text" : "password"}
-                placeholder="Votre mot de passe"
-                value={motdepasse}
-                onChange={(e) => {
-                  setMotdepasse(e.target.value);
-                  setErreurs(p => ({ ...p, motdepasse: "" }));
-                }}
-                className={`w-full h-10 px-3 pr-10 rounded-lg border text-sm outline-none bg-gray-50
-                  ${erreurs.motdepasse
-                    ? "border-red-300 bg-red-50"
-                    : "border-gray-300 focus:border-green-500"
-                  }`}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPwd(v => !v)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                aria-label="Afficher/masquer le mot de passe"
-              >
-                {showPwd ? <EyeOffIcon /> : <EyeIcon />}
-              </button>
-            </div>
-            {erreurs.motdepasse && (
-              <p className="text-red-500 text-xs mt-1">{erreurs.motdepasse}</p>
-            )}
-          </div>
-
-          {/* Bouton Se connecter */}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full h-10 bg-green-700 hover:bg-green-800 disabled:opacity-50 text-white font-medium rounded-lg text-sm transition-colors"
-          >
-            {loading ? "Connexion en cours..." : "Se connecter"}
-          </button>
-
-        </form>
-
-        {/* Séparateur */}
-        <div className="flex items-center gap-3 my-5">
-          <div className="flex-1 h-px bg-gray-200" />
-          <span className="text-xs text-gray-400">ou</span>
-          <div className="flex-1 h-px bg-gray-200" />
+          <h1 className="text-xl font-semibold text-white">Connexion</h1>
+          <p className="text-green-100 text-sm mt-1">Accédez à votre espace personnel de la plateforme</p>
         </div>
 
-        {/* Lien Créer un compte */}
-        <p className="text-center text-sm text-gray-500">
-          Pas encore de compte ?{" "}
-          <a href="/register" className="text-green-700 font-medium hover:underline">
-            Créer un compte
-          </a>
-        </p>
+        {/* ── Contenu formulaire ── */}
+        <div className="p-8">
 
+          {/* Erreur globale */}
+          {erreurs.global && (
+            <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3 mb-4">
+              ⚠️ {erreurs.global}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} noValidate>
+
+            {/* Email */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Adresse e-mail <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="email"
+                placeholder="Ex : admin@cil.com"
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  setErreurs(p => ({ ...p, email: "" }));
+                }}
+                className={`w-full h-10 px-3 rounded-lg border text-sm outline-none bg-white/70
+                  ${erreurs.email ? "border-red-300 bg-red-50" : "border-gray-300 focus:border-green-500"}`}
+              />
+              {erreurs.email && <p className="text-red-500 text-xs mt-1">{erreurs.email}</p>}
+            </div>
+
+            {/* Mot de passe */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Mot de passe <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <input
+                  type={showPwd ? "text" : "password"}
+                  placeholder="Votre mot de passe"
+                  value={motdepasse}
+                  onChange={(e) => {
+                    setMotdepasse(e.target.value);
+                    setErreurs(p => ({ ...p, motdepasse: "" }));
+                  }}
+                  className={`w-full h-10 px-3 pr-10 rounded-lg border text-sm outline-none bg-white/70
+                    ${erreurs.motdepasse ? "border-red-300 bg-red-50" : "border-gray-300 focus:border-green-500"}`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPwd(v => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  aria-label="Afficher/masquer le mot de passe"
+                >
+                  {showPwd ? <EyeOffIcon /> : <EyeIcon />}
+                </button>
+              </div>
+              {erreurs.motdepasse && <p className="text-red-500 text-xs mt-1">{erreurs.motdepasse}</p>}
+            </div>
+
+            {/* Bouton Se connecter */}
+            <button
+              type="submit"
+              disabled={loading}
+              style={{
+                width: "100%", height: "40px",
+                background: "linear-gradient(135deg, #15803d, #166534)",
+                border: "none", borderRadius: "10px",
+                color: "white", fontSize: "14px", fontWeight: 500,
+                cursor: loading ? "not-allowed" : "pointer",
+                opacity: loading ? 0.6 : 1,
+              }}
+            >
+              {loading ? "Connexion en cours..." : "Se connecter"}
+            </button>
+
+          </form>
+
+          {/* Séparateur */}
+          <div className="flex items-center gap-3 my-5">
+            <div className="flex-1 h-px bg-gray-200" />
+            <span className="text-xs text-gray-400">ou</span>
+            <div className="flex-1 h-px bg-gray-200" />
+          </div>
+
+          {/* Lien Créer un compte */}
+          <p className="text-center text-sm text-gray-500">
+            Pas encore de compte ?{" "}
+            <a href="/register" className="text-green-700 font-medium hover:underline">
+              Créer un compte
+            </a>
+          </p>
+
+        </div>
       </div>
     </div>
-    </>
   );
 }

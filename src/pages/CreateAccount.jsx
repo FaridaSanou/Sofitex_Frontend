@@ -34,12 +34,12 @@ const STRENGTH_TEXT  = ["", "text-red-500", "text-yellow-500", "text-green-500",
 // ─── Types d'utilisateurs ─────────────────────────────────────────────────────
 const TYPES = [
   { value: "USAGER",             label: "Usager",             icon: "👤", description: "Citoyen ou personne physique" },
-  { value: "CIL",                label: "CIL",                icon: "🛡️", description: "Comission de l'Informatique et Libertés" },
+  { value: "CIL",                label: "CIL",                icon: "🛡️", description: "Correspondant Informatique et Libertés" },
   { value: "DPO",                label: "DPO",                icon: "🔒", description: "Délégué à la Protection des Données" },
   { value: "UTILISATEUR_METIER", label: "Utilisateur Métier", icon: "💼", description: "Utilisateur interne de l'organisation" },
 ];
 
-const MAIN_STEPS = ["Informations personnelles", "Type & Demande d'acces"];
+const MAIN_STEPS = ["Informations personnelles", "Type & Accès"];
 
 // ─── Champ réutilisable ───────────────────────────────────────────────────────
 const Field = ({ label, error, children }) => (
@@ -79,7 +79,7 @@ export default function CreateAccount() {
   };
 
   const onSubmit = async (data) => {
-    if (!typeChoisi) { setErrGlobal("Veuillez choisir un type d'utilisateur."); return; }
+    if (!typeChoisi) { setErrGlobal("Veuillez choisir un type de compte."); return; }
     setLoading(true);
     setErrGlobal("");
     try {
@@ -128,7 +128,11 @@ export default function CreateAccount() {
       style={{ backgroundImage: `url(${backgroundImage})`, backgroundSize: "cover", backgroundPosition: "center", backgroundColor: "rgba(0,0,0,0.5)", backgroundBlendMode: "overlay" }}>
 
       <div className="rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden"
-        style={{ background: "linear-gradient(160deg, rgba(255,255,255,0.97) 0%, rgba(220,252,231,0.97) 100%)" }}>
+        style={{
+          background: "linear-gradient(160deg, rgba(255,255,255,0.97) 0%, rgba(220,252,231,0.97) 100%)",
+          boxShadow: "0 0 0 3px #15803d, 0 0 0 6px rgba(21,128,61,0.15), 0 24px 60px rgba(0,0,0,0.35)",
+          border: "1px solid rgba(21,128,61,0.3)",
+        }}>
 
         {/* ── En-tête ── */}
         <div className="px-8 py-6 text-center"
@@ -157,7 +161,7 @@ export default function CreateAccount() {
         <div className="p-8">
 
           {errGlobal && (
-            <div className="bg-green-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3 mb-4">⚠️ {errGlobal}</div>
+            <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3 mb-4">⚠️ {errGlobal}</div>
           )}
 
           <form onSubmit={handleSubmit(onSubmit)}>
@@ -169,11 +173,11 @@ export default function CreateAccount() {
                 <div className="flex gap-2 mb-6">
                   <div className={`flex-1 text-center py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer
                     ${subStep === 0 ? "bg-green-50 text-green-700 border border-green-300" : "bg-gray-100 text-gray-400"}`}>
-                    Identité
+                    👤 Identité
                   </div>
                   <div className={`flex-1 text-center py-2 rounded-lg text-sm font-medium transition-colors
                     ${subStep === 1 ? "bg-green-50 text-green-700 border border-green-300" : "bg-gray-100 text-gray-400"}`}>
-                    Sécurité
+                    🔐 Sécurité
                   </div>
                 </div>
 
@@ -277,12 +281,17 @@ export default function CreateAccount() {
                 {!typeChoisi && (
                   <>
                     <p className="text-sm font-medium text-gray-700 mb-4">
-                      Choisissez un type d'utilisateur<span className="text-green-500">*</span>
+                      Choisissez votre type de compte <span className="text-red-500">*</span>
                     </p>
                     <div className="grid grid-cols-2 gap-3 mb-6">
                       {TYPES.map((t) => (
                         <button key={t.value} type="button" onClick={() => setTypeChoisi(t.value)}
-                          className="flex flex-col items-center gap-2 p-4 border-2 border-gray-200 rounded-xl hover:border-green-500 hover:bg-green-50 transition-all text-center bg-white/60">
+                          className="flex flex-col items-center gap-2 p-4 rounded-xl transition-all text-center"
+                          style={{
+                            background: "rgba(255,255,255,0.85)",
+                            border: "2px solid #15803d",
+                            boxShadow: "0 0 0 3px rgba(21,128,61,0.12), 0 2px 8px rgba(21,128,61,0.1)",
+                          }}>
                           <span className="text-3xl">{t.icon}</span>
                           <span className="text-sm font-semibold text-gray-800">{t.label}</span>
                           <span className="text-xs text-gray-400">{t.description}</span>
@@ -309,7 +318,7 @@ export default function CreateAccount() {
                       </div>
                     </div>
 
-                    <div className="bg-green50 border border-yellow-200 text-yellow-800 text-sm rounded-lg px-4 py-3 mb-5">
+                    <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 text-sm rounded-lg px-4 py-3 mb-5">
                       ⚠️ Votre compte sera en statut <strong>EN_ATTENTE</strong> jusqu'à validation.
                     </div>
 
@@ -329,16 +338,24 @@ export default function CreateAccount() {
 
                     {/* ── CIL ── */}
                     {typeChoisi === "CIL" && (
-                      <div className="grid grid-cols-2 gap-4 mb-6">
-                        <Field label="Service" error={errors.service}>
-                          <input placeholder="Ex : Service informatique" className={inputCls(errors.service)}
-                            {...register("service", { required: "Champ requis" })} />
-                        </Field>
-                        <Field label="Niveau de responsabilité" error={errors.niveauResponsabilite}>
-                          <input placeholder="Ex : Responsable" className={inputCls(errors.niveauResponsabilite)}
-                            {...register("niveauResponsabilite", { required: "Champ requis" })} />
-                        </Field>
-                      </div>
+                      <>
+                        <div className="grid grid-cols-2 gap-4 mb-4">
+                          <Field label="Service" error={errors.service}>
+                            <input placeholder="Ex : Service informatique" className={inputCls(errors.service)}
+                              {...register("service", { required: "Champ requis" })} />
+                          </Field>
+                          <Field label="Niveau de responsabilité" error={errors.niveauResponsabilite}>
+                            <input placeholder="Ex : Responsable" className={inputCls(errors.niveauResponsabilite)}
+                              {...register("niveauResponsabilite", { required: "Champ requis" })} />
+                          </Field>
+                        </div>
+                        <div className="mb-6">
+                          <Field label="Téléphone professionnel" error={errors.telProfessionnel}>
+                            <input type="tel" placeholder="Ex : +226 70 00 00 00" className={inputCls(errors.telProfessionnel)}
+                              {...register("telProfessionnel", { required: "Champ requis" })} />
+                          </Field>
+                        </div>
+                      </>
                     )}
 
                     {/* ── DPO ── */}
@@ -349,15 +366,9 @@ export default function CreateAccount() {
                             <input placeholder="Ex : Ministère de la santé" className={inputCls(errors.organisme)}
                               {...register("organisme", { required: "Champ requis" })} />
                           </Field>
-                          <Field label="Date de nomination" error={errors.dateNomination}>
-                            <input type="date" className={inputCls(errors.dateNomination)}
-                              {...register("dateNomination", { required: "Champ requis" })} />
-                          </Field>
-                        </div>
-                        <div className="mb-6">
-                          <Field label="Adresse professionnelle" error={errors.adresseProfessionnelle}>
-                            <input placeholder="Ex : 01 BP 00, Ouagadougou" className={inputCls(errors.adresseProfessionnelle)}
-                              {...register("adresseProfessionnelle", { required: "Champ requis" })} />
+                          <Field label="Téléphone professionnel" error={errors.telProfessionnel}>
+                            <input type="tel" placeholder="Ex : +226 70 00 00 00" className={inputCls(errors.telProfessionnel)}
+                              {...register("telProfessionnel", { required: "Champ requis" })} />
                           </Field>
                         </div>
                       </>
@@ -377,18 +388,44 @@ export default function CreateAccount() {
                           </Field>
                         </div>
                         <div className="mb-6">
-                          <Field label="Date de nomination" error={errors.dateNomination}>
-                            <input type="date" className={inputCls(errors.dateNomination)}
-                              {...register("dateNomination", { required: "Champ requis" })} />
+                          <Field label="Téléphone professionnel" error={errors.telProfessionnel}>
+                            <input type="tel" placeholder="Ex : +226 70 00 00 00" className={inputCls(errors.telProfessionnel)}
+                              {...register("telProfessionnel", { required: "Champ requis" })} />
                           </Field>
                         </div>
                       </>
                     )}
 
-                    <button type="submit" disabled={loading}
-                      className="w-full h-10 bg-green-700 hover:bg-green-800 disabled:opacity-50 text-white font-medium rounded-lg text-sm transition-colors">
-                      {loading ? "Envoi en cours..." : "✓ Créer le compte"}
-                    </button>
+                    <div style={{ display: "flex", gap: "12px", marginTop: "8px" }}>
+                      <button type="button"
+                        onClick={() => { setTypeChoisi(""); setMainStep(0); setSubStep(1); }}
+                        style={{
+                          flex: 1, height: "40px",
+                          border: "2px solid #15803d",
+                          borderRadius: "10px",
+                          color: "#15803d",
+                          background: "transparent",
+                          fontSize: "14px",
+                          fontWeight: 500,
+                          cursor: "pointer",
+                        }}>
+                        ← Retour aux informations
+                      </button>
+                      <button type="submit" disabled={loading}
+                        style={{
+                          flex: 1, height: "40px",
+                          background: "linear-gradient(135deg, #15803d, #166534)",
+                          border: "none",
+                          borderRadius: "10px",
+                          color: "white",
+                          fontSize: "14px",
+                          fontWeight: 500,
+                          cursor: loading ? "not-allowed" : "pointer",
+                          opacity: loading ? 0.6 : 1,
+                        }}>
+                        {loading ? "Envoi en cours..." : "✓ Créer le compte"}
+                      </button>
+                    </div>
                   </>
                 )}
               </>
