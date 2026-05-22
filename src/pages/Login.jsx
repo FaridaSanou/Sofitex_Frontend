@@ -71,7 +71,7 @@ export default function Login() {
       }}
     >
       {/* ── Carte formulaire ── */}
-      <div className="rounded-2xl w-full max-w-2xl overflow-hidden"
+      <div className="rounded-2xl w-full max-w-lg overflow-hidden"
         style={{
           background: "linear-gradient(160deg, rgba(255,255,255,0.97) 0%, rgba(220,252,231,0.97) 100%)",
           boxShadow: "0 0 0 3px #15803d, 0 0 0 6px rgba(21,128,61,0.15), 0 24px 60px rgba(0,0,0,0.35)",
@@ -79,7 +79,7 @@ export default function Login() {
         }}>
 
         {/* ── En-tête vert ── */}
-        <div className="px-8 py-6 text-center"
+        <div className="px-6 py-4 text-center"
           style={{ background: "linear-gradient(135deg, #15803d, #166534)" }}>
           <div className="w-16 h-16 rounded-full mx-auto mb-2 p-1"
             style={{ background: "rgba(255,255,255,0.25)", border: "2px solid rgba(255,255,255,0.6)" }}>
@@ -94,7 +94,7 @@ export default function Login() {
         </div>
 
         {/* ── Contenu formulaire ── */}
-        <div className="p-8">
+        <div className="p-6">
 
           {/* Erreur globale */}
           {erreurs.global && (

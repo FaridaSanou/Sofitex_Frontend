@@ -135,9 +135,9 @@ export default function CreateAccount() {
         }}>
 
         {/* ── En-tête ── */}
-        <div className="px-8 py-6 text-center"
+        <div className="px-6 py-4 text-center"
           style={{ background: "linear-gradient(135deg, #15803d, #166534)" }}>
-          <img src={logoImage} alt="Logo" className="w-14 h-14 object-contain mx-auto mb-2" />
+          <img src={logoImage} alt="Logo" className="w-10 h-10 object-contain mx-auto mb-1" />
           <h1 className="text-xl font-semibold text-white">Créer un compte</h1>
           <p className="text-green-100 text-sm mt-1">Remplissez les informations pour accéder à la plateforme</p>
         </div>
@@ -158,7 +158,7 @@ export default function CreateAccount() {
           ))}
         </div>
 
-        <div className="p-8">
+        <div className="p-6">
 
           {errGlobal && (
             <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3 mb-4">⚠️ {errGlobal}</div>
@@ -288,13 +288,14 @@ export default function CreateAccount() {
                         <button key={t.value} type="button" onClick={() => setTypeChoisi(t.value)}
                           className="flex flex-col items-center gap-2 p-4 rounded-xl transition-all text-center"
                           style={{
-                            background: "rgba(255,255,255,0.85)",
+                            background: "linear-gradient(135deg, #15803d, #166534)",
                             border: "2px solid #15803d",
                             boxShadow: "0 0 0 3px rgba(21,128,61,0.12), 0 2px 8px rgba(21,128,61,0.1)",
+                            color: "white",
                           }}>
                           <span className="text-3xl">{t.icon}</span>
-                          <span className="text-sm font-semibold text-gray-800">{t.label}</span>
-                          <span className="text-xs text-gray-400">{t.description}</span>
+                          <span className="text-sm font-semibold text-white">{t.label}</span>
+                          <span className="text-xs text-green-100">{t.description}</span>
                         </button>
                       ))}
                     </div>
