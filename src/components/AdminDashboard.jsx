@@ -251,7 +251,7 @@ const Sidebar = ({ sidebarOpen, activeTab, setActiveTab, stats }) => {
             </div>
           )}
           {sidebarOpen && (
-            <button className="text-green-300 hover:text-white">
+            <button onClick={() => { localStorage.removeItem("token"); window.location.href = "/login"; }} className="text-green-300 hover:text-white">
               <Icon name="logout" className="w-4 h-4" />
             </button>
           )}

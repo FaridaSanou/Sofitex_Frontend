@@ -114,10 +114,16 @@ export default function CreateAccount() {
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Compte créé avec succès !</h2>
           <span className="inline-block bg-yellow-100 text-yellow-800 text-xs font-semibold px-3 py-1 rounded-full mb-4">EN_ATTENTE</span>
           <p className="text-sm text-gray-500 mb-6">Votre demande a bien été enregistrée.<br />Un administrateur validera votre compte sous peu.</p>
-          <button onClick={() => { setDone(false); setMainStep(0); setSubStep(0); setTypeChoisi(""); }}
-            className="border border-gray-300 text-gray-600 text-sm px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors">
-            ← Créer un autre compte
-          </button>
+          <div className="flex gap-3">
+            <button onClick={() => { setDone(false); setMainStep(0); setSubStep(0); setTypeChoisi(""); }}
+              className="flex-1 border border-gray-300 text-gray-600 text-sm px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors">
+              ← Créer un autre compte
+            </button>
+            <a href="/login"
+              className="flex-1 bg-green-700 text-white text-sm px-4 py-2 rounded-lg hover:bg-green-800 transition-colors text-center no-underline">
+              Se connecter →
+            </a>
+          </div>
         </div>
       </div>
     );
