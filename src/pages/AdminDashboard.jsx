@@ -351,8 +351,7 @@ const RecentDemandes = ({ demandes, setActiveTab, handleValider, setRejetModal }
       </div>
     </div>
   );
-};
-
+}
 // ── Répartition par type ──────────────────────────────────────────
 
 const TypeRepartition = ({ demandes }) => (
