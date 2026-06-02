@@ -238,7 +238,7 @@ const Sidebar = ({ sidebarOpen, activeTab, setActiveTab, stats }) => {
             </div>
           )}
           {sidebarOpen && (
-            <button onClick={() => { localStorage.removeItem("token"); window.location.href = "/login"; }}
+            <button onClick={() => { localStorage.removeItem("token"); window.location.href = "/"; }}
               className="text-green-300 hover:text-white">
               <Icon name="logout" className="w-4 h-4" />
             </button>
@@ -348,8 +348,7 @@ const RecentDemandes = ({ demandes, setActiveTab, handleValider, setRejetModal }
       </div>
     </div>
   );
-};
-
+}
 // ── Répartition par type ──────────────────────────────────────────
 
 const TypeRepartition = ({ demandes }) => (

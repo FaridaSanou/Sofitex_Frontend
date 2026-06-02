@@ -122,7 +122,7 @@ export default function CreateAccount() {
               className="flex-1 border border-gray-300 text-gray-600 text-sm px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors">
               ← Créer un autre compte
             </button>
-            <a href="/login"
+            <a href="/"
               className="flex-1 bg-green-700 text-white text-sm px-4 py-2 rounded-lg hover:bg-green-800 transition-colors text-center no-underline">
               Se connecter →
             </a>
@@ -445,7 +445,7 @@ export default function CreateAccount() {
 
           <p className="text-center text-sm text-gray-500 mt-6">
             Déjà un compte ?{" "}
-            <a href="/login" className="text-green-700 font-medium hover:underline">Se connecter</a>
+            <a href="/" className="text-green-700 font-medium hover:underline">Se connecter</a>
           </p>
 
         </div>

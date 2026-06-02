@@ -1,6 +1,9 @@
 import { useState } from "react";
 import nature from "../assets/nature.png"
 import logo from "../assets/image.png"
+import Chargement from "../components/chargement";
+
+
 // ─── Icônes SVG ───────────────────────────────────────────────────────────────
 const EyeIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -23,6 +26,8 @@ export default function Login() {
   const [showPwd, setShowPwd]       = useState(false);
   const [erreurs, setErreurs]       = useState({});
   const [loading, setLoading]       = useState(false);
+
+  const [isloading , setIsloading] = useState(false)
 
   // ── Validation ───────────────────────────────────────────────────────────────
   const valider = () => {
@@ -61,7 +66,8 @@ export default function Login() {
         ROLE_DG: "/dg",
         ROLE_UTILISATEUR_METIER: "/metier",
       };
-      window.location.href = home[data.role] || "/dashboard";
+      // window.location.href = home[data.role] || "/dashboard";
+      setIsloading(true)
     } catch (err) {
       setErreurs({ global: "Impossible de contacter le serveur" });
     } finally {
@@ -198,6 +204,7 @@ export default function Login() {
 
         </div>
       </div>
+      { isloading && <Chargement texte="Bien venu ............."/> }
     </div>
   );
 }
