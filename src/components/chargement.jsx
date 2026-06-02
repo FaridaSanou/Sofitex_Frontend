@@ -1,7 +1,8 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import toast from 'react-hot-toast';
-import Compteinactif from "../Compteinactif";
+// import toast from 'react-hot-toast';
+import Compteinactif from "../components/chargement.jsx";
+
 
 const fonctionController = async (adresseEmail, navigate ) => {
   const token = localStorage.getItem("token");
@@ -22,30 +23,30 @@ const fonctionController = async (adresseEmail, navigate ) => {
     // alert("Fonction récupérée : " + JSON.stringify(data));
     
     const ROUTES_PAR_TYPE = {
-      "DG": "/tableau-de-bord/dg",
-      "DPO": "/tableau-de-bord/dpo",
-      "CIL": "/tableau-de-bord/cil",
+      "DG": "/dg",
+      "DPO": "/dpo",
+      "CIL": "/cil",
       "Usager": "/tableau-de-bord/usager",
-      "UTILISATEUR_METIER": "/tableau-de-bord/utilisateur-metier",
+      "UTILISATEUR_METIER": "/metier",
     };
 
   // Guard: données manquantes ou corrompues
   if (!data || !data.type) {
-    toast("Veuillez vous connecter");
-    navigate("/connexion");
+    // toast("Veuillez vous connecter");
+    navigate("/");
     return;
   }
   
   if (data.fonction === "Administrateur Système") {
-    navigate("/tableau-de-bord");
+    navigate("/dashboard");
     return;
   }
   
   const route = ROUTES_PAR_TYPE[data.type];
   
   if (!route) {
-    toast("Veuillez vous connecter");
-    navigate("/connexion");
+    // toast("Veuillez vous connecter");
+    navigate("/");
     return;
   }
   
@@ -55,8 +56,8 @@ const fonctionController = async (adresseEmail, navigate ) => {
 
 
   } catch (err) {
-      toast("Veuillez vous connecter");
-      navigate("/connextion");
+      // toast("Veuillez vous connecter");
+      navigate("/");
     // console.error("Erreur :", err);
     // alert("Erreur lors de la vérification de la fonction : " + err.message);
     // alert("Erreur lors de la vérification de la fonction.");

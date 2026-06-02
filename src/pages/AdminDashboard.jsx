@@ -149,15 +149,15 @@ const RejetModal = ({ demande, onConfirm, onClose }) => {
 // ── Modal Détail ──────────────────────────────────────────────────
 
 const DetailModal = ({ demande, onClose }) => (
-  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-lg mx-4">
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-bold text-gray-800">Détail #{demande.idDemande}</h3>
-        <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={onClose}>
+    <div className="bg-white rounded-xl shadow-lg p-5 w-full max-w-sm mx-4" onClick={(e) => e.stopPropagation()}>
+      <div className="flex justify-between items-center mb-3">
+        <h3 className="text-base font-bold text-gray-800">Détail de la demande</h3>
+        <button onClick={onClose} className="text-gray-400 hover:text-gray-600" type="button">
           <Icon name="x" className="w-5 h-5" />
         </button>
       </div>
-      <div className="space-y-3">
+      <div className="space-y-2">
         {[
           ["Nom complet",        `${demande.prenom ?? ""} ${demande.nom ?? ""}`.trim()],
           ["Email",              demande.email ?? "—"],
@@ -171,23 +171,20 @@ const DetailModal = ({ demande, onClose }) => (
           ["Motif de rejet",     demande.motif ?? "—"],
           ["Admin traitant",     demande.adminTraitantNom ?? "—"],
         ].map(([label, value]) => (
-          <div key={label} className="flex justify-between py-2 border-b border-gray-100">
-            <span className="text-sm text-gray-500">{label}</span>
-            <span className="text-sm font-medium text-gray-800">{value}</span>
+          <div key={label} className="flex justify-between py-1.5 border-b border-gray-100">
+            <span className="text-xs text-gray-500">{label}</span>
+            <span className="text-xs font-medium text-gray-800">{value}</span>
           </div>
         ))}
-        <div className="flex justify-between py-2">
-          <span className="text-sm text-gray-500">Statut demande</span>
+        <div className="flex justify-between py-1.5">
+          <span className="text-xs text-gray-500">Statut demande</span>
           {statutBadge(demande.statutDemandeAcces)}
         </div>
-        <div className="flex justify-between py-2">
-          <span className="text-sm text-gray-500">Statut compte</span>
+        <div className="flex justify-between py-1.5">
+          <span className="text-xs text-gray-500">Statut compte</span>
           {statutBadge(demande.statutUtilisateur)}
         </div>
       </div>
-      <button onClick={onClose} className="mt-5 w-full py-2 rounded-lg bg-green-700 text-white text-sm font-semibold hover:bg-green-800 transition">
-        Fermer
-      </button>
     </div>
   </div>
 );
@@ -241,7 +238,7 @@ const Sidebar = ({ sidebarOpen, activeTab, setActiveTab, stats }) => {
             </div>
           )}
           {sidebarOpen && (
-            <button onClick={() => { localStorage.removeItem("token"); window.location.href = "/login"; }}
+            <button onClick={() => { localStorage.removeItem("token"); window.location.href = "/"; }}
               className="text-green-300 hover:text-white">
               <Icon name="logout" className="w-4 h-4" />
             </button>
@@ -472,20 +469,20 @@ const UtilisateursSearch = ({ searchUser, setSearchUser }) => (
   </div>
 );
 
-const UtilisateursTable = ({ utilisateursFiltres, loading }) => (
+const UtilisateursTable = ({ utilisateursFiltres, loading, handleSuspendre, handleReactiver, handleDesactiver }) => (
   <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
           <tr className="bg-gray-50 border-b border-gray-100">
-            {["Utilisateur","Type","Statut","Date création"].map((h) => (
-              <th key={h} className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</th>
+            {["Utilisateur","Type","Statut","Date création","Actions"].map((h, i) => (
+              <th key={h} className={`px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide ${i === 4 ? "text-center" : "text-left"}`}>{h}</th>
             ))}
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-50">
           {loading
-            ? [1,2,3].map((i) => <SkeletonRow key={i} cols={4} />)
+            ? [1,2,3].map((i) => <SkeletonRow key={i} cols={5} />)
             : utilisateursFiltres.map((u) => (
               <tr key={u.id} className="hover:bg-gray-50 transition">
                 <td className="px-5 py-4">
@@ -504,6 +501,24 @@ const UtilisateursTable = ({ utilisateursFiltres, loading }) => (
                 <td className="px-5 py-4">{typeBadge(u.typeUtilisateur)}</td>
                 <td className="px-5 py-4">{statutBadge(u.statutUtilisateur)}</td>
                 <td className="px-5 py-4 text-gray-500 text-xs">{formatDate(u.dateCreation)}</td>
+                <td className="px-5 py-4">
+                  <div className="flex items-center justify-center gap-2">
+                    {u.statutUtilisateur === "ACTIF" ? (
+                      <>
+                        <button onClick={() => handleSuspendre(u.id)} className="p-1.5 bg-orange-100 text-orange-600 rounded-lg hover:bg-orange-200 transition" title="Suspendre">
+                          <Icon name="x" className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => handleDesactiver(u.id)} className="p-1.5 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition" title="Désactiver">
+                          <Icon name="x" className="w-4 h-4" />
+                        </button>
+                      </>
+                    ) : (
+                      <button onClick={() => handleReactiver(u.id)} className="p-1.5 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition" title="Réactiver">
+                        <Icon name="check" className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                </td>
               </tr>
             ))
           }
@@ -619,6 +634,48 @@ function AdminDashboard() {
     }
   };
 
+  // PUT /api/admin/utilisateurs/{id}/suspendre
+  const handleSuspendre = async (id) => {
+    try {
+      const res = await fetch(`${API_BASE}/admin/utilisateurs/${id}/suspendre`, {
+        method: "PUT", headers: authHeaders(),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      setUtilisateurs((prev) => prev.map((u) => u.id === id ? { ...u, statutUtilisateur: "SUSPENDU" } : u));
+      showToast("Compte suspendu", "error");
+    } catch (err) {
+      showToast(err.message || "Erreur lors de la suspension", "error");
+    }
+  };
+
+  // PUT /api/admin/utilisateurs/{id}/reactiver
+  const handleReactiver = async (id) => {
+    try {
+      const res = await fetch(`${API_BASE}/admin/utilisateurs/${id}/reactiver`, {
+        method: "PUT", headers: authHeaders(),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      setUtilisateurs((prev) => prev.map((u) => u.id === id ? { ...u, statutUtilisateur: "ACTIF" } : u));
+      showToast("Compte réactivé ✓");
+    } catch (err) {
+      showToast(err.message || "Erreur lors de la réactivation", "error");
+    }
+  };
+
+  // PUT /api/admin/utilisateurs/{id}/desactiver
+  const handleDesactiver = async (id) => {
+    try {
+      const res = await fetch(`${API_BASE}/admin/utilisateurs/${id}/desactiver`, {
+        method: "PUT", headers: authHeaders(),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      setUtilisateurs((prev) => prev.map((u) => u.id === id ? { ...u, statutUtilisateur: "INACTIF" } : u));
+      showToast("Compte désactivé", "error");
+    } catch (err) {
+      showToast(err.message || "Erreur lors de la désactivation", "error");
+    }
+  };
+
   const handleRefresh = () => { fetchDemandes(); fetchUtilisateurs(); };
 
   // Filtrage sur statutDemandeAcces (champ réel du backend)
@@ -635,7 +692,7 @@ function AdminDashboard() {
     enAttente:    demandes.filter((d) => d.statutDemandeAcces === "EN_ATTENTE").length,
     approuvees:   demandes.filter((d) => d.statutDemandeAcces === "APPROUVEE").length,
     rejetees:     demandes.filter((d) => d.statutDemandeAcces === "REJETEE").length,
-    utilisateurs: utilisateurs.length,
+    utilisateurs: utilisateurs.filter((u) => u.statutUtilisateur === "ACTIF").length,
   };
 
   return (
@@ -662,7 +719,7 @@ function AdminDashboard() {
           {activeTab === "utilisateurs" && (
             <div className="space-y-4">
               <UtilisateursSearch searchUser={searchUser} setSearchUser={setSearchUser} />
-              <UtilisateursTable utilisateursFiltres={utilisateursFiltres} loading={loadingUsers} />
+              <UtilisateursTable utilisateursFiltres={utilisateursFiltres} loading={loadingUsers} handleSuspendre={handleSuspendre} handleReactiver={handleReactiver} handleDesactiver={handleDesactiver} />
             </div>
           )}
         </main>

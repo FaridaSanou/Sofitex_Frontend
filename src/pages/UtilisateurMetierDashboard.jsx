@@ -13,15 +13,23 @@ const GROUPES_DONNEES = [
 ];
 const UNITES = ["Mois","Années","Durée indéterminée"];
 
+// ─── Données Mock ────────────────────────────────────────────────
+const mockSessions = [
+  { idSession: 1, dateDebut: "2026-05-01T08:00:00", dateFin: "2026-06-30T18:00:00", statutSession: "EN_COURS", typeCollecte: "EN_LIGNE", lieu: "Bobo-Dioulasso", description: "Collecte des données RH", dpoId: 1, dpoNomComplet: "Kaboré Moussa" },
+  { idSession: 2, dateDebut: "2026-04-15T09:00:00", dateFin: "2026-05-15T17:00:00", statutSession: "TERMINEE", typeCollecte: "TERRAIN", lieu: "Ouagadougou", description: "Enquête producteurs coton", dpoId: 1, dpoNomComplet: "Kaboré Moussa" },
+];
+
 const mockTraitements = [
   { idTraitement: 1, department: "DRH", description: "Gestion des salaires", texte: "Permettre le paiement des employés", certificationSecurite: "ISO 27001", dureeConservation: 60, dateCreation: "2026-05-10T09:00:00", dateFin: "2031-05-10T00:00:00", nombreDonnee: 3, sessionCollecteId: 1, utilisateurMetierId: 1, utilisateurMetierNom: "Ouedraogo Amadou", statut: "ENVOYE_DPO" },
-  { idTraitement: 2, department: "DSI", description: "Gestion des accès réseau", texte: "Contrôler les accès aux systèmes informatiques", certificationSecurite: "En cours", dureeConservation: 12, dateCreation: "2026-05-15T14:00:00", dateFin: "2027-05-15T00:00:00", nombreDonnee: 1, sessionCollecteId: 2, utilisateurMetierId: 1, utilisateurMetierNom: "Ouedraogo Amadou", statut: "EN_COURS" },
+  { idTraitement: 2, department: "DSI", description: "Gestion des accès réseau", texte: "Contrôler les accès aux systèmes", certificationSecurite: "En cours", dureeConservation: 12, dateCreation: "2026-05-15T14:00:00", dateFin: "2027-05-15T00:00:00", nombreDonnee: 1, sessionCollecteId: 2, utilisateurMetierId: 1, utilisateurMetierNom: "Ouedraogo Amadou", statut: "EN_COURS" },
+  { idTraitement: 3, department: "Direction Commerciale", description: "Gestion des commandes clients", texte: "Suivi des ventes et facturation", certificationSecurite: "ISO 27001", dureeConservation: 36, dateCreation: "2026-05-20T10:00:00", dateFin: "2029-05-20T00:00:00", nombreDonnee: 12, sessionCollecteId: 1, utilisateurMetierId: 2, utilisateurMetierNom: "Traoré Fatimata", statut: "EN_COURS" },
+  { idTraitement: 4, department: "DRH", description: "Suivi des formations", texte: "Gérer les inscriptions aux formations", certificationSecurite: "Non renseigné", dureeConservation: 24, dateCreation: "2026-06-01T08:00:00", dateFin: "2028-06-01T00:00:00", nombreDonnee: 0, sessionCollecteId: null, utilisateurMetierId: 1, utilisateurMetierNom: "Ouedraogo Amadou", statut: "EN_COURS" },
 ];
 
 const mockDemandes = [
-  { id: 1, usager: "Traoré Fatima", type: "MODIFICATION", traitement: "Gestion des salaires", date: "2026-05-20T10:00:00", statut: "EN_ATTENTE", detail: "Demande de correction de l'adresse mail enregistrée." },
-  { id: 2, usager: "Kaboré Issouf", type: "SUPPRESSION", traitement: "Gestion des accès réseau", date: "2026-05-21T08:30:00", statut: "EN_ATTENTE", detail: "Demande de suppression des données suite à fin de contrat." },
-  { id: 3, usager: "Sawadogo Paul", type: "MODIFICATION", traitement: "Gestion des salaires", date: "2026-05-18T16:00:00", statut: "TRAITE", detail: "Correction du numéro de téléphone." },
+  { id: 1, usager: "Traoré Fatima", usagerNom: "Traoré Fatima", type: "MODIFICATION", typeDemande: "MODIFICATION", traitement: "Gestion des salaires", traitementNom: "Gestion des salaires", date: "2026-05-20T10:00:00", dateDemande: "2026-05-20T10:00:00", statut: "EN_ATTENTE", statutDemande: "EN_ATTENTE", detail: "Demande de correction de l'adresse mail enregistrée.", descriptionDemande: "Demande de correction de l'adresse mail enregistrée." },
+  { id: 2, usager: "Kaboré Issouf", usagerNom: "Kaboré Issouf", type: "SUPPRESSION", typeDemande: "SUPPRESSION", traitement: "Gestion des accès réseau", traitementNom: "Gestion des accès réseau", date: "2026-05-21T08:30:00", dateDemande: "2026-05-21T08:30:00", statut: "EN_ATTENTE", statutDemande: "EN_ATTENTE", detail: "Demande de suppression des données suite à fin de contrat.", descriptionDemande: "Demande de suppression des données suite à fin de contrat." },
+  { id: 3, usager: "Sawadogo Paul", usagerNom: "Sawadogo Paul", type: "MODIFICATION", typeDemande: "MODIFICATION", traitement: "Gestion des salaires", traitementNom: "Gestion des salaires", date: "2026-05-18T16:00:00", dateDemande: "2026-05-18T16:00:00", statut: "TRAITE", statutDemande: "TRAITE", detail: "Correction du numéro de téléphone.", descriptionDemande: "Correction du numéro de téléphone." },
 ];
 
 const formatDate = (d) => d ? new Date(d).toLocaleDateString("fr-FR") : "—";
@@ -60,10 +68,10 @@ function ModalDemandeUsager({ demande, onClose, onTraiter }) {
         </div>
         <div className="p-6 space-y-4">
           <div className="bg-green-50 rounded-xl p-4 space-y-2 text-sm">
-            <p><span className="font-semibold text-green-800">Usager :</span> {demande.usager}</p>
-            <p><span className="font-semibold text-green-800">Traitement concerné :</span> {demande.traitement}</p>
-            <p><span className="font-semibold text-green-800">Date :</span> {formatDate(demande.date)}</p>
-            <p><span className="font-semibold text-green-800">Détail :</span> {demande.detail}</p>
+            <p><span className="font-semibold text-green-800">Usager :</span> {demande.usager || demande.usagerNom}</p>
+            <p><span className="font-semibold text-green-800">Traitement concerné :</span> {demande.traitement || demande.traitementNom}</p>
+            <p><span className="font-semibold text-green-800">Date :</span> {formatDate(demande.date || demande.dateDemande)}</p>
+            <p><span className="font-semibold text-green-800">Détail :</span> {demande.detail || demande.descriptionDemande}</p>
           </div>
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1">Votre réponse / action</label>
@@ -111,7 +119,7 @@ function ModalDetailTraitement({ traitement, onClose, onEnvoyer }) {
             <div className="bg-green-50 rounded-lg p-3"><p className="text-xs text-green-600 font-semibold">Date création</p><p>{formatDate(traitement.dateCreation)}</p></div>
             <div className="bg-green-50 rounded-lg p-3"><p className="text-xs text-green-600 font-semibold">Date fin</p><p>{formatDate(traitement.dateFin)}</p></div>
             <div className="bg-green-50 rounded-lg p-3"><p className="text-xs text-green-600 font-semibold">Nb données</p><p>{traitement.nombreDonnee}</p></div>
-            <div className="bg-green-50 rounded-lg p-3"><p className="text-xs text-green-600 font-semibold">Session ID</p><p>#{traitement.sessionCollecteId}</p></div>
+            <div className="bg-green-50 rounded-lg p-3"><p className="text-xs text-green-600 font-semibold">Session ID</p><p>#{traitement.sessionCollecteId || "—"}</p></div>
           </div>
           <div className="flex gap-3 justify-end pt-2">
             <button onClick={onClose} className="px-4 py-2 rounded-lg border border-gray-300 text-gray-600 text-sm hover:bg-gray-50">Fermer</button>
@@ -128,18 +136,13 @@ function ModalDetailTraitement({ traitement, onClose, onEnvoyer }) {
 }
 
 // ─── Modal Créer Traitement (4 étapes) ──────────────────────────
-function ModalCreerTraitement({ onClose, onSave }) {
+function ModalCreerTraitement({ onClose, onSave, sessions }) {
   const [etape, setEtape] = useState(1);
   const [form, setForm] = useState({
-    // Étape 1
     nomTraitement: "", department: "", responsable: "", email: "", telephone: "",
-    // Étape 2
     finalitePrincipale: "", finalitesSecondaires: "", origines: [],
-    // Étape 3
     categoriesPersonnes: [], donneesSelectionnees: {},
-    // Étape 4
     destinatairesInternes: "", destinatairesExternes: "", dureeConservation: "", uniteConservation: "Mois", motifIndetermine: "",
-    // DTO
     texte: "", certificationSecurite: "", dateFin: "", sessionCollecteId: "",
   });
 
@@ -154,7 +157,6 @@ function ModalCreerTraitement({ onClose, onSave }) {
   const etape2Ok = form.finalitePrincipale && form.origines.length > 0;
   const etape3Ok = form.categoriesPersonnes.length > 0;
   const etape4Ok = form.destinatairesInternes && (form.uniteConservation === "Durée indéterminée" ? form.motifIndetermine : form.dureeConservation);
-
   const canNext = etape === 1 ? etape1Ok : etape === 2 ? etape2Ok : etape === 3 ? etape3Ok : false;
 
   const handleSave = () => {
@@ -175,7 +177,6 @@ function ModalCreerTraitement({ onClose, onSave }) {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-screen overflow-y-auto">
-        {/* Header */}
         <div className="bg-green-800 text-white px-6 py-4 rounded-t-2xl flex justify-between items-center sticky top-0 z-10">
           <div>
             <h3 className="font-bold text-lg">Nouveau Traitement</h3>
@@ -184,7 +185,6 @@ function ModalCreerTraitement({ onClose, onSave }) {
           <button onClick={onClose} className="text-green-200 hover:text-white text-xl">✕</button>
         </div>
 
-        {/* Barre de progression */}
         <div className="flex bg-green-900">
           {steps.map((s, i) => (
             <div key={i} className={`flex-1 py-2 text-center text-xs font-semibold transition-all ${i + 1 === etape ? "bg-green-600 text-white" : i + 1 < etape ? "bg-green-700 text-green-200" : "text-green-400"}`}>
@@ -194,7 +194,6 @@ function ModalCreerTraitement({ onClose, onSave }) {
         </div>
 
         <div className="p-6 space-y-5">
-          {/* ── Étape 1 ── */}
           {etape === 1 && (
             <div className="space-y-4">
               <h4 className="font-bold text-green-800 text-base border-b border-green-100 pb-2">📋 Informations Générales & Responsable</h4>
@@ -226,7 +225,6 @@ function ModalCreerTraitement({ onClose, onSave }) {
             </div>
           )}
 
-          {/* ── Étape 2 ── */}
           {etape === 2 && (
             <div className="space-y-4">
               <h4 className="font-bold text-green-800 text-base border-b border-green-100 pb-2">🎯 Finalités & Origine des Données</h4>
@@ -252,7 +250,6 @@ function ModalCreerTraitement({ onClose, onSave }) {
             </div>
           )}
 
-          {/* ── Étape 3 ── */}
           {etape === 3 && (
             <div className="space-y-4">
               <h4 className="font-bold text-green-800 text-base border-b border-green-100 pb-2">👥 Personnes & Catégories de Données</h4>
@@ -291,7 +288,6 @@ function ModalCreerTraitement({ onClose, onSave }) {
             </div>
           )}
 
-          {/* ── Étape 4 ── */}
           {etape === 4 && (
             <div className="space-y-4">
               <h4 className="font-bold text-green-800 text-base border-b border-green-100 pb-2">🔒 Conservation & Destinataires</h4>
@@ -329,14 +325,21 @@ function ModalCreerTraitement({ onClose, onSave }) {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">ID Session de collecte</label>
-                <input type="number" value={form.sessionCollecteId} onChange={e => set("sessionCollecteId", e.target.value)} placeholder="ID de la session associée" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Session de collecte</label>
+                <select value={form.sessionCollecteId} onChange={e => set("sessionCollecteId", e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
+                  <option value="">-- Aucune session --</option>
+                  {sessions.map(s => (
+                    <option key={s.idSession} value={s.idSession}>
+                      {s.description || `Session #${s.idSession}`}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-400 mt-1">Optionnel : associer ce traitement à une session de collecte existante</p>
               </div>
             </div>
           )}
         </div>
 
-        {/* Footer navigation */}
         <div className="px-6 pb-6 flex justify-between items-center border-t border-gray-100 pt-4">
           <button onClick={() => etape > 1 ? setEtape(e => e - 1) : onClose()} className="px-4 py-2 rounded-lg border border-gray-300 text-gray-600 text-sm hover:bg-gray-50">
             {etape === 1 ? "Annuler" : "← Précédent"}
@@ -362,6 +365,7 @@ function UtilisateurMetierDashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [traitements, setTraitements] = useState(mockTraitements);
   const [demandes, setDemandes] = useState(mockDemandes);
+  const [sessions, setSessions] = useState(mockSessions);
   const [showCreer, setShowCreer] = useState(false);
   const [detailTraitement, setDetailTraitement] = useState(null);
   const [detailDemande, setDetailDemande] = useState(null);
@@ -373,14 +377,14 @@ function UtilisateurMetierDashboard() {
     setTimeout(() => setToast(null), 3000);
   };
 
-  const handleCreer = (payload) => {
+  const handleCreer = (payload, formData) => {
     const nouveau = {
       ...payload,
       idTraitement: traitements.length + 1,
       dateCreation: new Date().toISOString(),
       nombreDonnee: 0,
       utilisateurMetierId: 1,
-      utilisateurMetierNom: "Utilisateur Métier",
+      utilisateurMetierNom: "Ouedraogo Amadou",
       statut: "EN_COURS",
     };
     setTraitements(prev => [nouveau, ...prev]);
@@ -398,7 +402,7 @@ function UtilisateurMetierDashboard() {
     showToast("✅ Demande traitée !");
   };
 
-  const demandesEnAttente = demandes.filter(d => d.statut === "EN_ATTENTE").length;
+  const demandesEnAttente = demandes.filter(d => (d.statut === "EN_ATTENTE" || d.statutDemande === "EN_ATTENTE")).length;
   const traitementsFiltres = traitements.filter(t =>
     t.description?.toLowerCase().includes(recherche.toLowerCase()) ||
     t.department?.toLowerCase().includes(recherche.toLowerCase())
@@ -407,7 +411,7 @@ function UtilisateurMetierDashboard() {
   const stats = [
     { label: "Total traitements", value: traitements.length, icon: "📋", color: "bg-green-50 border-green-200" },
     { label: "Envoyés au DPO", value: traitements.filter(t => t.statut === "ENVOYE_DPO").length, icon: "📤", color: "bg-blue-50 border-blue-200" },
-    { label: "En cours", value: traitements.filter(t => t.statut === "EN_COURS").length, icon: "⏳", color: "bg-yellow-50 border-yellow-200" },
+    { label: "En cours", value: traitements.filter(t => t.statut === "EN_COURS" || !t.statut).length, icon: "⏳", color: "bg-yellow-50 border-yellow-200" },
     { label: "Demandes usagers", value: demandesEnAttente, icon: "🔔", color: "bg-red-50 border-red-200" },
   ];
 
@@ -421,7 +425,6 @@ function UtilisateurMetierDashboard() {
     <div className="flex h-screen bg-gray-100 font-sans">
       {/* ── Sidebar ── */}
       <aside className={`${sidebarOpen ? "w-64" : "w-16"} bg-green-900 text-white flex flex-col transition-all duration-300 shadow-xl`}>
-        {/* Logo */}
         <div className="flex items-center gap-3 px-4 py-5 border-b border-green-700">
           <div className="w-9 h-9 bg-white rounded-lg flex items-center justify-center text-green-800 font-black text-sm flex-shrink-0">SF</div>
           {sidebarOpen && (
@@ -432,7 +435,6 @@ function UtilisateurMetierDashboard() {
           )}
         </div>
 
-        {/* Nav */}
         <nav className="flex-1 py-4 space-y-1 px-2">
           {navItems.map(item => (
             <button
@@ -451,7 +453,6 @@ function UtilisateurMetierDashboard() {
           ))}
         </nav>
 
-        {/* Toggle */}
         <div className="p-3 border-t border-green-700">
           <button onClick={() => setSidebarOpen(o => !o)} className="w-full flex items-center justify-center py-2 rounded-lg text-green-300 hover:bg-green-800 text-sm">
             {sidebarOpen ? "◀ Réduire" : "▶"}
@@ -461,7 +462,6 @@ function UtilisateurMetierDashboard() {
 
       {/* ── Main ── */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header */}
         <header className="bg-green-800 text-white px-6 py-4 flex items-center justify-between shadow-md">
           <div>
             <h1 className="font-bold text-lg">
@@ -509,6 +509,9 @@ function UtilisateurMetierDashboard() {
                       <BadgeStatut statut={t.statut} />
                     </div>
                   ))}
+                  {traitements.length === 0 && (
+                    <p className="text-center text-gray-400 text-sm py-4">Aucun traitement. Créez votre premier traitement !</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -592,22 +595,22 @@ function UtilisateurMetierDashboard() {
                   <tbody className="divide-y divide-gray-100">
                     {demandes.map(d => (
                       <tr key={d.id} className="hover:bg-green-50 transition-colors">
-                        <td className="px-4 py-3 font-medium text-gray-800">{d.usager}</td>
+                        <td className="px-4 py-3 font-medium text-gray-800">{d.usager || d.usagerNom}</td>
                         <td className="px-4 py-3">
-                          <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${d.type === "MODIFICATION" ? "bg-orange-100 text-orange-700" : "bg-red-100 text-red-700"}`}>
-                            {d.type === "MODIFICATION" ? "✏️ Modification" : "🗑 Suppression"}
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${(d.type === "MODIFICATION" || d.typeDemande === "MODIFICATION") ? "bg-orange-100 text-orange-700" : "bg-red-100 text-red-700"}`}>
+                            {(d.type === "MODIFICATION" || d.typeDemande === "MODIFICATION") ? "✏️ Modification" : "🗑 Suppression"}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-gray-600">{d.traitement}</td>
-                        <td className="px-4 py-3 text-gray-500 text-xs">{formatDate(d.date)}</td>
+                        <td className="px-4 py-3 text-gray-600">{d.traitement || d.traitementNom}</td>
+                        <td className="px-4 py-3 text-gray-500 text-xs">{formatDate(d.date || d.dateDemande)}</td>
                         <td className="px-4 py-3">
-                          {d.statut === "EN_ATTENTE"
+                          {(d.statut === "EN_ATTENTE" || d.statutDemande === "EN_ATTENTE")
                             ? <span className="bg-yellow-100 text-yellow-700 text-xs font-semibold px-2 py-0.5 rounded-full">⏳ En attente</span>
                             : <span className="bg-green-100 text-green-700 text-xs font-semibold px-2 py-0.5 rounded-full">✅ Traité</span>
                           }
                         </td>
                         <td className="px-4 py-3">
-                          {d.statut === "EN_ATTENTE" ? (
+                          {(d.statut === "EN_ATTENTE" || d.statutDemande === "EN_ATTENTE") ? (
                             <button onClick={() => setDetailDemande(d)} className="text-xs bg-green-700 text-white px-3 py-1 rounded-lg hover:bg-green-800">Traiter</button>
                           ) : (
                             <span className="text-gray-400 text-xs">✅ Traité</span>
@@ -617,6 +620,9 @@ function UtilisateurMetierDashboard() {
                     ))}
                   </tbody>
                 </table>
+                {demandes.length === 0 && (
+                  <div className="py-12 text-center text-gray-400 text-sm">Aucune demande</div>
+                )}
               </div>
             </div>
           )}
@@ -624,7 +630,7 @@ function UtilisateurMetierDashboard() {
       </div>
 
       {/* ── Modals ── */}
-      {showCreer && <ModalCreerTraitement onClose={() => setShowCreer(false)} onSave={handleCreer} />}
+      {showCreer && <ModalCreerTraitement onClose={() => setShowCreer(false)} onSave={handleCreer} sessions={sessions} />}
       {detailTraitement && <ModalDetailTraitement traitement={detailTraitement} onClose={() => setDetailTraitement(null)} onEnvoyer={handleEnvoyer} />}
       {detailDemande && <ModalDemandeUsager demande={detailDemande} onClose={() => setDetailDemande(null)} onTraiter={handleTraiterDemande} />}
 
