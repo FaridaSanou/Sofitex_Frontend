@@ -1,6 +1,17 @@
-import { useState } from "react";
+// ═══════════════════════════════════════════════════════════════════
+// MODULE : Tableau de bord Utilisateur Métier (UtilisateurMetierDashboard)
+// Point d'entrée : Gère son propre layout (sidebar + header + main)
+// Contenu : Dashboard, Sessions de collecte, Traitements, Demandes usagers, Historique
+// ═══════════════════════════════════════════════════════════════════
 
-// ─── Données de référence ────────────────────────────────────────
+import { useState, useEffect } from "react";
+import api from "../services/api";
+import sofitexLogo from "../assets/image.png";
+
+// ═══════════════════════════════════════════════════════════════════
+// MODULE 1 : Données de référence
+// Listes utilisées dans le formulaire de création de traitement
+// ═══════════════════════════════════════════════════════════════════
 const DIRECTIONS = ["DSI","DRH","Direction Commerciale","Direction Financière","Direction Générale","Direction Technique","Direction Qualité","Direction Logistique","Direction Juridique","Autre"];
 const ORIGINES = ["Directement auprès des personnes (formulaires en ligne, papier)","Via des objets connectés ou capteurs","Importation de fichiers externes ou bases de données existantes"];
 const CATEGORIES_PERSONNES = ["Employés SOFITEX","Producteurs de coton","Clients","Fournisseurs / Sous-traitants","Visiteurs","Candidats à l'embauche","Usagers externes"];
@@ -13,12 +24,34 @@ const GROUPES_DONNEES = [
 ];
 const UNITES = ["Mois","Années","Durée indéterminée"];
 
-// ─── Données Mock ────────────────────────────────────────────────
-const mockSessions = [
-  { idSession: 1, dateDebut: "2026-05-01T08:00:00", dateFin: "2026-06-30T18:00:00", statutSession: "EN_COURS", typeCollecte: "EN_LIGNE", lieu: "Bobo-Dioulasso", description: "Collecte des données RH", dpoId: 1, dpoNomComplet: "Kaboré Moussa" },
-  { idSession: 2, dateDebut: "2026-04-15T09:00:00", dateFin: "2026-05-15T17:00:00", statutSession: "TERMINEE", typeCollecte: "TERRAIN", lieu: "Ouagadougou", description: "Enquête producteurs coton", dpoId: 1, dpoNomComplet: "Kaboré Moussa" },
-];
+// ═══════════════════════════════════════════════════════════════════
+// MODULE 2 : Utilitaires de formatage des dates
+// toDate() gère les chaînes ISO et le format tableau Jackson
+// ═══════════════════════════════════════════════════════════════════
+const toDate = (d) => {
+  if (!d) return null;
+  if (Array.isArray(d)) return new Date(d[0], d[1] - 1, d[2], d[3] || 0, d[4] || 0);
+  return new Date(d);
+};
 
+const formatDate = (d) => {
+  const date = toDate(d);
+  return date instanceof Date && !isNaN(date)
+    ? date.toLocaleDateString("fr-FR")
+    : "—";
+};
+
+const formatDateTime = (d) => {
+  const date = toDate(d);
+  return date instanceof Date && !isNaN(date)
+    ? date.toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })
+    : "—";
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// MODULE 3 : Données factices (Mock Data)
+// Utilisées en fallback lorsque l'API n'est pas disponible
+// ═══════════════════════════════════════════════════════════════════
 const mockTraitements = [
   { idTraitement: 1, department: "DRH", description: "Gestion des salaires", texte: "Permettre le paiement des employés", certificationSecurite: "ISO 27001", dureeConservation: 60, dateCreation: "2026-05-10T09:00:00", dateFin: "2031-05-10T00:00:00", nombreDonnee: 3, sessionCollecteId: 1, utilisateurMetierId: 1, utilisateurMetierNom: "Ouedraogo Amadou", statut: "ENVOYE_DPO" },
   { idTraitement: 2, department: "DSI", description: "Gestion des accès réseau", texte: "Contrôler les accès aux systèmes", certificationSecurite: "En cours", dureeConservation: 12, dateCreation: "2026-05-15T14:00:00", dateFin: "2027-05-15T00:00:00", nombreDonnee: 1, sessionCollecteId: 2, utilisateurMetierId: 1, utilisateurMetierNom: "Ouedraogo Amadou", statut: "EN_COURS" },
@@ -32,9 +65,11 @@ const mockDemandes = [
   { id: 3, usager: "Sawadogo Paul", usagerNom: "Sawadogo Paul", type: "MODIFICATION", typeDemande: "MODIFICATION", traitement: "Gestion des salaires", traitementNom: "Gestion des salaires", date: "2026-05-18T16:00:00", dateDemande: "2026-05-18T16:00:00", statut: "TRAITE", statutDemande: "TRAITE", detail: "Correction du numéro de téléphone.", descriptionDemande: "Correction du numéro de téléphone." },
 ];
 
-const formatDate = (d) => d ? new Date(d).toLocaleDateString("fr-FR") : "—";
-
-// ─── Badge statut ────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
+// MODULE 4 : BadgeStatut
+// Affiche le statut du traitement avec un code couleur
+// (ENVOYE_DPO / EN_COURS / VALIDE / REJETE)
+// ═══════════════════════════════════════════════════════════════════
 function BadgeStatut({ statut }) {
   const map = {
     ENVOYE_DPO: { label: "Envoyé DPO", cls: "bg-blue-100 text-blue-700" },
@@ -46,7 +81,10 @@ function BadgeStatut({ statut }) {
   return <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${s.cls}`}>{s.label}</span>;
 }
 
-// ─── Toast ───────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
+// MODULE 5 : Toast de notification
+// Affiché en bas à droite (succès vert / erreur rouge)
+// ═══════════════════════════════════════════════════════════════════
 function Toast({ toast }) {
   if (!toast) return null;
   return (
@@ -56,7 +94,11 @@ function Toast({ toast }) {
   );
 }
 
-// ─── Modal Demande Usager ────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
+// MODULE 6 : Modal Demande Usager
+// Affiche le détail d'une demande (modification/suppression)
+// et permet au métier d'y répondre (marquer comme traité)
+// ═══════════════════════════════════════════════════════════════════
 function ModalDemandeUsager({ demande, onClose, onTraiter }) {
   const [reponse, setReponse] = useState("");
   return (
@@ -99,7 +141,10 @@ function ModalDemandeUsager({ demande, onClose, onTraiter }) {
   );
 }
 
-// ─── Modal Détail Traitement ─────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
+// MODULE 7 : Modal Détail Traitement
+// Affiche toutes les infos d'un traitement et permet de l'envoyer au DPO
+// ═══════════════════════════════════════════════════════════════════
 function ModalDetailTraitement({ traitement, onClose, onEnvoyer }) {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -135,7 +180,13 @@ function ModalDetailTraitement({ traitement, onClose, onEnvoyer }) {
   );
 }
 
-// ─── Modal Créer Traitement (4 étapes) ──────────────────────────
+// ═══════════════════════════════════════════════════════════════════
+// MODULE 8 : Modal Créer Traitement (4 étapes)
+// Étape 1 : Informations générales (nom, département, responsable)
+// Étape 2 : Finalités et origine des données
+// Étape 3 : Personnes visées et catégories de données
+// Étape 4 : Conservation, destinataires et session de collecte
+// ═══════════════════════════════════════════════════════════════════
 function ModalCreerTraitement({ onClose, onSave, sessions }) {
   const [etape, setEtape] = useState(1);
   const [form, setForm] = useState({
@@ -169,7 +220,7 @@ function ModalCreerTraitement({ onClose, onSave, sessions }) {
       dateFin: form.dateFin || null,
       sessionCollecteId: form.sessionCollecteId ? parseInt(form.sessionCollecteId) : null,
     };
-    onSave(payload, form);
+    onSave(payload);
   };
 
   const steps = ["Qui & Quoi", "Pourquoi", "Données", "Conservation"];
@@ -359,42 +410,99 @@ function ModalCreerTraitement({ onClose, onSave, sessions }) {
   );
 }
 
-// ─── Composant principal ─────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
+// MODULE 9 : Composant principal UtilisateurMetierDashboard
+// Gère l'ensemble de l'interface métier : sidebar personnalisée,
+// header avec notifications, et 5 sections (dashboard, sessions,
+// traitements, demandes, historique). Les sessions sont pollées
+// toutes les 30s pour détecter les nouvelles créations du DPO.
+// ═══════════════════════════════════════════════════════════════════
 function UtilisateurMetierDashboard() {
   const [activeSection, setActiveSection] = useState("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [traitements, setTraitements] = useState(mockTraitements);
   const [demandes, setDemandes] = useState(mockDemandes);
-  const [sessions, setSessions] = useState(mockSessions);
+  const [sessions, setSessions] = useState([]);
   const [showCreer, setShowCreer] = useState(false);
   const [detailTraitement, setDetailTraitement] = useState(null);
   const [detailDemande, setDetailDemande] = useState(null);
   const [toast, setToast] = useState(null);
   const [recherche, setRecherche] = useState("");
+  const [traitementFilterMode, setTraitementFilterMode] = useState("tous");
+  const [selectedSessionId, setSelectedSessionId] = useState("");
+  const [selectedSessionDetail, setSelectedSessionDetail] = useState(null);
+  const [newSessionCount, setNewSessionCount] = useState(0);
+  const [previousSessionCount, setPreviousSessionCount] = useState(0);
 
   const showToast = (msg, type = "success") => {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 3000);
   };
 
-  const handleCreer = (payload, formData) => {
-    const nouveau = {
-      ...payload,
-      idTraitement: traitements.length + 1,
-      dateCreation: new Date().toISOString(),
-      nombreDonnee: 0,
-      utilisateurMetierId: 1,
-      utilisateurMetierNom: "Ouedraogo Amadou",
-      statut: "EN_COURS",
-    };
-    setTraitements(prev => [nouveau, ...prev]);
-    setShowCreer(false);
-    showToast("✅ Traitement créé avec succès !");
+  useEffect(() => {
+    api.get("/sessions")
+      .then((res) => {
+        setSessions(res.data);
+        setPreviousSessionCount(res.data.length);
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      api.get("/sessions")
+        .then((res) => {
+          setSessions(res.data);
+          if (res.data.length > previousSessionCount) {
+            setNewSessionCount(prev => prev + (res.data.length - previousSessionCount));
+          }
+          setPreviousSessionCount(res.data.length);
+        })
+        .catch(() => {});
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [previousSessionCount]);
+
+  const handleCreer = (payload) => {
+    api.post("/traitements", payload)
+      .then((res) => {
+        setTraitements(prev => [res.data, ...prev]);
+        setShowCreer(false);
+        showToast("✅ Traitement créé avec succès !");
+      })
+      .catch(() => {
+        const nouveau = {
+          ...payload,
+          idTraitement: traitements.length + 1,
+          dateCreation: new Date().toISOString(),
+          nombreDonnee: 0,
+          utilisateurMetierId: 1,
+          utilisateurMetierNom: "Ouedraogo Amadou",
+          statut: "EN_COURS",
+        };
+        setTraitements(prev => [nouveau, ...prev]);
+        setShowCreer(false);
+        showToast("✅ Traitement créé (hors ligne)");
+      });
   };
 
   const handleEnvoyer = (id) => {
-    setTraitements(prev => prev.map(t => t.idTraitement === id ? { ...t, statut: "ENVOYE_DPO" } : t));
-    showToast("📤 Traitement envoyé au DPO !");
+    api.patch(`/traitements/${id}/statut?valeur=ENVOYE_DPO`)
+      .then(() => {
+        setTraitements(prev => prev.map(t => t.idTraitement === id ? { ...t, statut: "ENVOYE_DPO" } : t));
+        showToast("📤 Traitement envoyé au DPO !");
+      })
+      .catch(() => {
+        setTraitements(prev => prev.map(t => t.idTraitement === id ? { ...t, statut: "ENVOYE_DPO" } : t));
+        showToast("📤 Traitement envoyé au DPO (hors ligne)");
+      });
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("role");
+    localStorage.removeItem("email");
+    window.location.href = "/";
   };
 
   const handleTraiterDemande = (id, reponse) => {
@@ -403,34 +511,48 @@ function UtilisateurMetierDashboard() {
   };
 
   const demandesEnAttente = demandes.filter(d => (d.statut === "EN_ATTENTE" || d.statutDemande === "EN_ATTENTE")).length;
-  const traitementsFiltres = traitements.filter(t =>
-    t.description?.toLowerCase().includes(recherche.toLowerCase()) ||
-    t.department?.toLowerCase().includes(recherche.toLowerCase())
-  );
+
+  const traitementsFiltres = traitements.filter(t => {
+    const matchRecherche = !recherche ||
+      t.description?.toLowerCase().includes(recherche.toLowerCase()) ||
+      t.department?.toLowerCase().includes(recherche.toLowerCase());
+    if (!matchRecherche) return false;
+    if (traitementFilterMode === "parSession" && selectedSessionId) {
+      return t.sessionCollecteId === Number(selectedSessionId);
+    }
+    return true;
+  });
+
+  const traitementsParSession = (sessionId) =>
+    traitements.filter(t => t.sessionCollecteId === Number(sessionId));
 
   const stats = [
+    { label: "Sessions en cours", value: sessions.filter(s => s.statutSession === "EN_COURS").length, icon: "📅", color: "bg-blue-50 border-blue-200" },
     { label: "Total traitements", value: traitements.length, icon: "📋", color: "bg-green-50 border-green-200" },
-    { label: "Envoyés au DPO", value: traitements.filter(t => t.statut === "ENVOYE_DPO").length, icon: "📤", color: "bg-blue-50 border-blue-200" },
-    { label: "En cours", value: traitements.filter(t => t.statut === "EN_COURS" || !t.statut).length, icon: "⏳", color: "bg-yellow-50 border-yellow-200" },
+    { label: "Envoyés au DPO", value: traitements.filter(t => t.statut === "ENVOYE_DPO").length, icon: "📤", color: "bg-purple-50 border-purple-200" },
     { label: "Demandes usagers", value: demandesEnAttente, icon: "🔔", color: "bg-red-50 border-red-200" },
   ];
 
   const navItems = [
     { id: "dashboard", label: "Tableau de bord", icon: "🏠" },
+    { id: "sessions", label: "Sessions de collecte", icon: "📅", badge: newSessionCount },
     { id: "traitements", label: "Mes traitements", icon: "📋" },
     { id: "demandes", label: "Demandes usagers", icon: "🔔", badge: demandesEnAttente },
+    { id: "historique", label: "Historique", icon: "📜" },
   ];
 
   return (
     <div className="flex h-screen bg-gray-100 font-sans">
       {/* ── Sidebar ── */}
-      <aside className={`${sidebarOpen ? "w-64" : "w-16"} bg-green-900 text-white flex flex-col transition-all duration-300 shadow-xl`}>
+      <aside className={`${sidebarOpen ? "w-64" : "w-16"} bg-green-800 text-white flex flex-col transition-all duration-300 shadow-xl`}>
         <div className="flex items-center gap-3 px-4 py-5 border-b border-green-700">
-          <div className="w-9 h-9 bg-white rounded-lg flex items-center justify-center text-green-800 font-black text-sm flex-shrink-0">SF</div>
+          <div className="w-9 h-9 bg-white rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
+            <img src={sofitexLogo} alt="Sofitex" className="w-full h-full object-contain" />
+          </div>
           {sidebarOpen && (
             <div>
               <p className="font-bold text-sm leading-tight">SOFITEX</p>
-              <p className="text-green-300 text-xs">Utilisateur Métier</p>
+              <p className="text-green-300 text-xs">Plateforme CIL</p>
             </div>
           )}
         </div>
@@ -439,8 +561,8 @@ function UtilisateurMetierDashboard() {
           {navItems.map(item => (
             <button
               key={item.id}
-              onClick={() => setActiveSection(item.id)}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${activeSection === item.id ? "bg-green-600 text-white shadow" : "text-green-200 hover:bg-green-800"}`}
+              onClick={() => { setActiveSection(item.id); if (item.id === "sessions") setNewSessionCount(0); }}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${activeSection === item.id ? "bg-white text-green-800 shadow" : "text-green-100 hover:bg-green-700"}`}
             >
               <span className="text-lg flex-shrink-0">{item.icon}</span>
               {sidebarOpen && (
@@ -453,8 +575,26 @@ function UtilisateurMetierDashboard() {
           ))}
         </nav>
 
-        <div className="p-3 border-t border-green-700">
-          <button onClick={() => setSidebarOpen(o => !o)} className="w-full flex items-center justify-center py-2 rounded-lg text-green-300 hover:bg-green-800 text-sm">
+        <div className="px-3 py-4 border-t border-green-700">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center flex-shrink-0">
+              <span className="text-white text-xs font-bold">U</span>
+            </div>
+            {sidebarOpen && (
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold truncate">Utilisateur Métier</p>
+                <p className="text-green-300 text-xs truncate">{localStorage.getItem("email") || ""}</p>
+              </div>
+            )}
+            {sidebarOpen && (
+              <button onClick={handleLogout} className="text-green-300 hover:text-white">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+              </button>
+            )}
+          </div>
+          <button onClick={() => setSidebarOpen(o => !o)} className="w-full flex items-center justify-center py-2 mt-2 rounded-lg text-green-300 hover:bg-green-700 text-sm">
             {sidebarOpen ? "◀ Réduire" : "▶"}
           </button>
         </div>
@@ -462,22 +602,37 @@ function UtilisateurMetierDashboard() {
 
       {/* ── Main ── */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="bg-green-800 text-white px-6 py-4 flex items-center justify-between shadow-md">
-          <div>
-            <h1 className="font-bold text-lg">
-              {activeSection === "dashboard" && "Tableau de bord"}
-              {activeSection === "traitements" && "Mes Traitements"}
-              {activeSection === "demandes" && "Demandes des Usagers"}
-            </h1>
-            <p className="text-green-200 text-xs">Plateforme CIL — SOFITEX</p>
+        <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between flex-shrink-0">
+          <div className="flex items-center gap-4">
+            <button onClick={() => setSidebarOpen(!sidebarOpen)} className="text-gray-500 hover:text-gray-700">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+            <div>
+              <h1 className="text-lg font-bold text-gray-800">
+                {activeSection === "dashboard" && "Tableau de bord"}
+                {activeSection === "sessions" && "Sessions de collecte"}
+                {activeSection === "traitements" && "Mes Traitements"}
+                {activeSection === "demandes" && "Demandes des Usagers"}
+                {activeSection === "historique" && "Historique"}
+              </h1>
+              <p className="text-xs text-gray-400">
+                {new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+              </p>
+            </div>
           </div>
           <div className="flex items-center gap-3">
-            {demandesEnAttente > 0 && (
-              <button onClick={() => setActiveSection("demandes")} className="relative bg-green-700 hover:bg-green-600 px-3 py-1.5 rounded-lg text-sm">
-                🔔 <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">{demandesEnAttente}</span>
+            {newSessionCount > 0 && (
+              <button onClick={() => { setNewSessionCount(0); setActiveSection("sessions"); }} className="relative p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg">
+                📅 <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center">{newSessionCount > 9 ? '9+' : newSessionCount}</span>
               </button>
             )}
-            <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center text-sm font-bold">UM</div>
+            {demandesEnAttente > 0 && (
+              <button onClick={() => setActiveSection("demandes")} className="relative p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg">
+                🔔 <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center">{demandesEnAttente > 9 ? '9+' : demandesEnAttente}</span>
+              </button>
+            )}
           </div>
         </header>
 
@@ -517,14 +672,140 @@ function UtilisateurMetierDashboard() {
             </div>
           )}
 
+          {/* ── Sessions de collecte ── */}
+          {activeSection === "sessions" && (
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h2 className="text-xl font-bold text-gray-800">Sessions de collecte ({sessions.length})</h2>
+              </div>
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-green-50 text-green-800">
+                      <tr>
+                        <th className="px-4 py-3 text-left font-semibold">Description</th>
+                        <th className="px-4 py-3 text-left font-semibold">Type</th>
+                        <th className="px-4 py-3 text-left font-semibold">Dates</th>
+                        <th className="px-4 py-3 text-left font-semibold">Statut</th>
+                        <th className="px-4 py-3 text-left font-semibold">DPO</th>
+                        <th className="px-4 py-3 text-center font-semibold">Traitements</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {sessions.map(s => {
+                        const nbTraitements = s.nombreTraitements ?? traitementsParSession(s.idSession).length;
+                        return (
+                          <tr key={s.idSession} className="hover:bg-green-50 transition-colors">
+                            <td className="px-4 py-3 font-medium text-gray-800">{s.description || `Session #${s.idSession}`}</td>
+                            <td className="px-4 py-3">
+                              <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                                {s.typeCollecte === "EN_LIGNE" ? "En ligne" : "Terrain"}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-xs text-gray-500">
+                              <p>Du {formatDateTime(s.dateDebut)}</p>
+                              <p>Au {formatDateTime(s.dateFin)}</p>
+                            </td>
+                            <td className="px-4 py-3">
+                              <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+                                s.statutSession === "EN_COURS" ? "bg-blue-100 text-blue-700" :
+                                s.statutSession === "TERMINEE" ? "bg-green-100 text-green-700" :
+                                "bg-red-100 text-red-700"
+                              }`}>
+                                {s.statutSession === "EN_COURS" ? "En cours" : s.statutSession === "TERMINEE" ? "Terminée" : "Annulée"}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-600">{s.dpoNomComplet || "—"}</td>
+                            <td className="px-4 py-3 text-center">
+                              <button
+                                onClick={() => setSelectedSessionDetail(selectedSessionDetail?.idSession === s.idSession ? null : s)}
+                                className="px-3 py-1 bg-green-100 text-green-700 rounded-lg text-xs font-medium hover:bg-green-200"
+                              >
+                                {nbTraitements} traitement{nbTraitements !== 1 ? "s" : ""} {selectedSessionDetail?.idSession === s.idSession ? "▲" : "▼"}
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                      {sessions.length === 0 && (
+                        <tr><td colSpan={6} className="py-12 text-center text-gray-400 text-sm">Aucune session de collecte</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {selectedSessionDetail && (
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                  <div className="p-4 border-b border-gray-100 bg-green-50">
+                    <h3 className="font-bold text-green-800">
+                      Traitements liés à la session : {selectedSessionDetail.description || `#${selectedSessionDetail.idSession}`}
+                    </h3>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-4 py-3 text-left font-semibold text-gray-500">Description</th>
+                          <th className="px-4 py-3 text-left font-semibold text-gray-500">Département</th>
+                          <th className="px-4 py-3 text-left font-semibold text-gray-500">Statut</th>
+                          <th className="px-4 py-3 text-center font-semibold text-gray-500">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {traitementsParSession(selectedSessionDetail.idSession).map(t => (
+                          <tr key={t.idTraitement} className="hover:bg-green-50 transition-colors">
+                            <td className="px-4 py-3 font-medium text-gray-800">{t.description}</td>
+                            <td className="px-4 py-3 text-gray-600">{t.department}</td>
+                            <td className="px-4 py-3"><BadgeStatut statut={t.statut} /></td>
+                            <td className="px-4 py-3 text-center">
+                              <button onClick={() => setDetailTraitement(t)} className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-lg hover:bg-green-200">Voir</button>
+                            </td>
+                          </tr>
+                        ))}
+                        {traitementsParSession(selectedSessionDetail.idSession).length === 0 && (
+                          <tr><td colSpan={4} className="py-8 text-center text-gray-400 text-sm">Aucun traitement lié à cette session</td></tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* ── Traitements ── */}
           {activeSection === "traitements" && (
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
-              <div className="p-5 border-b border-gray-100 flex flex-col sm:flex-row gap-3 justify-between items-start sm:items-center">
-                <h2 className="font-bold text-gray-800">Mes Traitements ({traitements.length})</h2>
-                <div className="flex gap-3 w-full sm:w-auto">
-                  <input value={recherche} onChange={e => setRecherche(e.target.value)} placeholder="Rechercher..." className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 flex-1 sm:w-48" />
-                  <button onClick={() => setShowCreer(true)} className="bg-green-700 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-green-800 whitespace-nowrap">+ Nouveau</button>
+              <div className="p-5 border-b border-gray-100 space-y-3">
+                <div className="flex flex-col sm:flex-row gap-3 justify-between items-start sm:items-center">
+                  <h2 className="font-bold text-gray-800">Mes Traitements ({traitements.length})</h2>
+                  <div className="flex gap-3 w-full sm:w-auto">
+                    <input value={recherche} onChange={e => setRecherche(e.target.value)} placeholder="Rechercher..." className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 flex-1 sm:w-48" />
+                    <button onClick={() => setShowCreer(true)} className="bg-green-700 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-green-800 whitespace-nowrap">+ Nouveau</button>
+                  </div>
+                </div>
+                <div className="flex gap-4 items-end">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">Filtrer</label>
+                    <div className="flex gap-2">
+                      <button onClick={() => { setTraitementFilterMode("tous"); setSelectedSessionId(""); }} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${traitementFilterMode === "tous" ? "bg-green-700 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>Tous</button>
+                      <button onClick={() => setTraitementFilterMode("parSession")} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${traitementFilterMode === "parSession" ? "bg-green-700 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>Par session</button>
+                    </div>
+                  </div>
+                  {traitementFilterMode === "parSession" && (
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 mb-1">Session</label>
+                      <select value={selectedSessionId} onChange={e => setSelectedSessionId(e.target.value)} className="h-8 px-2 rounded-lg border border-gray-300 text-xs">
+                        <option value="">Sélectionner...</option>
+                        {sessions.map(s => (
+                          <option key={s.idSession} value={s.idSession}>
+                            {s.description || `Session #${s.idSession}`}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="overflow-x-auto">
@@ -623,6 +904,77 @@ function UtilisateurMetierDashboard() {
                 {demandes.length === 0 && (
                   <div className="py-12 text-center text-gray-400 text-sm">Aucune demande</div>
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* ── Historique ── */}
+          {activeSection === "historique" && (
+            <div className="space-y-4">
+              <h2 className="text-xl font-bold text-gray-800">Historique</h2>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+                  <h3 className="font-bold text-gray-800 mb-3">📤 Traitements envoyés au DPO</h3>
+                  <div className="space-y-2">
+                    {traitements.filter(t => t.statut === "ENVOYE_DPO").length === 0 && (
+                      <p className="text-sm text-gray-400 text-center py-4">Aucun traitement envoyé</p>
+                    )}
+                    {traitements.filter(t => t.statut === "ENVOYE_DPO").slice(0, 10).map(t => (
+                      <div key={t.idTraitement} className="flex items-center justify-between p-3 bg-blue-50 rounded-xl">
+                        <div>
+                          <p className="font-semibold text-sm text-gray-800">{t.description}</p>
+                          <p className="text-xs text-gray-400">{t.department} · {formatDate(t.dateCreation)}</p>
+                        </div>
+                        <span className="text-xs text-blue-600 font-medium">📤 Envoyé</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+                  <h3 className="font-bold text-gray-800 mb-3">✅ Demandes usagers traitées</h3>
+                  <div className="space-y-2">
+                    {demandes.filter(d => d.statut === "TRAITE" || d.statutDemande === "TRAITE").length === 0 && (
+                      <p className="text-sm text-gray-400 text-center py-4">Aucune demande traitée</p>
+                    )}
+                    {demandes.filter(d => d.statut === "TRAITE" || d.statutDemande === "TRAITE").slice(0, 10).map(d => (
+                      <div key={d.id} className="flex items-center justify-between p-3 bg-green-50 rounded-xl">
+                        <div>
+                          <p className="font-semibold text-sm text-gray-800">{d.usager || d.usagerNom}</p>
+                          <p className="text-xs text-gray-400">{d.traitement || d.traitementNom} · {formatDate(d.date || d.dateDemande)}</p>
+                        </div>
+                        <span className="text-xs text-green-600 font-medium">✅ Traité</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+                <h3 className="font-bold text-gray-800 mb-3">📅 Sessions de collecte terminées</h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-4 py-2 text-left font-semibold text-gray-500 text-xs">Description</th>
+                        <th className="px-4 py-2 text-left font-semibold text-gray-500 text-xs">Type</th>
+                        <th className="px-4 py-2 text-left font-semibold text-gray-500 text-xs">Date fin</th>
+                        <th className="px-4 py-2 text-left font-semibold text-gray-500 text-xs">DPO</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {sessions.filter(s => s.statutSession === "TERMINEE").map(s => (
+                        <tr key={s.idSession} className="hover:bg-green-50">
+                          <td className="px-4 py-2 font-medium text-gray-800">{s.description || `Session #${s.idSession}`}</td>
+                          <td className="px-4 py-2 text-gray-600">{s.typeCollecte === "EN_LIGNE" ? "En ligne" : "Terrain"}</td>
+                          <td className="px-4 py-2 text-xs text-gray-500">{formatDate(s.dateFin)}</td>
+                          <td className="px-4 py-2 text-sm text-gray-600">{s.dpoNomComplet || "—"}</td>
+                        </tr>
+                      ))}
+                      {sessions.filter(s => s.statutSession === "TERMINEE").length === 0 && (
+                        <tr><td colSpan={4} className="py-8 text-center text-gray-400 text-sm">Aucune session terminée</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           )}

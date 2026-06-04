@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import sofitexLogo from "../assets/image.png";
 
 const API_BASE = "http://localhost:8080/api";
 
@@ -170,10 +171,13 @@ const DetailModal = ({ demande, onClose }) => (
           ["Date de validation", formatDate(demande.dateValidation)],
           ["Motif de rejet",     demande.motif ?? "—"],
           ["Admin traitant",     demande.adminTraitantNom ?? "—"],
+          ["Departement",        demande.departement ?? "—"],
         ].map(([label, value]) => (
-          <div key={label} className="flex justify-between py-1.5 border-b border-gray-100">
-            <span className="text-xs text-gray-500">{label}</span>
-            <span className="text-xs font-medium text-gray-800">{value}</span>
+          <div key={label} className="">
+               {value === "—" ? ('') : ( <div className="flex justify-between py-1.5 border-b border-gray-100">
+                      <span className="text-xs text-gray-500">{label}</span>
+                      <span className="text-xs font-medium text-gray-800">{value}</span>
+               </div> )}
           </div>
         ))}
         <div className="flex justify-between py-1.5">
@@ -200,8 +204,8 @@ const Sidebar = ({ sidebarOpen, activeTab, setActiveTab, stats }) => {
   return (
     <aside className={`${sidebarOpen ? "w-64" : "w-16"} bg-green-800 text-white flex flex-col transition-all duration-300 flex-shrink-0`}>
       <div className="flex items-center gap-3 px-4 py-5 border-b border-green-700">
-        <div className="w-9 h-9 bg-white rounded-lg flex items-center justify-center flex-shrink-0">
-          <span className="text-green-800 font-black text-sm">S</span>
+        <div className="w-9 h-9 bg-white rounded-full flex items-center justify-center flex-shrink-0">
+          <img src={sofitexLogo} alt="Sofitex" className="w-7 h-7 object-contain" />
         </div>
         {sidebarOpen && (
           <div>
@@ -658,7 +662,7 @@ function AdminDashboard() {
       setUtilisateurs((prev) => prev.map((u) => u.id === id ? { ...u, statutUtilisateur: "ACTIF" } : u));
       showToast("Compte réactivé ✓");
     } catch (err) {
-      showToast(err.message || "Erreur lors de la réactivation", "error");
+      showToast(err || "Erreur lors de la réactivation", "error");
     }
   };
 

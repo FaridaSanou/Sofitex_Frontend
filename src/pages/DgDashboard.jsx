@@ -2,7 +2,18 @@ import { useState, useEffect } from "react";
 import DashboardLayout from "../layouts/DashboardLayout";
 import api from "../services/api";
 
-const formatDate = (d) => d ? new Date(d).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" }) : "—";
+const toDate = (d) => {
+  if (!d) return null;
+  if (Array.isArray(d)) return new Date(d[0], d[1] - 1, d[2], d[3] || 0, d[4] || 0);
+  return new Date(d);
+};
+
+const formatDate = (d) => {
+  const date = toDate(d);
+  return date instanceof Date && !isNaN(date)
+    ? date.toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" })
+    : "—";
+};
 
 const statutBadge = (s) => {
   const map = {

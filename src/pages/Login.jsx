@@ -66,7 +66,7 @@ export default function Login() {
         ROLE_DG: "/dg",
         ROLE_UTILISATEUR_METIER: "/metier",
       };
-      // window.location.href = home[data.role] || "/dashboard";
+      window.location.href = home[data.role] || "/dashboard";
       setIsloading(true)
     } catch (err) {
       setErreurs({ global: "Impossible de contacter le serveur" });
@@ -204,7 +204,7 @@ export default function Login() {
 
         </div>
       </div>
-      { isloading && <Chargement texte="Bien venu ............."/> }
+      { isloading && <Chargement texte="Bien venu ............." /> }
     </div>
   );
 }

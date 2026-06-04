@@ -56,13 +56,19 @@ const fonctionController = async (adresseEmail, navigate ) => {
 
 
   } catch (err) {
-      // toast("Veuillez vous connecter");
+      const savedRole = localStorage.getItem("role");
+      if (savedRole) {
+        const ROUTES_PAR_ROLE = {
+          "ROLE_ADMINISTRATEUR": "/dashboard",
+          "ROLE_DPO": "/dpo",
+          "ROLE_CIL": "/cil",
+          "ROLE_DG": "/dg",
+          "ROLE_UTILISATEUR_METIER": "/metier",
+        };
+        const route = ROUTES_PAR_ROLE[savedRole];
+        if (route) { navigate(route); return; }
+      }
       navigate("/");
-    // console.error("Erreur :", err);
-    // alert("Erreur lors de la vérification de la fonction : " + err.message);
-    // alert("Erreur lors de la vérification de la fonction.");
-    // alert(err.message);
-    throw err;
   }
 };
 
