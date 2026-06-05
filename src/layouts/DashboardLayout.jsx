@@ -67,8 +67,10 @@ const ROLE_CONFIG = {
     initials: "U",
     nav: [
       { id: "dashboard", label: "Tableau de bord", icon: "dashboard" },
+      { id: "sessions", label: "Sessions de collecte", icon: "sessions" },
       { id: "traitements", label: "Traitements", icon: "traitements" },
       { id: "demandes", label: "Demandes", icon: "demande" },
+      { id: "historique", label: "Historique", icon: "donnees" },
     ],
   },
 };

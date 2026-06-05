@@ -99,7 +99,10 @@ export default function CreateAccount() {
       });
       if (!response.ok) { setErrGlobal("Une erreur est survenue. Veuillez réessayer."); return; }
       setDone(true);
-    } catch { setErrGlobal("Impossible de contacter le serveur."); }
+    } catch(e) { 
+      setErrGlobal("Impossible de contacter le serveur.");
+      alert(e.message)
+     }
     finally { setLoading(false); }
   };
 

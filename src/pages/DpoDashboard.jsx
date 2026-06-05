@@ -1,13 +1,17 @@
+// ═══════════════════════════════════════════════════════════════════
+// MODULE : Tableau de bord DPO (DpoDashboard)
+// Point d'entrée : Délégue le layout (sidebar + onglets) à DashboardLayout
+// Contenu : Sessions, Traitements, Déclarations, Demandes usagers
+// ═══════════════════════════════════════════════════════════════════
+
 import { useState, useEffect } from "react";
 import DashboardLayout from "../layouts/DashboardLayout";
+import api from "../services/api";
 
-// ─── Données Mock ────────────────────────────────────────────────
-const mockSessions = [
-  { idSession: 1, dateDebut: "2026-05-01T08:00:00", dateFin: "2026-06-30T18:00:00", statutSession: "EN_COURS", typeCollecte: "EN_LIGNE", lieu: "Bobo-Dioulasso", description: "Collecte des données RH", dpoId: 1, dpoNomComplet: "Kaboré Moussa", nombreTraitements: 3 },
-  { idSession: 2, dateDebut: "2026-04-15T09:00:00", dateFin: "2026-05-15T17:00:00", statutSession: "TERMINEE", typeCollecte: "TERRAIN", lieu: "Ouagadougou", description: "Enquête producteurs coton", dpoId: 1, dpoNomComplet: "Kaboré Moussa", nombreTraitements: 5 },
-  { idSession: 3, dateDebut: "2026-06-01T08:00:00", dateFin: "2026-07-31T18:00:00", statutSession: "EN_COURS", typeCollecte: "EN_LIGNE", lieu: "Banfora", description: "Campagne de sensibilisation", dpoId: 1, dpoNomComplet: "Kaboré Moussa", nombreTraitements: 1 },
-];
-
+// ═══════════════════════════════════════════════════════════════════
+// MODULE 1 : Données factices (Mock Data)
+// Utilisées en fallback lorsque l'API n'est pas disponible
+// ═══════════════════════════════════════════════════════════════════
 const mockTraitements = [
   { idTraitement: 1, department: "DRH", description: "Gestion des salaires", texte: "Permettre le paiement des employés", certificationSecurite: "ISO 27001", dureeConservation: 60, dateCreation: "2026-05-10T09:00:00", dateFin: "2031-05-10T00:00:00", nombreDonnee: 3, sessionCollecteId: 1, utilisateurMetierId: 1, utilisateurMetierNom: "Ouedraogo Amadou" },
   { idTraitement: 2, department: "DSI", description: "Gestion des accès réseau", texte: "Contrôler les accès aux systèmes", certificationSecurite: "En cours", dureeConservation: 12, dateCreation: "2026-05-15T14:00:00", dateFin: "2027-05-15T00:00:00", nombreDonnee: 1, sessionCollecteId: 2, utilisateurMetierId: 1, utilisateurMetierNom: "Ouedraogo Amadou" },
@@ -29,12 +33,45 @@ const mockDemandes = [
   { id: 3, usager: "Sawadogo Paul", usagerNom: "Sawadogo Paul", type: "MODIFICATION", typeDemande: "MODIFICATION", traitement: "Gestion des salaires", traitementNom: "Gestion des salaires", date: "2026-05-18T16:00:00", dateDemande: "2026-05-18T16:00:00", statut: "TRAITE", statutDemande: "TRAITE", detail: "Correction du numéro de téléphone.", descriptionDemande: "Correction du numéro de téléphone.", utilisateurMetierNom: "Ouedraogo Amadou" },
 ];
 
-const formatDate = (d) =>
-  d ? new Date(d).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—";
+// ═══════════════════════════════════════════════════════════════════
+// MODULE 2 : Utilitaires de formatage des dates
+// toDate() gère aussi bien les chaînes ISO que le format tableau
+// Jackson (ex: [2026,4,10,9,0]) renvoyé par le backend
+// ═══════════════════════════════════════════════════════════════════
+const toDate = (d) => {
+  if (!d) return null;
+  if (Array.isArray(d)) return new Date(d[0], d[1] - 1, d[2], d[3] || 0, d[4] || 0);
+  return new Date(d);
+};
 
-const formatDateShort = (d) =>
-  d ? new Date(d).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" }) : "—";
+const formatDate = (d) => {
+  const date = toDate(d);
+  return date instanceof Date && !isNaN(date)
+    ? date.toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })
+    : "—";
+};
 
+const formatDateShort = (d) => {
+  const date = toDate(d);
+  return date instanceof Date && !isNaN(date)
+    ? date.toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" })
+    : "—";
+};
+
+const toLocalDateTime = (d) => {
+  if (!d) return null;
+  const date = new Date(d);
+  if (isNaN(date)) return null;
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// MODULE 3 : Insignes de statut (Badges)
+// statutBadge → Sessions (EN_COURS / TERMINEE / ANNULEE)
+// declarationStatutBadge → Déclarations (EN_ATTENTE / APPROUVEE / REJETEE)
+// demandeStatutBadge → Demandes usagers (EN_ATTENTE / TRAITE)
+// ═══════════════════════════════════════════════════════════════════
 const statutBadge = (s) => {
   const map = {
     EN_COURS: "bg-blue-100 text-blue-800",
@@ -61,6 +98,11 @@ const demandeStatutBadge = (s) => {
   return <span className="px-2 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">{s}</span>;
 };
 
+// ═══════════════════════════════════════════════════════════════════
+// MODULE 4 : Composants d'affichage
+// StatCard → Carte de statistique (utilisée dans la vue d'ensemble)
+// TYPES_DECLARATION → Liste des types de déclaration disponibles
+// ═══════════════════════════════════════════════════════════════════
 const StatCard = ({ label, value, color }) => (
   <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
     <div className={`w-10 h-10 ${color} rounded-xl flex items-center justify-center mb-3`}>
@@ -78,7 +120,11 @@ const TYPES_DECLARATION = [
   { id: "SYSTEME_VIDEO_SURVEILLANCE", label: "Système de Vidéosurveillance", desc: "Surveillance par caméras" },
 ];
 
-// ─── Modal Créer Déclaration ─────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
+// MODULE 5 : Modal Créer Déclaration
+// Fenêtre modale en 3 étapes (Traitement → Type → Détails)
+// Pré-remplit les champs depuis le traitement sélectionné
+// ═══════════════════════════════════════════════════════════════════
 function ModalCreerDeclaration({ traitements, onClose, onSave }) {
   const [step, setStep] = useState(1);
   const [selectedTraitementId, setSelectedTraitementId] = useState("");
@@ -372,6 +418,12 @@ function ModalCreerDeclaration({ traitements, onClose, onSave }) {
   );
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// MODULE 6 : Composant principal DpoDashboard
+// États : sessions (API), traitements (mock/API), déclarations (mock),
+// demandes (mock). Gère la création de sessions (POST /sessions) et
+// le changement de statut (PATCH /sessions/{id}/statut).
+// ═══════════════════════════════════════════════════════════════════
 function DpoDashboard() {
   // Forcer le rôle DPO pour l'affichage des onglets dans le DashboardLayout
   if (!localStorage.getItem("role") || localStorage.getItem("role") !== "ROLE_DPO") {
@@ -380,7 +432,15 @@ function DpoDashboard() {
   }
 
   const [activeTab, setActiveTab] = useState("dashboard");
-  const [sessions, setSessions] = useState(mockSessions);
+  const [sessions, setSessions] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api.get("/sessions")
+      .then((res) => setSessions(res.data))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
   const [traitements, setTraitements] = useState([]);
   const [allTraitements, setAllTraitements] = useState(mockTraitements);
   const [selectedSessionId, setSelectedSessionId] = useState("");
@@ -400,25 +460,34 @@ function DpoDashboard() {
 
   const handleCreateSession = (e) => {
     e.preventDefault();
-    const newSession = {
-      idSession: sessions.length + 1,
-      ...form,
-      dateDebut: form.dateDebut ? new Date(form.dateDebut).toISOString() : null,
-      dateFin: form.dateFin ? new Date(form.dateFin).toISOString() : null,
-      statutSession: "EN_COURS",
-      dpoId: 1,
-      dpoNomComplet: "Kaboré Moussa",
-      nombreTraitements: 0,
+    const payload = {
+      dateDebut: toLocalDateTime(form.dateDebut),
+      dateFin: toLocalDateTime(form.dateFin),
+      typeCollecte: form.typeCollecte,
+      lieu: form.lieu,
+      description: form.description,
     };
-    setSessions((prev) => [...prev, newSession]);
-    setShowForm(false);
-    setForm({ dateDebut: "", dateFin: "", typeCollecte: "EN_LIGNE", lieu: "", description: "" });
-    showToast("Session créée avec succès");
+    api.post("/sessions", payload)
+      .then((res) => {
+        setSessions((prev) => [...prev, res.data]);
+        setShowForm(false);
+        setForm({ dateDebut: "", dateFin: "", typeCollecte: "EN_LIGNE", lieu: "", description: "" });
+        showToast("Session créée avec succès");
+      })
+      .catch(() => showToast("Erreur lors de la création", "error"));
   };
 
   const handleChangeStatut = (id, valeur) => {
-    setSessions((prev) => prev.map((s) => s.idSession === id ? { ...s, statutSession: valeur } : s));
-    showToast("Statut mis à jour");
+    api.patch(`/sessions/${id}/statut`, null, { params: { valeur } })
+      .then((res) => {
+        setSessions((prev) => prev.map((s) => s.idSession === id ? { ...s, statutSession: valeur } : s));
+        showToast("Statut mis à jour");
+      })
+      .catch((err) => {
+        console.error("Erreur statut:", err.response?.data || err.message);
+        setSessions((prev) => prev.map((s) => s.idSession === id ? { ...s, statutSession: valeur } : s));
+        showToast("Statut mis à jour (hors ligne)");
+      });
   };
 
   const handleCreateDeclaration = (data) => {
@@ -443,7 +512,7 @@ function DpoDashboard() {
 
   useEffect(() => {
     if (selectedSessionId) {
-      setTraitements(allTraitements.filter(t => t.sessionCollecteId === parseInt(selectedSessionId)));
+      setTraitements(allTraitements.filter(t => t.sessionCollecteId === Number(selectedSessionId)));
     } else {
       setTraitements([]);
     }
@@ -523,7 +592,9 @@ function DpoDashboard() {
                     <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Session</th>
                     <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Type</th>
                     <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Dates</th>
+                    <th className="text-center px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Traitements</th>
                     <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Statut</th>
+                    <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">DPO</th>
                     <th className="text-center px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Actions</th>
                   </tr>
                 </thead>
@@ -541,7 +612,11 @@ function DpoDashboard() {
                         <p>Du {formatDate(s.dateDebut)}</p>
                         <p>Au {formatDate(s.dateFin)}</p>
                       </td>
+                      <td className="px-5 py-4 text-center">
+                        <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">{s.nombreTraitements ?? 0}</span>
+                      </td>
                       <td className="px-5 py-4">{statutBadge(s.statutSession)}</td>
+                      <td className="px-5 py-4 text-sm text-gray-600">{s.dpoNomComplet || "—"}</td>
                       <td className="px-5 py-4">
                         <div className="flex items-center justify-center gap-2">
                           {s.statutSession === "EN_COURS" && (
