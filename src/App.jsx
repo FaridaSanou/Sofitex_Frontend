@@ -20,7 +20,7 @@ export default function App() {
         <Route path="/cil" element={<CilDashboard />} />
         <Route path="/dg" element={<DgDashboard />} />
         <Route path="/metier" element={<UtilisateurMetierDashboard />} />
-        <Route path="/compte-inactif" element={<Inactif />} />
+        <Route path="/compte-inactif" element={<Inactif />}/>
       </Routes>
     </BrowserRouter>
   )

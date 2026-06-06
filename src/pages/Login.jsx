@@ -59,14 +59,15 @@ export default function Login() {
       localStorage.setItem("token", data.token);
       localStorage.setItem("role", data.role);
       localStorage.setItem("email", data.email);
-      const home = {
-        ROLE_ADMINISTRATEUR: "/dashboard",
-        ROLE_DPO: "/dpo",
-        ROLE_CIL: "/cil",
-        ROLE_DG: "/dg",
-        ROLE_UTILISATEUR_METIER: "/metier",
-      };
-      window.location.href = home[data.role] || "/dashboard";
+      // const home = {
+      //   ROLE_ADMINISTRATEUR: "/dashboard",
+      //   ROLE_DPO: "/dpo",
+      //   ROLE_CIL: "/cil",
+      //   ROLE_DG: "/dg",
+      //   ROLE_UTILISATEUR_METIER: "/metier",
+      // };
+      // window.location.href = home[data.role] || "/dashboard";
+      // window.location.href = "/dashboard";
       setIsloading(true)
     } catch (err) {
       setErreurs({ global: "Impossible de contacter le serveur" });
