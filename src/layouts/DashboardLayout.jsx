@@ -1,4 +1,5 @@
 import { useState } from "react";
+import sofitexLogo from "../assets/image.png";
 
 const Icon = ({ name, className = "w-5 h-5" }) => {
   const icons = {
@@ -83,6 +84,8 @@ export default function DashboardLayout({ children, activeTab, setActiveTab, bad
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("role");
+    localStorage.removeItem("email");
+    localStorage.removeItem("dpoId");
     window.location.href = "/";
   };
 
@@ -90,8 +93,8 @@ export default function DashboardLayout({ children, activeTab, setActiveTab, bad
     <div className="flex h-screen bg-gray-50 font-sans overflow-hidden">
       <aside className={`${sidebarOpen ? "w-64" : "w-16"} bg-green-800 text-white flex flex-col transition-all duration-300 flex-shrink-0`}>
         <div className="flex items-center gap-3 px-4 py-5 border-b border-green-700">
-          <div className="w-9 h-9 bg-white rounded-lg flex items-center justify-center flex-shrink-0">
-            <span className="text-green-800 font-black text-sm">S</span>
+          <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
+            <img src={sofitexLogo} alt="Sofitex" className="w-8 h-8 object-contain" />
           </div>
           {sidebarOpen && (
             <div>

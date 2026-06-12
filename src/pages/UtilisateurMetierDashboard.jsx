@@ -9,6 +9,50 @@ import api from "../services/api";
 import sofitexLogo from "../assets/image.png";
 
 // ═══════════════════════════════════════════════════════════════════
+// MODULE ICON : Composant d'icônes SVG réutilisable
+// Remplace tous les emojis par des icônes vectorielles
+// ═══════════════════════════════════════════════════════════════════
+function Icon({ name, className = "w-5 h-5" }) {
+  const cls = `inline-block flex-shrink-0 ${className}`;
+  switch (name) {
+    case "close":
+      return <svg className={cls} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>;
+    case "check":
+      return <svg className={cls} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>;
+    case "send":
+      return <svg className={cls} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>;
+    case "clipboard":
+      return <svg className={cls} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>;
+    case "lock":
+      return <svg className={cls} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>;
+    case "globe":
+      return <svg className={cls} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" /></svg>;
+    case "handshake":
+      return <svg className={cls} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>;
+    case "megaphone":
+      return <svg className={cls} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" /></svg>;
+    case "user":
+      return <svg className={cls} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>;
+    case "calendar":
+      return <svg className={cls} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>;
+    case "home":
+      return <svg className={cls} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>;
+    case "bell":
+      return <svg className={cls} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>;
+    case "history":
+      return <svg className={cls} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>;
+    case "edit":
+      return <svg className={cls} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>;
+    case "trash":
+      return <svg className={cls} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>;
+    case "clock":
+      return <svg className={cls} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>;
+    default:
+      return null;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
 // MODULE 1 : Données de référence
 // Listes utilisées dans le formulaire de création de traitement
 // ═══════════════════════════════════════════════════════════════════
@@ -53,7 +97,7 @@ const formatDateTime = (d) => {
 // Utilisées en fallback lorsque l'API n'est pas disponible
 // ═══════════════════════════════════════════════════════════════════
 const mockTraitements = [
-  { idTraitement: 1, department: "DRH", description: "Gestion des salaires", texte: "Permettre le paiement des employés", certificationSecurite: "ISO 27001", dureeConservation: 60, dateCreation: "2026-05-10T09:00:00", dateFin: "2031-05-10T00:00:00", nombreDonnee: 3, sessionCollecteId: 1, utilisateurMetierId: 1, utilisateurMetierNom: "Ouedraogo Amadou", statut: "ENVOYE_DPO" },
+  { idTraitement: 1, department: "DRH", description: "Gestion des salaires", texte: "Permettre le paiement des employés", certificationSecurite: "ISO 27001", dureeConservation: 60, dateCreation: "2026-05-10T09:00:00", dateFin: "2031-05-10T00:00:00", nombreDonnee: 3, sessionCollecteId: 1, utilisateurMetierId: 1, utilisateurMetierNom: "Ouedraogo Amadou", statut: "EN_COURS", envoyeAuDpo: true },
   { idTraitement: 2, department: "DSI", description: "Gestion des accès réseau", texte: "Contrôler les accès aux systèmes", certificationSecurite: "En cours", dureeConservation: 12, dateCreation: "2026-05-15T14:00:00", dateFin: "2027-05-15T00:00:00", nombreDonnee: 1, sessionCollecteId: 2, utilisateurMetierId: 1, utilisateurMetierNom: "Ouedraogo Amadou", statut: "EN_COURS" },
   { idTraitement: 3, department: "Direction Commerciale", description: "Gestion des commandes clients", texte: "Suivi des ventes et facturation", certificationSecurite: "ISO 27001", dureeConservation: 36, dateCreation: "2026-05-20T10:00:00", dateFin: "2029-05-20T00:00:00", nombreDonnee: 12, sessionCollecteId: 1, utilisateurMetierId: 2, utilisateurMetierNom: "Traoré Fatimata", statut: "EN_COURS" },
   { idTraitement: 4, department: "DRH", description: "Suivi des formations", texte: "Gérer les inscriptions aux formations", certificationSecurite: "Non renseigné", dureeConservation: 24, dateCreation: "2026-06-01T08:00:00", dateFin: "2028-06-01T00:00:00", nombreDonnee: 0, sessionCollecteId: null, utilisateurMetierId: 1, utilisateurMetierNom: "Ouedraogo Amadou", statut: "EN_COURS" },
@@ -68,14 +112,16 @@ const mockDemandes = [
 // ═══════════════════════════════════════════════════════════════════
 // MODULE 4 : BadgeStatut
 // Affiche le statut du traitement avec un code couleur
-// (ENVOYE_DPO / EN_COURS / VALIDE / REJETE)
+// Priorité : envoyeAuDpo → VALIDE → REJETE → EN_COURS
 // ═══════════════════════════════════════════════════════════════════
-function BadgeStatut({ statut }) {
+function BadgeStatut({ statut, envoyeAuDpo }) {
+  if (envoyeAuDpo) {
+    return <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">Envoyé DPO</span>;
+  }
   const map = {
-    ENVOYE_DPO: { label: "Envoyé DPO", cls: "bg-blue-100 text-blue-700" },
-    EN_COURS: { label: "En cours", cls: "bg-yellow-100 text-yellow-700" },
     VALIDE: { label: "Validé", cls: "bg-green-100 text-green-700" },
     REJETE: { label: "Rejeté", cls: "bg-red-100 text-red-700" },
+    EN_COURS: { label: "En cours", cls: "bg-yellow-100 text-yellow-700" },
   };
   const s = map[statut] || { label: statut, cls: "bg-gray-100 text-gray-600" };
   return <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${s.cls}`}>{s.label}</span>;
@@ -87,8 +133,10 @@ function BadgeStatut({ statut }) {
 // ═══════════════════════════════════════════════════════════════════
 function Toast({ toast }) {
   if (!toast) return null;
+  const isSuccess = toast.type !== "error";
   return (
-    <div className={`fixed bottom-6 right-6 px-5 py-3 rounded-xl shadow-lg text-white text-sm font-medium z-50 transition-all ${toast.type === "error" ? "bg-red-500" : "bg-green-700"}`}>
+    <div className={`fixed bottom-6 right-6 px-5 py-3 rounded-xl shadow-lg text-white text-sm font-medium z-50 transition-all flex items-center gap-2 ${isSuccess ? "bg-green-700" : "bg-red-500"}`}>
+      <Icon name={isSuccess ? "check" : "close"} className="w-4 h-4" />
       {toast.msg}
     </div>
   );
@@ -106,7 +154,7 @@ function ModalDemandeUsager({ demande, onClose, onTraiter }) {
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
         <div className="bg-green-800 text-white px-6 py-4 rounded-t-2xl flex justify-between items-center">
           <h3 className="font-bold text-lg">Demande de {demande.type === "MODIFICATION" ? "Modification" : "Suppression"}</h3>
-          <button onClick={onClose} className="text-green-200 hover:text-white text-xl">✕</button>
+          <button onClick={onClose} className="text-green-200 hover:text-white"><Icon name="close" className="w-5 h-5" /></button>
         </div>
         <div className="p-6 space-y-4">
           <div className="bg-green-50 rounded-xl p-4 space-y-2 text-sm">
@@ -132,7 +180,7 @@ function ModalDemandeUsager({ demande, onClose, onTraiter }) {
               disabled={!reponse.trim()}
               className="px-4 py-2 rounded-lg bg-green-700 text-white text-sm font-semibold hover:bg-green-800 disabled:opacity-40"
             >
-              ✅ Marquer comme traité
+              <Icon name="check" className="w-4 h-4 mr-1.5" /> Marquer comme traité
             </button>
           </div>
         </div>
@@ -151,12 +199,12 @@ function ModalDetailTraitement({ traitement, onClose, onEnvoyer }) {
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
         <div className="bg-green-800 text-white px-6 py-4 rounded-t-2xl flex justify-between items-center">
           <h3 className="font-bold text-lg">Détail du traitement #{traitement.idTraitement}</h3>
-          <button onClick={onClose} className="text-green-200 hover:text-white text-xl">✕</button>
+          <button onClick={onClose} className="text-green-200 hover:text-white"><Icon name="close" className="w-5 h-5" /></button>
         </div>
         <div className="p-6 space-y-3 text-sm">
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-green-50 rounded-lg p-3"><p className="text-xs text-green-600 font-semibold">Département</p><p className="font-medium">{traitement.department}</p></div>
-            <div className="bg-green-50 rounded-lg p-3"><p className="text-xs text-green-600 font-semibold">Statut</p><BadgeStatut statut={traitement.statut} /></div>
+            <div className="bg-green-50 rounded-lg p-3"><p className="text-xs text-green-600 font-semibold">Statut</p><BadgeStatut statut={traitement.statut} envoyeAuDpo={traitement.envoyeAuDpo} /></div>
             <div className="bg-green-50 rounded-lg p-3 col-span-2"><p className="text-xs text-green-600 font-semibold">Description</p><p>{traitement.description}</p></div>
             <div className="bg-green-50 rounded-lg p-3 col-span-2"><p className="text-xs text-green-600 font-semibold">Texte / Finalité</p><p>{traitement.texte}</p></div>
             <div className="bg-green-50 rounded-lg p-3"><p className="text-xs text-green-600 font-semibold">Certification sécurité</p><p>{traitement.certificationSecurite}</p></div>
@@ -168,9 +216,9 @@ function ModalDetailTraitement({ traitement, onClose, onEnvoyer }) {
           </div>
           <div className="flex gap-3 justify-end pt-2">
             <button onClick={onClose} className="px-4 py-2 rounded-lg border border-gray-300 text-gray-600 text-sm hover:bg-gray-50">Fermer</button>
-            {traitement.statut !== "ENVOYE_DPO" && (
+            {!traitement.envoyeAuDpo && (
               <button onClick={() => { onEnvoyer(traitement.idTraitement); onClose(); }} className="px-4 py-2 rounded-lg bg-green-700 text-white text-sm font-semibold hover:bg-green-800">
-                📤 Envoyer au DPO
+                <Icon name="send" className="w-4 h-4 mr-1.5" /> Envoyer au DPO
               </button>
             )}
           </div>
@@ -181,61 +229,102 @@ function ModalDetailTraitement({ traitement, onClose, onEnvoyer }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// MODULE 8 : Modal Créer Traitement (4 étapes)
-// Étape 1 : Informations générales (nom, département, responsable)
-// Étape 2 : Finalités et origine des données
-// Étape 3 : Personnes visées et catégories de données
-// Étape 4 : Conservation, destinataires et session de collecte
+// MODULE 8 : Modal Créer Traitement (3 étapes)
+// Étape 1 : Informations du traitement (nom, description, finalite, type, secteur, lieu, texte juridique)
+// Étape 2 : Détails & Conformité (conservation, dates, booléens, catégories personnes)
+// Étape 3 : Responsable du traitement (identité, coordonnées, activité)
+// Le créateur est récupéré automatiquement depuis localStorage
 // ═══════════════════════════════════════════════════════════════════
 function ModalCreerTraitement({ onClose, onSave, sessions }) {
   const [etape, setEtape] = useState(1);
+  const creePar = localStorage.getItem("nom") || localStorage.getItem("email") || "Utilisateur inconnu";
+
   const [form, setForm] = useState({
-    nomTraitement: "", department: "", responsable: "", email: "", telephone: "",
-    finalitePrincipale: "", finalitesSecondaires: "", origines: [],
-    categoriesPersonnes: [], donneesSelectionnees: {},
-    destinatairesInternes: "", destinatairesExternes: "", dureeConservation: "", uniteConservation: "Mois", motifIndetermine: "",
-    texte: "", certificationSecurite: "", dateFin: "", sessionCollecteId: "",
+    // Étape 1 — Traitement
+    nom: "",
+    description: "",
+    finalite: "",
+    type_traitement: "",
+    secteur: "",
+    lieu_stockage: "",
+    texte_juridique: "",
+    // Étape 2 — Détails & Conformité
+    duree_conservation: "",
+    dateFin: "",
+    date_mise_en_oeuvre: "",
+    transfert_etranger: false,
+    sous_traitance: false,
+    communication_tiers: false,
+    categorie_personnes: "",
+    sessionCollecteId: "",
+    // Étape 3 — Responsable
+    nom_raisonSociale: "",
+    RCCM: "",
+    secteur_activite: "",
+    adresse: "",
+    boitePostale: "",
+    ville: "",
+    telephone: "",
+    adresseEmail: "",
+    activite_principale: "",
   });
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
-  const toggleArr = (k, v) => setForm(f => ({ ...f, [k]: f[k].includes(v) ? f[k].filter(x => x !== v) : [...f[k], v] }));
-  const toggleDonnee = (groupe, item) => setForm(f => {
-    const prev = f.donneesSelectionnees[groupe] || [];
-    return { ...f, donneesSelectionnees: { ...f.donneesSelectionnees, [groupe]: prev.includes(item) ? prev.filter(x => x !== item) : [...prev, item] } };
-  });
 
-  const etape1Ok = form.nomTraitement && form.department && form.responsable && form.email;
-  const etape2Ok = form.finalitePrincipale && form.origines.length > 0;
-  const etape3Ok = form.categoriesPersonnes.length > 0;
-  const etape4Ok = form.destinatairesInternes && (form.uniteConservation === "Durée indéterminée" ? form.motifIndetermine : form.dureeConservation);
-  const canNext = etape === 1 ? etape1Ok : etape === 2 ? etape2Ok : etape === 3 ? etape3Ok : false;
+  const etape1Ok = form.nom && form.finalite && form.type_traitement;
+  const etape2Ok = form.duree_conservation && form.categorie_personnes;
+  const etape3Ok = form.nom_raisonSociale && form.adresseEmail;
+  const canNext = etape === 1 ? etape1Ok : etape === 2 ? etape2Ok : false;
 
   const handleSave = () => {
     const payload = {
-      department: form.department,
-      description: form.nomTraitement,
-      texte: form.finalitePrincipale,
-      certificationSecurite: form.certificationSecurite || "Non renseigné",
-      dureeConservation: form.uniteConservation === "Années" ? parseInt(form.dureeConservation) * 12 : parseInt(form.dureeConservation) || 0,
+      nom: form.nom,
+      description: form.description,
+      finalite: form.finalite,
+      duree_conservation: parseInt(form.duree_conservation) || 0,
       dateFin: form.dateFin || null,
+      type_traitement: form.type_traitement,
+      lieu_stockage: form.lieu_stockage,
+      texte_juridique: form.texte_juridique,
+      date_mise_en_oeuvre: form.date_mise_en_oeuvre || null,
+      transfert_etranger: form.transfert_etranger,
+      sous_traitance: form.sous_traitance,
+      communication_tiers: form.communication_tiers,
+      secteur: form.secteur,
+      categorie_personnes: form.categorie_personnes,
       sessionCollecteId: form.sessionCollecteId ? parseInt(form.sessionCollecteId) : null,
+      responsable: {
+        nom_raisonSociale: form.nom_raisonSociale,
+        RCCM: form.RCCM,
+        secteur_activite: form.secteur_activite,
+        adresse: form.adresse,
+        boitePostale: form.boitePostale,
+        ville: form.ville,
+        telephone: form.telephone,
+        adresseEmail: form.adresseEmail,
+        activite_principale: form.activite_principale,
+      },
+      creePar: creePar,
     };
     onSave(payload);
   };
 
-  const steps = ["Qui & Quoi", "Pourquoi", "Données", "Conservation"];
+  const steps = ["Traitement", "Détails & Conformité", "Responsable"];
+  const inp = "w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500";
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-screen overflow-y-auto">
+        {/* Header */}
         <div className="bg-green-800 text-white px-6 py-4 rounded-t-2xl flex justify-between items-center sticky top-0 z-10">
           <div>
             <h3 className="font-bold text-lg">Nouveau Traitement</h3>
-            <p className="text-green-200 text-xs">Étape {etape} / 4 — {steps[etape - 1]}</p>
+            <p className="text-green-200 text-xs">Étape {etape} / 3 — {steps[etape - 1]} · Créé par : <span className="font-semibold">{creePar}</span></p>
           </div>
-          <button onClick={onClose} className="text-green-200 hover:text-white text-xl">✕</button>
+          <button onClick={onClose} className="text-green-200 hover:text-white"><Icon name="close" className="w-5 h-5" /></button>
         </div>
 
+        {/* Barre de progression */}
         <div className="flex bg-green-900">
           {steps.map((s, i) => (
             <div key={i} className={`flex-1 py-2 text-center text-xs font-semibold transition-all ${i + 1 === etape ? "bg-green-600 text-white" : i + 1 < etape ? "bg-green-700 text-green-200" : "text-green-400"}`}>
@@ -245,163 +334,197 @@ function ModalCreerTraitement({ onClose, onSave, sessions }) {
         </div>
 
         <div className="p-6 space-y-5">
+
+          {/* ── ÉTAPE 1 : Informations du traitement ── */}
           {etape === 1 && (
             <div className="space-y-4">
-              <h4 className="font-bold text-green-800 text-base border-b border-green-100 pb-2">📋 Informations Générales & Responsable</h4>
+              <h4 className="font-bold text-green-800 text-base border-b border-green-100 pb-2"><Icon name="clipboard" className="w-5 h-5 mr-1.5 inline" /> Informations du Traitement</h4>
+
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1">Nom du traitement <span className="text-red-500">*</span></label>
-                <input value={form.nomTraitement} onChange={e => set("nomTraitement", e.target.value)} placeholder='Ex: "Gestion de la messagerie interne"' className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+                <input value={form.nom} onChange={e => set("nom", e.target.value)} placeholder='Ex: Gestion de la paie des employés' className={inp} />
               </div>
+
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Direction / Département <span className="text-red-500">*</span></label>
-                <select value={form.department} onChange={e => set("department", e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
-                  <option value="">-- Sélectionner --</option>
-                  {DIRECTIONS.map(d => <option key={d} value={d}>{d}</option>)}
-                </select>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Description</label>
+                <textarea rows={3} value={form.description} onChange={e => set("description", e.target.value)} placeholder="Description détaillée du traitement..." className={inp} />
               </div>
+
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Responsable de l'application <span className="text-red-500">*</span></label>
-                <input value={form.responsable} onChange={e => set("responsable", e.target.value)} placeholder="Nom du chef de service ou directeur" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Finalité <span className="text-red-500">*</span></label>
+                <input value={form.finalite} onChange={e => set("finalite", e.target.value)} placeholder="Ex: Permettre le paiement des producteurs de coton" className={inp} />
               </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Email professionnel <span className="text-red-500">*</span></label>
-                  <input type="email" value={form.email} onChange={e => set("email", e.target.value)} placeholder="contact@sofitex.bf" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Téléphone</label>
-                  <input value={form.telephone} onChange={e => set("telephone", e.target.value)} placeholder="+226 XX XX XX XX" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {etape === 2 && (
-            <div className="space-y-4">
-              <h4 className="font-bold text-green-800 text-base border-b border-green-100 pb-2">🎯 Finalités & Origine des Données</h4>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Finalité Principale <span className="text-red-500">*</span></label>
-                <textarea rows={3} value={form.finalitePrincipale} onChange={e => set("finalitePrincipale", e.target.value)} placeholder="Ex: Permettre le paiement des producteurs de coton" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Finalités Secondaires <span className="text-gray-400 font-normal">(optionnel)</span></label>
-                <textarea rows={2} value={form.finalitesSecondaires} onChange={e => set("finalitesSecondaires", e.target.value)} placeholder="Ex: Établir des statistiques de rendement annuel" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Origine des données <span className="text-red-500">*</span></label>
-                <div className="space-y-2">
-                  {ORIGINES.map(o => (
-                    <label key={o} className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all ${form.origines.includes(o) ? "border-green-500 bg-green-50" : "border-gray-200 hover:border-green-300"}`}>
-                      <input type="checkbox" checked={form.origines.includes(o)} onChange={() => toggleArr("origines", o)} className="mt-0.5 accent-green-600" />
-                      <span className="text-sm">{o}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {etape === 3 && (
-            <div className="space-y-4">
-              <h4 className="font-bold text-green-800 text-base border-b border-green-100 pb-2">👥 Personnes & Catégories de Données</h4>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Catégories de personnes visées <span className="text-red-500">*</span></label>
-                <div className="grid grid-cols-2 gap-2">
-                  {CATEGORIES_PERSONNES.map(c => (
-                    <label key={c} className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer text-sm transition-all ${form.categoriesPersonnes.includes(c) ? "border-green-500 bg-green-50 text-green-800 font-medium" : "border-gray-200 hover:border-green-300"}`}>
-                      <input type="checkbox" checked={form.categoriesPersonnes.includes(c)} onChange={() => toggleArr("categoriesPersonnes", c)} className="accent-green-600" />
-                      {c}
-                    </label>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Types de données collectées</label>
-                <div className="space-y-3">
-                  {GROUPES_DONNEES.map(g => (
-                    <div key={g.groupe} className="border border-gray-200 rounded-xl overflow-hidden">
-                      <div className="bg-green-700 text-white px-4 py-2 text-sm font-semibold">🗂 {g.groupe}</div>
-                      <div className="p-3 grid grid-cols-2 gap-2">
-                        {g.items.map(item => {
-                          const sel = (form.donneesSelectionnees[g.groupe] || []).includes(item);
-                          return (
-                            <label key={item} className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer text-sm transition-all ${sel ? "border-green-500 bg-green-50 text-green-800 font-medium" : "border-gray-100 hover:border-green-300"}`}>
-                              <input type="checkbox" checked={sel} onChange={() => toggleDonnee(g.groupe, item)} className="accent-green-600" />
-                              {item}
-                            </label>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {etape === 4 && (
-            <div className="space-y-4">
-              <h4 className="font-bold text-green-800 text-base border-b border-green-100 pb-2">🔒 Conservation & Destinataires</h4>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Destinataires Internes <span className="text-red-500">*</span></label>
-                <textarea rows={2} value={form.destinatairesInternes} onChange={e => set("destinatairesInternes", e.target.value)} placeholder="Ex: Service comptable, Direction RH..." className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Destinataires Externes / Sous-traitants <span className="text-gray-400 font-normal">(optionnel)</span></label>
-                <textarea rows={2} value={form.destinatairesExternes} onChange={e => set("destinatairesExternes", e.target.value)} placeholder="Ex: Banque partenaire, Prestataire RH..." className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Durée de conservation opérationnelle <span className="text-red-500">*</span></label>
-                <div className="flex gap-3 items-center">
-                  {form.uniteConservation !== "Durée indéterminée" && (
-                    <input type="number" min="1" value={form.dureeConservation} onChange={e => set("dureeConservation", e.target.value)} placeholder="Ex: 5" className="w-24 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
-                  )}
-                  <select value={form.uniteConservation} onChange={e => set("uniteConservation", e.target.value)} className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
-                    {UNITES.map(u => <option key={u} value={u}>{u}</option>)}
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">Type de traitement <span className="text-red-500">*</span></label>
+                  <select value={form.type_traitement} onChange={e => set("type_traitement", e.target.value)} className={inp}>
+                    <option value="">-- Sélectionner --</option>
+                    <option value="Collecte">Collecte</option>
+                    <option value="Enregistrement">Enregistrement</option>
+                    <option value="Organisation">Organisation</option>
+                    <option value="Conservation">Conservation</option>
+                    <option value="Consultation">Consultation</option>
+                    <option value="Utilisation">Utilisation</option>
+                    <option value="Communication">Communication</option>
+                    <option value="Diffusion">Diffusion</option>
+                    <option value="Effacement">Effacement / Destruction</option>
                   </select>
                 </div>
-                {form.uniteConservation === "Durée indéterminée" && (
-                  <input value={form.motifIndetermine} onChange={e => set("motifIndetermine", e.target.value)} placeholder="Motif de la durée indéterminée..." className="mt-2 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
-                )}
-                <p className="text-xs text-gray-400 mt-1">Ex: 5 Ans après la rupture du contrat de travail</p>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">Secteur</label>
+                  <select value={form.secteur} onChange={e => set("secteur", e.target.value)} className={inp}>
+                    <option value="">-- Sélectionner --</option>
+                    {DIRECTIONS.map(d => <option key={d} value={d}>{d}</option>)}
+                  </select>
+                </div>
               </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Lieu de stockage</label>
+                <input value={form.lieu_stockage} onChange={e => set("lieu_stockage", e.target.value)} placeholder="Ex: Serveur interne DSI, Cloud AWS, Disque local..." className={inp} />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Texte juridique / Base légale</label>
+                <textarea rows={2} value={form.texte_juridique} onChange={e => set("texte_juridique", e.target.value)} placeholder="Ex: Loi n°010-2004/AN relative à la protection des données personnelles..." className={inp} />
+              </div>
+            </div>
+          )}
+
+          {/* ── ÉTAPE 2 : Détails & Conformité ── */}
+          {etape === 2 && (
+            <div className="space-y-4">
+              <h4 className="font-bold text-green-800 text-base border-b border-green-100 pb-2"><Icon name="lock" className="w-5 h-5 mr-1.5 inline" /> Détails & Conformité</h4>
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Certification sécurité</label>
-                  <input value={form.certificationSecurite} onChange={e => set("certificationSecurite", e.target.value)} placeholder="Ex: ISO 27001, En cours..." className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">Durée de conservation (mois) <span className="text-red-500">*</span></label>
+                  <input type="number" min="1" value={form.duree_conservation} onChange={e => set("duree_conservation", e.target.value)} placeholder="Ex: 60" className={inp} />
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1">Date de fin</label>
-                  <input type="date" value={form.dateFin} onChange={e => set("dateFin", e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+                  <input type="date" value={form.dateFin} onChange={e => set("dateFin", e.target.value)} className={inp} />
                 </div>
               </div>
+
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Session de collecte</label>
-                <select value={form.sessionCollecteId} onChange={e => set("sessionCollecteId", e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
-                  <option value="">-- Aucune session --</option>
-                  {sessions.map(s => (
-                    <option key={s.idSession} value={s.idSession}>
-                      {s.description || `Session #${s.idSession}`}
-                    </option>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Date de mise en œuvre</label>
+                <input type="date" value={form.date_mise_en_oeuvre} onChange={e => set("date_mise_en_oeuvre", e.target.value)} className={inp} />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Catégorie de personnes concernées <span className="text-red-500">*</span></label>
+                <select value={form.categorie_personnes} onChange={e => set("categorie_personnes", e.target.value)} className={inp}>
+                  <option value="">-- Sélectionner --</option>
+                  {["Employés SOFITEX","Producteurs de coton","Clients","Fournisseurs / Sous-traitants","Visiteurs","Candidats à l'embauche","Usagers externes"].map(c => (
+                    <option key={c} value={c}>{c}</option>
                   ))}
                 </select>
-                <p className="text-xs text-gray-400 mt-1">Optionnel : associer ce traitement à une session de collecte existante</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Session de collecte</label>
+                <select value={form.sessionCollecteId} onChange={e => set("sessionCollecteId", e.target.value)} className={inp}>
+                  <option value="">-- Aucune session --</option>
+                  {sessions.map(s => (
+                    <option key={s.idSession} value={s.idSession}>{s.description || `Session #${s.idSession}`}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="bg-gray-50 rounded-xl p-4 space-y-3">
+                <p className="text-sm font-semibold text-gray-700 mb-2">Caractéristiques spéciales</p>
+                {[
+                  { key: "transfert_etranger", labelComponent: <><Icon name="globe" className="w-4 h-4 mr-1.5" />Transfert vers l'étranger</>, desc: "Les données sont transmises à un pays étranger" },
+                  { key: "sous_traitance", labelComponent: <><Icon name="handshake" className="w-4 h-4 mr-1.5" />Sous-traitance</>, desc: "Un sous-traitant traite ces données pour votre compte" },
+                  { key: "communication_tiers", labelComponent: <><Icon name="megaphone" className="w-4 h-4 mr-1.5" />Communication à des tiers</>, desc: "Les données sont partagées avec des tiers" },
+                ].map(({ key, labelComponent, desc }) => (
+                  <label key={key} className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all ${form[key] ? "border-green-500 bg-green-50" : "border-gray-200 hover:border-green-300"}`}>
+                    <input type="checkbox" checked={form[key]} onChange={e => set(key, e.target.checked)} className="mt-0.5 accent-green-600 w-4 h-4" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-800">{labelComponent}</p>
+                      <p className="text-xs text-gray-400">{desc}</p>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ── ÉTAPE 3 : Responsable ── */}
+          {etape === 3 && (
+            <div className="space-y-4">
+              <h4 className="font-bold text-green-800 text-base border-b border-green-100 pb-2"><Icon name="user" className="w-5 h-5 mr-1.5 inline" /> Responsable du Traitement</h4>
+
+              <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3 text-sm">
+                <span className="font-semibold text-green-800">Créé par :</span> <span className="text-green-700">{creePar}</span>
+                <p className="text-xs text-gray-400 mt-0.5">Récupéré automatiquement depuis votre session</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Nom / Raison Sociale <span className="text-red-500">*</span></label>
+                <input value={form.nom_raisonSociale} onChange={e => set("nom_raisonSociale", e.target.value)} placeholder="Ex: SOFITEX SA" className={inp} />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">RCCM</label>
+                  <input value={form.RCCM} onChange={e => set("RCCM", e.target.value)} placeholder="Ex: BF-OUA-2005-B-1234" className={inp} />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">Secteur d'activité</label>
+                  <input value={form.secteur_activite} onChange={e => set("secteur_activite", e.target.value)} placeholder="Ex: Agro-industrie" className={inp} />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Activité principale</label>
+                <input value={form.activite_principale} onChange={e => set("activite_principale", e.target.value)} placeholder="Ex: Production et égrenage du coton" className={inp} />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Adresse</label>
+                <input value={form.adresse} onChange={e => set("adresse", e.target.value)} placeholder="Ex: Avenue de la Nation, Bobo-Dioulasso" className={inp} />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">Boîte postale</label>
+                  <input value={form.boitePostale} onChange={e => set("boitePostale", e.target.value)} placeholder="Ex: BP 147" className={inp} />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">Ville</label>
+                  <input value={form.ville} onChange={e => set("ville", e.target.value)} placeholder="Ex: Bobo-Dioulasso" className={inp} />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">Téléphone</label>
+                  <input value={form.telephone} onChange={e => set("telephone", e.target.value)} placeholder="+226 XX XX XX XX" className={inp} />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">Adresse email <span className="text-red-500">*</span></label>
+                  <input type="email" value={form.adresseEmail} onChange={e => set("adresseEmail", e.target.value)} placeholder="contact@sofitex.bf" className={inp} />
+                </div>
               </div>
             </div>
           )}
         </div>
 
+        {/* Footer navigation */}
         <div className="px-6 pb-6 flex justify-between items-center border-t border-gray-100 pt-4">
           <button onClick={() => etape > 1 ? setEtape(e => e - 1) : onClose()} className="px-4 py-2 rounded-lg border border-gray-300 text-gray-600 text-sm hover:bg-gray-50">
             {etape === 1 ? "Annuler" : "← Précédent"}
           </button>
-          {etape < 4 ? (
+          {etape < 3 ? (
             <button onClick={() => setEtape(e => e + 1)} disabled={!canNext} className="px-5 py-2 rounded-lg bg-green-700 text-white text-sm font-semibold hover:bg-green-800 disabled:opacity-40 disabled:cursor-not-allowed">
               Suivant →
             </button>
           ) : (
-            <button onClick={handleSave} disabled={!etape4Ok} className="px-5 py-2 rounded-lg bg-green-700 text-white text-sm font-semibold hover:bg-green-800 disabled:opacity-40 disabled:cursor-not-allowed">
-              ✅ Créer le traitement
+            <button onClick={handleSave} disabled={!etape3Ok} className="px-5 py-2 rounded-lg bg-green-700 text-white text-sm font-semibold hover:bg-green-800 disabled:opacity-40 disabled:cursor-not-allowed">
+              <Icon name="check" className="w-4 h-4 mr-1.5" /> Créer le traitement
             </button>
           )}
         </div>
@@ -420,7 +543,7 @@ function ModalCreerTraitement({ onClose, onSave, sessions }) {
 function UtilisateurMetierDashboard() {
   const [activeSection, setActiveSection] = useState("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [traitements, setTraitements] = useState(mockTraitements);
+  const [traitements, setTraitements] = useState([]);
   const [demandes, setDemandes] = useState(mockDemandes);
   const [sessions, setSessions] = useState([]);
   const [showCreer, setShowCreer] = useState(false);
@@ -433,6 +556,7 @@ function UtilisateurMetierDashboard() {
   const [selectedSessionDetail, setSelectedSessionDetail] = useState(null);
   const [newSessionCount, setNewSessionCount] = useState(0);
   const [previousSessionCount, setPreviousSessionCount] = useState(0);
+  const [utilisateurMetierId, setUtilisateurMetierId] = useState(null);
 
   const showToast = (msg, type = "success") => {
     setToast({ msg, type });
@@ -440,12 +564,26 @@ function UtilisateurMetierDashboard() {
   };
 
   useEffect(() => {
+    const email = localStorage.getItem("email");
     api.get("/sessions")
       .then((res) => {
         setSessions(res.data);
         setPreviousSessionCount(res.data.length);
       })
       .catch(() => {});
+    if (email) {
+      api.get("/verification/fonction", { params: { email } })
+        .then(res => {
+          const id = res.data.utilisateurMetierId;
+          if (id) {
+            setUtilisateurMetierId(Number(id));
+            return api.get(`/traitements/utilisateur-metier/${id}`);
+          }
+          throw new Error("no id");
+        })
+        .then(res => setTraitements(res.data))
+        .catch(() => {});
+    }
   }, []);
 
   useEffect(() => {
@@ -464,37 +602,83 @@ function UtilisateurMetierDashboard() {
   }, [previousSessionCount]);
 
   const handleCreer = (payload) => {
-    api.post("/traitements", payload)
+    const traitementData = {
+      nom: payload.nom || payload.description || "",
+      department: payload.secteur || payload.department || "",
+      description: payload.description || "",
+      texte: payload.finalite || payload.texte || "",
+      certificationSecurite: payload.certificationSecurite || "",
+      dureeConservation: payload.duree_conservation || 0,
+      dateFin: payload.dateFin || null,
+      utilisateurMetierId: utilisateurMetierId,
+      sessionCollecteId: payload.sessionCollecteId || null,
+      secteur: payload.secteur || "",
+      lieuStockage: payload.lieu_stockage || "",
+      dureeConservationDeclaration: payload.duree_conservation ? String(payload.duree_conservation) : "",
+      dateMiseEnOeuvre: payload.date_mise_en_oeuvre || null,
+      transfertEtranger: payload.transfert_etranger || false,
+      sousTraitance: payload.sous_traitance || false,
+      communicationTiers: payload.communication_tiers || false,
+      nomRaisonSociale: payload.nom_raisonSociale || "",
+      rccm: payload.RCCM || "",
+      secteurActivite: payload.secteur_activite || "",
+      adresse: payload.adresse || "",
+      boitePostale: payload.boitePostale || "",
+      ville: payload.ville || "",
+      telephone: payload.telephone || "",
+      adresseEmail: payload.adresseEmail || "",
+      activitePrincipale: payload.activite_principale || "",
+    };
+    const declarationData = {
+      denominationTraitement: payload.nom || payload.description || "",
+      finaliteTraitement: payload.finalite || "",
+      typeTraitement: payload.type_traitement || "",
+    };
+    const formData = new FormData();
+    formData.append("traitement", new Blob([JSON.stringify(traitementData)], { type: "application/json" }));
+    formData.append("declaration", new Blob([JSON.stringify(declarationData)], { type: "application/json" }));
+    api.post("/traitements/normale", formData)
       .then((res) => {
         setTraitements(prev => [res.data, ...prev]);
         setShowCreer(false);
-        showToast("✅ Traitement créé avec succès !");
+        showToast("Traitement créé avec succès !");
       })
       .catch(() => {
         const nouveau = {
-          ...payload,
-          idTraitement: traitements.length + 1,
+          idTraitement: Date.now(),
+          department: payload.secteur || payload.department || "",
+          description: payload.description || payload.nom || "",
+          texte: payload.finalite || payload.texte || "",
+          certificationSecurite: payload.certificationSecurite || "",
+          dureeConservation: payload.duree_conservation || 0,
           dateCreation: new Date().toISOString(),
+          dateFin: payload.dateFin || null,
           nombreDonnee: 0,
-          utilisateurMetierId: 1,
-          utilisateurMetierNom: "Ouedraogo Amadou",
+          sessionCollecteId: payload.sessionCollecteId || null,
+          utilisateurMetierId: utilisateurMetierId || 1,
+          utilisateurMetierNom: localStorage.getItem("email") || "Utilisateur Métier",
           statut: "EN_COURS",
+          envoyeAuDpo: false,
         };
         setTraitements(prev => [nouveau, ...prev]);
         setShowCreer(false);
-        showToast("✅ Traitement créé (hors ligne)");
+        showToast("Traitement créé (hors ligne)", "error");
       });
   };
 
   const handleEnvoyer = (id) => {
-    api.patch(`/traitements/${id}/statut?valeur=ENVOYE_DPO`)
-      .then(() => {
-        setTraitements(prev => prev.map(t => t.idTraitement === id ? { ...t, statut: "ENVOYE_DPO" } : t));
-        showToast("📤 Traitement envoyé au DPO !");
+    const t = traitements.find(t => t.idTraitement === id);
+    const dpoId = t?.sessionCollecteId
+      ? sessions.find(s => s.idSession === t.sessionCollecteId)?.dpoId
+      : null;
+    api.patch(`/traitements/${id}/envoyer-dpo`, null, { params: { dpoId } })
+      .then((res) => {
+        setTraitements(prev => prev.map(t => t.idTraitement === id ? res.data : t));
+        showToast("Traitement envoyé au DPO !");
       })
-      .catch(() => {
-        setTraitements(prev => prev.map(t => t.idTraitement === id ? { ...t, statut: "ENVOYE_DPO" } : t));
-        showToast("📤 Traitement envoyé au DPO (hors ligne)");
+      .catch((err) => {
+        const msg = err.response?.data?.message || "Erreur lors de l'envoi au DPO";
+        showToast(msg, "error");
       });
   };
 
@@ -502,12 +686,13 @@ function UtilisateurMetierDashboard() {
     localStorage.removeItem("token");
     localStorage.removeItem("role");
     localStorage.removeItem("email");
+    localStorage.removeItem("dpoId");
     window.location.href = "/";
   };
 
   const handleTraiterDemande = (id, reponse) => {
     setDemandes(prev => prev.map(d => d.id === id ? { ...d, statut: "TRAITE" } : d));
-    showToast("✅ Demande traitée !");
+    showToast("Demande traitée !");
   };
 
   const demandesEnAttente = demandes.filter(d => (d.statut === "EN_ATTENTE" || d.statutDemande === "EN_ATTENTE")).length;
@@ -527,18 +712,18 @@ function UtilisateurMetierDashboard() {
     traitements.filter(t => t.sessionCollecteId === Number(sessionId));
 
   const stats = [
-    { label: "Sessions en cours", value: sessions.filter(s => s.statutSession === "EN_COURS").length, icon: "📅", color: "bg-blue-50 border-blue-200" },
-    { label: "Total traitements", value: traitements.length, icon: "📋", color: "bg-green-50 border-green-200" },
-    { label: "Envoyés au DPO", value: traitements.filter(t => t.statut === "ENVOYE_DPO").length, icon: "📤", color: "bg-purple-50 border-purple-200" },
-    { label: "Demandes usagers", value: demandesEnAttente, icon: "🔔", color: "bg-red-50 border-red-200" },
+    { label: "Sessions en cours", value: sessions.filter(s => s.statutSession === "EN_COURS").length, icon: "calendar", color: "bg-blue-50 border-blue-200" },
+    { label: "Total traitements", value: traitements.length, icon: "clipboard", color: "bg-green-50 border-green-200" },
+    { label: "Envoyés au DPO", value: traitements.filter(t => t.envoyeAuDpo === true).length, icon: "send", color: "bg-purple-50 border-purple-200" },
+    { label: "Demandes usagers", value: demandesEnAttente, icon: "bell", color: "bg-red-50 border-red-200" },
   ];
 
   const navItems = [
-    { id: "dashboard", label: "Tableau de bord", icon: "🏠" },
-    { id: "sessions", label: "Sessions de collecte", icon: "📅", badge: newSessionCount },
-    { id: "traitements", label: "Mes traitements", icon: "📋" },
-    { id: "demandes", label: "Demandes usagers", icon: "🔔", badge: demandesEnAttente },
-    { id: "historique", label: "Historique", icon: "📜" },
+    { id: "dashboard", label: "Tableau de bord", icon: "home" },
+    { id: "sessions", label: "Sessions de collecte", icon: "calendar", badge: newSessionCount },
+    { id: "traitements", label: "Mes traitements", icon: "clipboard" },
+    { id: "demandes", label: "Demandes usagers", icon: "bell", badge: demandesEnAttente },
+    { id: "historique", label: "Historique", icon: "history" },
   ];
 
   return (
@@ -564,7 +749,7 @@ function UtilisateurMetierDashboard() {
               onClick={() => { setActiveSection(item.id); if (item.id === "sessions") setNewSessionCount(0); }}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${activeSection === item.id ? "bg-white text-green-800 shadow" : "text-green-100 hover:bg-green-700"}`}
             >
-              <span className="text-lg flex-shrink-0">{item.icon}</span>
+              <Icon name={item.icon} className="w-5 h-5 flex-shrink-0" />
               {sidebarOpen && (
                 <span className="flex-1 text-left">{item.label}</span>
               )}
@@ -625,12 +810,12 @@ function UtilisateurMetierDashboard() {
           <div className="flex items-center gap-3">
             {newSessionCount > 0 && (
               <button onClick={() => { setNewSessionCount(0); setActiveSection("sessions"); }} className="relative p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg">
-                📅 <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center">{newSessionCount > 9 ? '9+' : newSessionCount}</span>
+                <Icon name="calendar" className="w-5 h-5" /> <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center">{newSessionCount > 9 ? '9+' : newSessionCount}</span>
               </button>
             )}
             {demandesEnAttente > 0 && (
               <button onClick={() => setActiveSection("demandes")} className="relative p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg">
-                🔔 <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center">{demandesEnAttente > 9 ? '9+' : demandesEnAttente}</span>
+                <Icon name="bell" className="w-5 h-5" /> <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center">{demandesEnAttente > 9 ? '9+' : demandesEnAttente}</span>
               </button>
             )}
           </div>
@@ -643,7 +828,7 @@ function UtilisateurMetierDashboard() {
               <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
                 {stats.map((s, i) => (
                   <div key={i} className={`bg-white rounded-2xl border p-4 shadow-sm ${s.color}`}>
-                    <div className="text-2xl mb-1">{s.icon}</div>
+                    <div className="mb-1"><Icon name={s.icon} className="w-6 h-6 text-gray-600" /></div>
                     <p className="text-2xl font-bold text-gray-800">{s.value}</p>
                     <p className="text-xs text-gray-500 mt-0.5">{s.label}</p>
                   </div>
@@ -661,7 +846,7 @@ function UtilisateurMetierDashboard() {
                         <p className="font-semibold text-sm text-gray-800">{t.description}</p>
                         <p className="text-xs text-gray-400">{t.department} · {formatDate(t.dateCreation)}</p>
                       </div>
-                      <BadgeStatut statut={t.statut} />
+                      <BadgeStatut statut={t.statut} envoyeAuDpo={t.envoyeAuDpo} />
                     </div>
                   ))}
                   {traitements.length === 0 && (
@@ -757,7 +942,7 @@ function UtilisateurMetierDashboard() {
                           <tr key={t.idTraitement} className="hover:bg-green-50 transition-colors">
                             <td className="px-4 py-3 font-medium text-gray-800">{t.description}</td>
                             <td className="px-4 py-3 text-gray-600">{t.department}</td>
-                            <td className="px-4 py-3"><BadgeStatut statut={t.statut} /></td>
+                            <td className="px-4 py-3"><BadgeStatut statut={t.statut} envoyeAuDpo={t.envoyeAuDpo} /></td>
                             <td className="px-4 py-3 text-center">
                               <button onClick={() => setDetailTraitement(t)} className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-lg hover:bg-green-200">Voir</button>
                             </td>
@@ -829,12 +1014,12 @@ function UtilisateurMetierDashboard() {
                         <td className="px-4 py-3 text-gray-600">{t.department}</td>
                         <td className="px-4 py-3 text-gray-600">{t.dureeConservation} mois</td>
                         <td className="px-4 py-3 text-gray-600">{formatDate(t.dateFin)}</td>
-                        <td className="px-4 py-3"><BadgeStatut statut={t.statut} /></td>
+                        <td className="px-4 py-3"><BadgeStatut statut={t.statut} envoyeAuDpo={t.envoyeAuDpo} /></td>
                         <td className="px-4 py-3">
                           <div className="flex gap-2">
                             <button onClick={() => setDetailTraitement(t)} className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-lg hover:bg-green-200">Voir</button>
-                            {t.statut !== "ENVOYE_DPO" && (
-                              <button onClick={() => handleEnvoyer(t.idTraitement)} className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-lg hover:bg-blue-200">📤 DPO</button>
+                            {!t.envoyeAuDpo && (
+                              <button onClick={() => handleEnvoyer(t.idTraitement)} className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-lg hover:bg-blue-200"><Icon name="send" className="w-3.5 h-3.5 mr-1" />DPO</button>
                             )}
                           </div>
                         </td>
@@ -844,7 +1029,7 @@ function UtilisateurMetierDashboard() {
                 </table>
                 {traitementsFiltres.length === 0 && (
                   <div className="py-12 text-center text-gray-400 text-sm">
-                    <p className="text-3xl mb-2">📋</p>
+                    <Icon name="clipboard" className="w-10 h-10 mb-2 mx-auto text-gray-300" />
                     Aucun traitement trouvé
                   </div>
                 )}
@@ -879,22 +1064,22 @@ function UtilisateurMetierDashboard() {
                         <td className="px-4 py-3 font-medium text-gray-800">{d.usager || d.usagerNom}</td>
                         <td className="px-4 py-3">
                           <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${(d.type === "MODIFICATION" || d.typeDemande === "MODIFICATION") ? "bg-orange-100 text-orange-700" : "bg-red-100 text-red-700"}`}>
-                            {(d.type === "MODIFICATION" || d.typeDemande === "MODIFICATION") ? "✏️ Modification" : "🗑 Suppression"}
+                            {(d.type === "MODIFICATION" || d.typeDemande === "MODIFICATION") ? <><Icon name="edit" className="w-3.5 h-3.5 mr-1" />Modification</> : <><Icon name="trash" className="w-3.5 h-3.5 mr-1" />Suppression</>}
                           </span>
                         </td>
                         <td className="px-4 py-3 text-gray-600">{d.traitement || d.traitementNom}</td>
                         <td className="px-4 py-3 text-gray-500 text-xs">{formatDate(d.date || d.dateDemande)}</td>
                         <td className="px-4 py-3">
                           {(d.statut === "EN_ATTENTE" || d.statutDemande === "EN_ATTENTE")
-                            ? <span className="bg-yellow-100 text-yellow-700 text-xs font-semibold px-2 py-0.5 rounded-full">⏳ En attente</span>
-                            : <span className="bg-green-100 text-green-700 text-xs font-semibold px-2 py-0.5 rounded-full">✅ Traité</span>
+                            ? <span className="bg-yellow-100 text-yellow-700 text-xs font-semibold px-2 py-0.5 rounded-full"><Icon name="clock" className="w-3 h-3 mr-1" />En attente</span>
+                            : <span className="bg-green-100 text-green-700 text-xs font-semibold px-2 py-0.5 rounded-full"><Icon name="check" className="w-3 h-3 mr-1" />Traité</span>
                           }
                         </td>
                         <td className="px-4 py-3">
                           {(d.statut === "EN_ATTENTE" || d.statutDemande === "EN_ATTENTE") ? (
                             <button onClick={() => setDetailDemande(d)} className="text-xs bg-green-700 text-white px-3 py-1 rounded-lg hover:bg-green-800">Traiter</button>
                           ) : (
-                            <span className="text-gray-400 text-xs">✅ Traité</span>
+                            <span className="text-gray-400 text-xs"><Icon name="check" className="w-3 h-3 mr-1" />Traité</span>
                           )}
                         </td>
                       </tr>
@@ -914,24 +1099,24 @@ function UtilisateurMetierDashboard() {
               <h2 className="text-xl font-bold text-gray-800">Historique</h2>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-                  <h3 className="font-bold text-gray-800 mb-3">📤 Traitements envoyés au DPO</h3>
+                  <h3 className="font-bold text-gray-800 mb-3"><Icon name="send" className="w-4 h-4 mr-1.5 inline" /> Traitements envoyés au DPO</h3>
                   <div className="space-y-2">
-                    {traitements.filter(t => t.statut === "ENVOYE_DPO").length === 0 && (
+                    {traitements.filter(t => t.envoyeAuDpo === true).length === 0 && (
                       <p className="text-sm text-gray-400 text-center py-4">Aucun traitement envoyé</p>
                     )}
-                    {traitements.filter(t => t.statut === "ENVOYE_DPO").slice(0, 10).map(t => (
+                    {traitements.filter(t => t.envoyeAuDpo === true).slice(0, 10).map(t => (
                       <div key={t.idTraitement} className="flex items-center justify-between p-3 bg-blue-50 rounded-xl">
                         <div>
                           <p className="font-semibold text-sm text-gray-800">{t.description}</p>
                           <p className="text-xs text-gray-400">{t.department} · {formatDate(t.dateCreation)}</p>
                         </div>
-                        <span className="text-xs text-blue-600 font-medium">📤 Envoyé</span>
+                        <span className="text-xs text-blue-600 font-medium"><Icon name="send" className="w-3 h-3 mr-1" />Envoyé</span>
                       </div>
                     ))}
                   </div>
                 </div>
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-                  <h3 className="font-bold text-gray-800 mb-3">✅ Demandes usagers traitées</h3>
+                  <h3 className="font-bold text-gray-800 mb-3"><Icon name="check" className="w-4 h-4 mr-1.5 inline" /> Demandes usagers traitées</h3>
                   <div className="space-y-2">
                     {demandes.filter(d => d.statut === "TRAITE" || d.statutDemande === "TRAITE").length === 0 && (
                       <p className="text-sm text-gray-400 text-center py-4">Aucune demande traitée</p>
@@ -942,14 +1127,14 @@ function UtilisateurMetierDashboard() {
                           <p className="font-semibold text-sm text-gray-800">{d.usager || d.usagerNom}</p>
                           <p className="text-xs text-gray-400">{d.traitement || d.traitementNom} · {formatDate(d.date || d.dateDemande)}</p>
                         </div>
-                        <span className="text-xs text-green-600 font-medium">✅ Traité</span>
+                        <span className="text-xs text-green-600 font-medium"><Icon name="check" className="w-3 h-3 mr-1" />Traité</span>
                       </div>
                     ))}
                   </div>
                 </div>
               </div>
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-                <h3 className="font-bold text-gray-800 mb-3">📅 Sessions de collecte terminées</h3>
+                <h3 className="font-bold text-gray-800 mb-3"><Icon name="calendar" className="w-4 h-4 mr-1.5 inline" /> Sessions de collecte terminées</h3>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead className="bg-gray-50">

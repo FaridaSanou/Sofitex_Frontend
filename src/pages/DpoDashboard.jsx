@@ -9,23 +9,8 @@ import DashboardLayout from "../layouts/DashboardLayout";
 import api from "../services/api";
 
 // ═══════════════════════════════════════════════════════════════════
-// MODULE 1 : Données factices (Mock Data)
-// Utilisées en fallback lorsque l'API n'est pas disponible
+// MODULE 1 : (réservé)
 // ═══════════════════════════════════════════════════════════════════
-const mockTraitements = [
-  { idTraitement: 1, department: "DRH", description: "Gestion des salaires", texte: "Permettre le paiement des employés", certificationSecurite: "ISO 27001", dureeConservation: 60, dateCreation: "2026-05-10T09:00:00", dateFin: "2031-05-10T00:00:00", nombreDonnee: 3, sessionCollecteId: 1, utilisateurMetierId: 1, utilisateurMetierNom: "Ouedraogo Amadou" },
-  { idTraitement: 2, department: "DSI", description: "Gestion des accès réseau", texte: "Contrôler les accès aux systèmes", certificationSecurite: "En cours", dureeConservation: 12, dateCreation: "2026-05-15T14:00:00", dateFin: "2027-05-15T00:00:00", nombreDonnee: 1, sessionCollecteId: 2, utilisateurMetierId: 1, utilisateurMetierNom: "Ouedraogo Amadou" },
-  { idTraitement: 3, department: "Direction Commerciale", description: "Gestion des commandes clients", texte: "Suivi des ventes et facturation", certificationSecurite: "ISO 27001", dureeConservation: 36, dateCreation: "2026-05-20T10:00:00", dateFin: "2029-05-20T00:00:00", nombreDonnee: 12, sessionCollecteId: 1, utilisateurMetierId: 2, utilisateurMetierNom: "Traoré Fatimata" },
-  { idTraitement: 4, department: "DRH", description: "Suivi des formations", texte: "Gérer les inscriptions aux formations", certificationSecurite: "Non renseigné", dureeConservation: 24, dateCreation: "2026-06-01T08:00:00", dateFin: "2028-06-01T00:00:00", nombreDonnee: 0, sessionCollecteId: null, utilisateurMetierId: 1, utilisateurMetierNom: "Ouedraogo Amadou" },
-  { idTraitement: 5, department: "Direction Technique", description: "Maintenance des équipements", texte: "Planifier les maintenances préventives", certificationSecurite: "En cours", dureeConservation: 60, dateCreation: "2026-06-05T11:00:00", dateFin: "2031-06-05T00:00:00", nombreDonnee: 8, sessionCollecteId: null, utilisateurMetierId: 2, utilisateurMetierNom: "Traoré Fatimata" },
-  { idTraitement: 6, department: "DSI", description: "Gestion de la messagerie", texte: "Administration des boîtes mail", certificationSecurite: "ISO 27001", dureeConservation: 12, dateCreation: "2026-06-10T09:00:00", dateFin: "2027-06-10T00:00:00", nombreDonnee: 0, sessionCollecteId: 3, utilisateurMetierId: 1, utilisateurMetierNom: "Ouedraogo Amadou" },
-];
-
-const mockDeclarations = [
-  { idDeclaration: 1, typeDeclaration: "NORMALE", denominationTraitement: "Gestion des salaires", dateSoumission: "2026-05-25", statut: "APPROUVEE" },
-  { idDeclaration: 2, typeDeclaration: "AUTORISATION", denominationTraitement: "Gestion des accès réseau", dateSoumission: "2026-06-01", statut: "EN_ATTENTE" },
-  { idDeclaration: 3, typeDeclaration: "NORMALE", denominationTraitement: "Gestion des commandes clients", dateSoumission: "2026-06-10", statut: "EN_ATTENTE" },
-];
 
 const mockDemandes = [
   { id: 1, usager: "Traoré Fatima", usagerNom: "Traoré Fatima", type: "MODIFICATION", typeDemande: "MODIFICATION", traitement: "Gestion des salaires", traitementNom: "Gestion des salaires", date: "2026-05-20T10:00:00", dateDemande: "2026-05-20T10:00:00", statut: "EN_ATTENTE", statutDemande: "EN_ATTENTE", detail: "Demande de correction de l'adresse mail enregistrée.", descriptionDemande: "Demande de correction de l'adresse mail enregistrée.", utilisateurMetierNom: "Ouedraogo Amadou" },
@@ -125,292 +110,663 @@ const TYPES_DECLARATION = [
 // Fenêtre modale en 3 étapes (Traitement → Type → Détails)
 // Pré-remplit les champs depuis le traitement sélectionné
 // ═══════════════════════════════════════════════════════════════════
-function ModalCreerDeclaration({ traitements, onClose, onSave }) {
+// ── Composant champ réutilisable ──────────────────────────────────
+function Field({ label, children, required }) {
+  return (
+    <div>
+      <label className="block text-xs font-bold text-gray-600 mb-1">
+        {label} {required && <span className="text-red-500">*</span>}
+      </label>
+      {children}
+    </div>
+  );
+}
+
+function Input({ name, value, onChange, type = "text", placeholder = "" }) {
+  return (
+    <input
+      type={type} name={name} value={value} onChange={onChange}
+      placeholder={placeholder}
+      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
+    />
+  );
+}
+
+function Textarea({ name, value, onChange, rows = 2, placeholder = "" }) {
+  return (
+    <textarea
+      name={name} value={value} onChange={onChange} rows={rows}
+      placeholder={placeholder}
+      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
+    />
+  );
+}
+
+function CheckField({ label, name, checked, onChange }) {
+  return (
+    <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer">
+      <input type="checkbox" name={name} checked={checked} onChange={onChange} className="w-4 h-4 accent-green-700" />
+      {label}
+    </label>
+  );
+}
+
+function SectionTitle({ title }) {
+  return (
+    <h5 className="font-bold text-green-800 text-sm uppercase border-b border-green-200 pb-1 mt-4 mb-3">{title}</h5>
+  );
+}
+
+// ── MODAL PRINCIPAL ───────────────────────────────────────────────
+function ModalCreerDeclaration({ traitements, onClose, onSave, preFillTraitement }) {
   const [step, setStep] = useState(1);
   const [selectedTraitementId, setSelectedTraitementId] = useState("");
   const [typeDeclaration, setTypeDeclaration] = useState("");
-  const [form, setForm] = useState({
-    secteur: "", denominationTraitement: "", texteJuridique: "",
-    certificationSecurite: "", dureeConservation: "", responsableDeclaration: "",
-    natureDemande: "PREMIERE",
-    dateMiseEnOeuvre: "", lieuStockage: "", categoriesDonnees: "", origineDonnees: "",
-    categoriesPersonnesConcernees: "", nombrePersonnesConcernees: "", typeTraitement: "",
-    caracteristiquesTechniques: "", fonctionnalitesSysteme: "", politiqueAccesSystemes: false,
-    finaliteTraitement: "", mesuresSecurite: "", destinataireNom: "", destinataireAdresse: "",
-    communicationAutresOrganismes: false, transfertPaysEtranger: false, recoursSousTraitant: false,
-    finalites: "", adresseInstallation: "", emplacementCameras: "", nombreTotalCameras: "",
-    donneesConnexion: false, cookies: false, dureeConservationCookies: "",
-  });
+
+  const initForm = {
+    // ── Champs communs (Declaration.java) ──
+    secteur: "", natureDemande: "PREMIERE",
+    responsableDeclaration: "", contactConfidentialite: "",
+    dateMiseEnOeuvre: "", nomPrenomResponsable: "", fonctionResponsable: "",
+    categoriesDonnees: "", origineDonnees: "", dureeConservation: "", lieuStockage: "",
+    communicationAutresOrganismes: false, destinataireNom: "", destinataireAdresse: "",
+    texteJuridiqueCommunication: "", finaliteCommunication: "",
+    destinataireConformeCil: false, transfertPaysEtranger: false,
+    recoursSousTraitant: false, contratConfidentialiteSousTraitant: false,
+    rolesSousTraitants: "", categoriesPersonnesAcces: "",
+    politiqueAccesBatiments: false, mesuresSecurite: "",
+    mesuresSensibilisation: false, moyensInformationDroits: "",
+    moyensExerciceDroits: "", coordonneesExerciceDroits: "",
+    delaiCommunicationDroits: "",
+
+    // ── Déclaration Normale (DeclarationNormale.java) ──
+    denominationTraitement: "", finaliteTraitement: "", texteJuridique: "",
+    categoriesPersonnesConcernees: "", nombrePersonnesConcernees: "",
+    typeTraitement: "", descriptionProcedureManuelle: false,
+    caracteristiquesTechniques: "", caracteristiquesSysteme: "",
+    politiqueAccesSystemes: false, modalitesDiffusionResultats: false,
+    protocoleRecherche: false, descriptionConnexionFichiers: false,
+    motifsInterconnexion: "", identiteFichiersInterconnexion: "",
+
+    // ── Déclaration Autorisation (DeclarationAutorisation.java) ──
+    fonctionnalitesSysteme: "", certificationSecurite: "",
+    descriptionFichier: "", modeTransfert: "",
+    traitementDonneesSante: false, professionalSante: false,
+    modalitesDiffusionResultatsAuto: "", destinataireCie: "",
+    connexionFichiers: false, categoriesDonneesInterconnexion: "",
+    dureeInterconnexion: "", paysDestinationProtectionDonnees: false,
+    descriptionFichierTransfert: "", nombrePersonnesTransfert: "",
+    categoriesDonneesTransfert: "", fondementJuridique: "",
+    consentementPersonnesConcernees: false, methodeRecueilConsentement: "",
+    mesuresSecuriteTransfert: "", destinataireNomPrenom: "",
+    dureeConservationSante: "", descriptionSensibilisation: "",
+
+    // ── Collecte Site Internet (DeclarationCollecteSiteInternet.java) ──
+    caracteristiquesMainStructure: "", donneesConnexion: false,
+    descriptionDonneesConnexion: "", cookies: false,
+    descriptionCookies: "", dureeConservationCookies: "",
+    telechargementTraitement: "",
+
+    // ── Vidéosurveillance (DeclarationSystemeVideoSurveillance.java) ──
+    finalites: "", adresseInstallation: "", natureEnvironnement: "",
+    emplacementCameras: "", nombreTotalCameras: "", modeleDispositif: "",
+    visualisationTempsReel: false, modeTransfertVideo: "", sonDeSon: false,
+    typeEnregistrement: "", natureEnregistrement: "", liaisonReseau: "",
+    utilisationSystemesExperts: false, descriptionSystemesExperts: "",
+    fonctionnalitesTraitement: "", accesImagesDistance: false,
+    accesPhysique: "", accesLogique: "", mesuresSuppression: false,
+    localisationPictogrammes: "",
+  };
+
+  const [form, setForm] = useState(initForm);
+
+  useEffect(() => {
+    if (!preFillTraitement) return;
+    setSelectedTraitementId(String(preFillTraitement.idTraitement));
+
+    const baseFill = (prev) => ({
+      ...prev,
+      secteur: preFillTraitement.department || prev.secteur,
+      denominationTraitement: preFillTraitement.description || prev.denominationTraitement,
+      finaliteTraitement: preFillTraitement.texte || prev.finaliteTraitement,
+      dureeConservation: preFillTraitement.dureeConservation ? String(preFillTraitement.dureeConservation) + " mois" : prev.dureeConservation,
+      lieuStockage: preFillTraitement.lieuStockage || prev.lieuStockage,
+      nomPrenomResponsable: preFillTraitement.utilisateurMetierNom || prev.nomPrenomResponsable,
+      responsableDeclaration: preFillTraitement.utilisateurMetierNom || prev.responsableDeclaration,
+    });
+
+    if (preFillTraitement.declarationId) {
+      api.get(`/declarations/${preFillTraitement.declarationId}`)
+        .then((res) => {
+          const d = res.data;
+          setForm(prev => ({
+            ...baseFill(prev),
+            dateMiseEnOeuvre: d.dateMiseEnOeuvre || prev.dateMiseEnOeuvre,
+            responsableDeclaration: d.responsableDeclaration || prev.responsableDeclaration,
+            contactConfidentialite: d.contactConfidentialite || prev.contactConfidentialite,
+            secteur: d.secteur || prev.secteur,
+          }));
+        })
+        .catch(() => setForm(baseFill));
+    } else {
+      setForm(baseFill);
+    }
+  }, [preFillTraitement]);
+
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setForm(prev => ({ ...prev, [name]: type === "checkbox" ? checked : value }));
+  };
 
   const selectedTraitement = traitements.find(t => t.idTraitement === parseInt(selectedTraitementId));
 
-  useEffect(() => {
-    if (selectedTraitement) {
-      setForm(prev => ({
-        ...prev,
-        secteur: selectedTraitement.department || "",
-        denominationTraitement: selectedTraitement.description || "",
-        texteJuridique: selectedTraitement.texte || "",
-        certificationSecurite: selectedTraitement.certificationSecurite || "",
-        dureeConservation: selectedTraitement.dureeConservation ? `${selectedTraitement.dureeConservation} mois` : "",
-        responsableDeclaration: selectedTraitement.utilisateurMetierNom || "",
-      }));
-    }
-  }, [selectedTraitement]);
-
   const handleSave = () => {
-    if (!selectedTraitementId || !typeDeclaration) return;
-    onSave({
-      traitementId: parseInt(selectedTraitementId),
-      typeDeclaration,
-      ...form,
-    });
+    onSave({ traitementId: parseInt(selectedTraitementId), typeDeclaration, ...form });
     onClose();
   };
 
-  const canSave = selectedTraitementId && typeDeclaration;
+  const stepTitles = ["Traitement", "Type", "Identification", "Données & Sécurité", "Droits & Sous-traitance", "Spécifique"];
+  const totalSteps = 6;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-screen overflow-y-auto">
-        <div className="bg-green-800 text-white px-6 py-4 rounded-t-2xl flex justify-between items-center sticky top-0 z-10">
+    <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4 font-sans text-left">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[92vh] flex flex-col">
+
+        {/* Header */}
+        <div className="bg-green-800 text-white px-6 py-4 rounded-t-2xl flex justify-between items-center flex-shrink-0">
           <div>
-            <h3 className="font-bold text-lg">Nouvelle Déclaration</h3>
-            <p className="text-green-200 text-xs">{step === 1 ? "Choisir le traitement" : step === 2 ? "Type de déclaration" : "Formulaire"}</p>
+            <h3 className="font-bold text-lg">Nouvelle Déclaration CIL</h3>
+            <p className="text-xs opacity-80">Étape {step}/{totalSteps} — {stepTitles[step - 1]}</p>
           </div>
-          <button onClick={onClose} className="text-green-200 hover:text-white text-xl">✕</button>
+          <button onClick={onClose} className="text-2xl leading-none">✕</button>
         </div>
 
-        <div className="flex bg-green-900">
-          {[1, 2, 3].map(s => (
-            <div key={s} className={`flex-1 py-2 text-center text-xs font-semibold ${step === s ? "bg-green-600 text-white" : step > s ? "bg-green-700 text-green-200" : "text-green-400"}`}>
-              {step > s ? "✓ " : `${s}. `}{s === 1 ? "Traitement" : s === 2 ? "Type" : "Détails"}
-            </div>
+        {/* Barre de progression */}
+        <div className="flex gap-1 px-6 pt-3 flex-shrink-0">
+          {Array.from({ length: totalSteps }).map((_, i) => (
+            <div key={i} className={`h-1.5 flex-1 rounded-full transition-all ${i < step ? "bg-green-600" : "bg-gray-200"}`} />
           ))}
         </div>
 
-        <div className="p-6 space-y-5">
+        {/* Contenu scrollable */}
+        <div className="overflow-y-auto flex-1 px-6 py-4 space-y-3">
+
+          {/* ── ÉTAPE 1 : Choix du traitement ── */}
           {step === 1 && (
             <div className="space-y-4">
-              <h4 className="font-bold text-green-800">Sélectionner le traitement</h4>
-              <select value={selectedTraitementId} onChange={e => setSelectedTraitementId(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
-                <option value="">-- Choisir un traitement --</option>
-                {traitements.map(t => (
-                  <option key={t.idTraitement} value={t.idTraitement}>
-                    {t.description || `Traitement #${t.idTraitement}`} — {t.department || "N/A"}
-                  </option>
-                ))}
-              </select>
+              <SectionTitle title="Sélectionner le traitement associé" />
+              <Field label="Traitement métier" required>
+                <select value={selectedTraitementId} onChange={e => setSelectedTraitementId(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400">
+                  <option value="">-- Choisir un traitement --</option>
+                  {traitements.map(t => (
+                    <option key={t.idTraitement} value={t.idTraitement}>{t.description} ({t.department})</option>
+                  ))}
+                </select>
+              </Field>
               {selectedTraitement && (
-                <div className="bg-green-50 rounded-xl p-4 space-y-2 text-sm">
-                  <p><span className="font-semibold">Description :</span> {selectedTraitement.description}</p>
-                  <p><span className="font-semibold">Département :</span> {selectedTraitement.department}</p>
-                  <p><span className="font-semibold">Texte juridique :</span> {selectedTraitement.texte}</p>
-                  <p><span className="font-semibold">Certification sécurité :</span> {selectedTraitement.certificationSecurite}</p>
-                  <p><span className="font-semibold">Conservation :</span> {selectedTraitement.dureeConservation} mois</p>
-                  <p><span className="font-semibold">Responsable :</span> {selectedTraitement.utilisateurMetierNom}</p>
+                <div className="bg-green-50 border border-green-200 rounded-xl p-3 text-sm">
+                  <p><span className="font-bold">Traitement :</span> {selectedTraitement.description}</p>
+                  <p><span className="font-bold">Département :</span> {selectedTraitement.department}</p>
                 </div>
               )}
-              <div className="flex justify-end">
-                <button onClick={() => setStep(2)} disabled={!selectedTraitementId} className="px-5 py-2 rounded-lg bg-green-700 text-white text-sm font-semibold hover:bg-green-800 disabled:opacity-40">
-                  Suivant →
-                </button>
-              </div>
             </div>
           )}
 
+          {/* ── ÉTAPE 2 : Type de déclaration ── */}
           {step === 2 && (
-            <div className="space-y-4">
-              <h4 className="font-bold text-green-800">Type de déclaration</h4>
-              <div className="grid gap-3">
+            <div className="space-y-3">
+              <SectionTitle title="Type de formalité CIL" />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {TYPES_DECLARATION.map(t => (
-                  <label key={t.id} className={`flex items-start gap-4 p-4 rounded-xl border cursor-pointer transition-all ${typeDeclaration === t.id ? "border-green-500 bg-green-50" : "border-gray-200 hover:border-green-300"}`}>
-                    <input type="radio" name="typeDecl" value={t.id} checked={typeDeclaration === t.id} onChange={e => setTypeDeclaration(e.target.value)} className="mt-1 accent-green-600" />
-                    <div>
-                      <p className="font-semibold text-gray-800">{t.label}</p>
-                      <p className="text-sm text-gray-500">{t.desc}</p>
-                    </div>
-                  </label>
+                  <button key={t.id} onClick={() => setTypeDeclaration(t.id)}
+                    className={`p-4 border-2 rounded-xl text-left transition-all ${typeDeclaration === t.id ? "border-green-600 bg-green-50" : "border-gray-200 hover:border-green-300"}`}>
+                    <p className="font-bold text-green-900 text-sm">{t.label}</p>
+                    <p className="text-xs text-gray-500 mt-1">{t.desc}</p>
+                  </button>
                 ))}
               </div>
-              <div className="flex justify-between">
-                <button onClick={() => setStep(1)} className="px-4 py-2 rounded-lg border border-gray-300 text-gray-600 text-sm">← Précédent</button>
-                <button onClick={() => setStep(3)} disabled={!typeDeclaration} className="px-5 py-2 rounded-lg bg-green-700 text-white text-sm font-semibold hover:bg-green-800 disabled:opacity-40">
-                  Suivant →
-                </button>
+            </div>
+          )}
+
+          {/* ── ÉTAPE 3 : Identification ── */}
+          {step === 3 && (
+            <div className="space-y-3">
+              <SectionTitle title="Identification & Responsable" />
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Nom & Prénom Responsable" required>
+                  <Input name="nomPrenomResponsable" value={form.nomPrenomResponsable} onChange={handleChange} placeholder="Ex: Koné Mamadou" />
+                </Field>
+                <Field label="Fonction du Responsable" required>
+                  <Input name="fonctionResponsable" value={form.fonctionResponsable} onChange={handleChange} placeholder="Ex: Directeur DSI" />
+                </Field>
+                <Field label="Secteur / Département" required>
+                  <Input name="secteur" value={form.secteur} onChange={handleChange} placeholder="Ex: DRH" />
+                </Field>
+                <Field label="Contact Confidentialité">
+                  <Input name="contactConfidentialite" value={form.contactConfidentialite} onChange={handleChange} placeholder="email ou téléphone" />
+                </Field>
+                <Field label="Nature de la Demande" required>
+                  <select name="natureDemande" value={form.natureDemande} onChange={handleChange}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400">
+                    <option value="PREMIERE">Première déclaration</option>
+                    <option value="MODIFICATION">Modification</option>
+                    <option value="RENOUVELLEMENT">Renouvellement</option>
+                  </select>
+                </Field>
+                <Field label="Date de mise en œuvre">
+                  <Input name="dateMiseEnOeuvre" value={form.dateMiseEnOeuvre} onChange={handleChange} type="date" />
+                </Field>
               </div>
             </div>
           )}
 
-          {step === 3 && (
-            <div className="space-y-5">
-              <h4 className="font-bold text-green-800">Informations de la déclaration</h4>
-
-              {/* Champs pré-remplis depuis le traitement (readonly) */}
-              <div className="bg-green-50 rounded-xl p-4 space-y-3">
-                <p className="font-semibold text-green-700 text-sm">✅ Champs pré-remplis depuis le traitement</p>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600">Secteur</label>
-                    <input value={form.secteur} readOnly className="w-full h-9 px-3 rounded-lg border border-green-200 bg-green-100 text-sm text-gray-700" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600">Dénomination traitement</label>
-                    <input value={form.denominationTraitement} readOnly className="w-full h-9 px-3 rounded-lg border border-green-200 bg-green-100 text-sm text-gray-700" />
-                  </div>
-                  <div className="col-span-2">
-                    <label className="block text-xs font-medium text-gray-600">Texte juridique</label>
-                    <textarea value={form.texteJuridique} readOnly rows={2} className="w-full px-3 py-2 rounded-lg border border-green-200 bg-green-100 text-sm text-gray-700" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600">Certification sécurité</label>
-                    <input value={form.certificationSecurite} readOnly className="w-full h-9 px-3 rounded-lg border border-green-200 bg-green-100 text-sm text-gray-700" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600">Durée de conservation</label>
-                    <input value={form.dureeConservation} readOnly className="w-full h-9 px-3 rounded-lg border border-green-200 bg-green-100 text-sm text-gray-700" />
-                  </div>
-                  <div className="col-span-2">
-                    <label className="block text-xs font-medium text-gray-600">Responsable déclaration</label>
-                    <input value={form.responsableDeclaration} readOnly className="w-full h-9 px-3 rounded-lg border border-green-200 bg-green-100 text-sm text-gray-700" />
-                  </div>
-                </div>
+          {/* ── ÉTAPE 4 : Données & Sécurité ── */}
+          {step === 4 && (
+            <div className="space-y-3">
+              <SectionTitle title="Données Traitées" />
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Catégories de données">
+                  <Input name="categoriesDonnees" value={form.categoriesDonnees} onChange={handleChange} placeholder="Ex: Identité, Santé..." />
+                </Field>
+                <Field label="Origine des données">
+                  <Input name="origineDonnees" value={form.origineDonnees} onChange={handleChange} placeholder="Ex: Formulaire, Tiers..." />
+                </Field>
+                <Field label="Durée de conservation">
+                  <Input name="dureeConservation" value={form.dureeConservation} onChange={handleChange} placeholder="Ex: 5 ans" />
+                </Field>
+                <Field label="Lieu de stockage">
+                  <Input name="lieuStockage" value={form.lieuStockage} onChange={handleChange} placeholder="Ex: Serveur local, Cloud..." />
+                </Field>
               </div>
 
-              {/* Champs à remplir par le DPO */}
-              <div className="border-t border-gray-200 pt-4">
-                <p className="font-semibold text-gray-700 text-sm mb-3">📝 Informations à renseigner</p>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Nature de la demande</label>
-                    <select value={form.natureDemande} onChange={e => setForm(p => ({ ...p, natureDemande: e.target.value }))} className="w-full h-10 px-3 rounded-lg border border-gray-300 text-sm">
-                      <option value="PREMIERE">Première déclaration</option>
-                      <option value="MODIFICATION">Modification</option>
-                      <option value="SUPPRESSION">Suppression</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Date mise en œuvre</label>
-                    <input type="date" value={form.dateMiseEnOeuvre} onChange={e => setForm(p => ({ ...p, dateMiseEnOeuvre: e.target.value }))} className="w-full h-10 px-3 rounded-lg border border-gray-300 text-sm" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Lieu de stockage</label>
-                    <input value={form.lieuStockage} onChange={e => setForm(p => ({ ...p, lieuStockage: e.target.value }))} className="w-full h-10 px-3 rounded-lg border border-gray-300 text-sm" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Catégories de données</label>
-                    <input value={form.categoriesDonnees} onChange={e => setForm(p => ({ ...p, categoriesDonnees: e.target.value }))} className="w-full h-10 px-3 rounded-lg border border-gray-300 text-sm" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Origine des données</label>
-                    <input value={form.origineDonnees} onChange={e => setForm(p => ({ ...p, origineDonnees: e.target.value }))} className="w-full h-10 px-3 rounded-lg border border-gray-300 text-sm" />
-                  </div>
-                  <div className="col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Mesures de sécurité</label>
-                    <textarea value={form.mesuresSecurite} onChange={e => setForm(p => ({ ...p, mesuresSecurite: e.target.value }))} rows={2} className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm" />
-                  </div>
-
-                  {typeDeclaration === "NORMALE" && (
-                    <>
-                      <div className="col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Finalité du traitement</label>
-                        <textarea value={form.finaliteTraitement} onChange={e => setForm(p => ({ ...p, finaliteTraitement: e.target.value }))} rows={2} className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm" />
-                      </div>
-                      <div className="col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Catégories de personnes concernées</label>
-                        <input value={form.categoriesPersonnesConcernees} onChange={e => setForm(p => ({ ...p, categoriesPersonnesConcernees: e.target.value }))} className="w-full h-10 px-3 rounded-lg border border-gray-300 text-sm" />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Nombre de personnes</label>
-                        <input type="number" value={form.nombrePersonnesConcernees} onChange={e => setForm(p => ({ ...p, nombrePersonnesConcernees: e.target.value }))} className="w-full h-10 px-3 rounded-lg border border-gray-300 text-sm" />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Type de traitement</label>
-                        <input value={form.typeTraitement} onChange={e => setForm(p => ({ ...p, typeTraitement: e.target.value }))} className="w-full h-10 px-3 rounded-lg border border-gray-300 text-sm" />
-                      </div>
-                      <div className="col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Caractéristiques techniques</label>
-                        <textarea value={form.caracteristiquesTechniques} onChange={e => setForm(p => ({ ...p, caracteristiquesTechniques: e.target.value }))} rows={2} className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm" />
-                      </div>
-                    </>
-                  )}
-
-                  {typeDeclaration === "AUTORISATION" && (
-                    <>
-                      <div className="col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Finalité du traitement</label>
-                        <textarea value={form.finaliteTraitement} onChange={e => setForm(p => ({ ...p, finaliteTraitement: e.target.value }))} rows={2} className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm" />
-                      </div>
-                      <div className="col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Fonctionnalités du système</label>
-                        <textarea value={form.fonctionnalitesSysteme} onChange={e => setForm(p => ({ ...p, fonctionnalitesSysteme: e.target.value }))} rows={2} className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm" />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Destinataire</label>
-                        <input value={form.destinataireNom} onChange={e => setForm(p => ({ ...p, destinataireNom: e.target.value }))} className="w-full h-10 px-3 rounded-lg border border-gray-300 text-sm" />
-                      </div>
-                      <div>
-                        <label className="flex items-center gap-2 pt-6">
-                          <input type="checkbox" checked={form.politiqueAccesSystemes} onChange={e => setForm(p => ({ ...p, politiqueAccesSystemes: e.target.checked }))} className="accent-green-600" />
-                          <span className="text-sm">Politique d'accès aux systèmes</span>
-                        </label>
-                      </div>
-                    </>
-                  )}
-
-                  {typeDeclaration === "COLLECTE_SITE_INTERNET" && (
-                    <>
-                      <div className="col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Finalité du traitement</label>
-                        <textarea value={form.finaliteTraitement} onChange={e => setForm(p => ({ ...p, finaliteTraitement: e.target.value }))} rows={2} className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm" />
-                      </div>
-                      <label className="flex items-center gap-2">
-                        <input type="checkbox" checked={form.donneesConnexion} onChange={e => setForm(p => ({ ...p, donneesConnexion: e.target.checked }))} className="accent-green-600" />
-                        <span className="text-sm">Données de connexion</span>
-                      </label>
-                      <label className="flex items-center gap-2">
-                        <input type="checkbox" checked={form.cookies} onChange={e => setForm(p => ({ ...p, cookies: e.target.checked }))} className="accent-green-600" />
-                        <span className="text-sm">Utilisation de cookies</span>
-                      </label>
-                      {form.cookies && (
-                        <div className="col-span-2">
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Durée de conservation des cookies</label>
-                          <input value={form.dureeConservationCookies} onChange={e => setForm(p => ({ ...p, dureeConservationCookies: e.target.value }))} className="w-full h-10 px-3 rounded-lg border border-gray-300 text-sm" />
-                        </div>
-                      )}
-                    </>
-                  )}
-
-                  {typeDeclaration === "SYSTEME_VIDEO_SURVEILLANCE" && (
-                    <>
-                      <div className="col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Finalités du système</label>
-                        <textarea value={form.finalites} onChange={e => setForm(p => ({ ...p, finalites: e.target.value }))} rows={2} className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm" />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Adresse d'installation</label>
-                        <input value={form.adresseInstallation} onChange={e => setForm(p => ({ ...p, adresseInstallation: e.target.value }))} className="w-full h-10 px-3 rounded-lg border border-gray-300 text-sm" />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Emplacement caméras</label>
-                        <input value={form.emplacementCameras} onChange={e => setForm(p => ({ ...p, emplacementCameras: e.target.value }))} className="w-full h-10 px-3 rounded-lg border border-gray-300 text-sm" />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Nombre de caméras</label>
-                        <input type="number" value={form.nombreTotalCameras} onChange={e => setForm(p => ({ ...p, nombreTotalCameras: e.target.value }))} className="w-full h-10 px-3 rounded-lg border border-gray-300 text-sm" />
-                      </div>
-                    </>
-                  )}
+              <SectionTitle title="Communication & Destinataires" />
+              <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-2 flex flex-wrap gap-4">
+                  <CheckField label="Communication à d'autres organismes" name="communicationAutresOrganismes" checked={form.communicationAutresOrganismes} onChange={handleChange} />
+                  <CheckField label="Destinataire conforme CIL" name="destinataireConformeCil" checked={form.destinataireConformeCil} onChange={handleChange} />
+                  <CheckField label="Transfert vers pays étranger" name="transfertPaysEtranger" checked={form.transfertPaysEtranger} onChange={handleChange} />
                 </div>
+                {form.communicationAutresOrganismes && (
+                  <>
+                    <Field label="Nom du destinataire">
+                      <Input name="destinataireNom" value={form.destinataireNom} onChange={handleChange} />
+                    </Field>
+                    <Field label="Adresse du destinataire">
+                      <Input name="destinataireAdresse" value={form.destinataireAdresse} onChange={handleChange} />
+                    </Field>
+                    <Field label="Texte juridique communication">
+                      <Textarea name="texteJuridiqueCommunication" value={form.texteJuridiqueCommunication} onChange={handleChange} />
+                    </Field>
+                    <Field label="Finalité de la communication">
+                      <Input name="finaliteCommunication" value={form.finaliteCommunication} onChange={handleChange} />
+                    </Field>
+                  </>
+                )}
               </div>
 
-              <div className="flex justify-between pt-4 border-t border-gray-100">
-                <button onClick={() => setStep(2)} className="px-4 py-2 rounded-lg border border-gray-300 text-gray-600 text-sm">← Précédent</button>
-                <button onClick={handleSave} disabled={!canSave} className="px-6 py-2 rounded-lg bg-green-700 text-white text-sm font-semibold hover:bg-green-800 disabled:opacity-40">
-                  Créer la déclaration
-                </button>
+              <SectionTitle title="Mesures de Sécurité" />
+              <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-2">
+                  <Field label="Mesures de sécurité mises en place">
+                    <Textarea name="mesuresSecurite" value={form.mesuresSecurite} onChange={handleChange} placeholder="Chiffrement, contrôle d'accès..." rows={2} />
+                  </Field>
+                </div>
+                <CheckField label="Mesures de sensibilisation du personnel" name="mesuresSensibilisation" checked={form.mesuresSensibilisation} onChange={handleChange} />
+                <CheckField label="Politique d'accès aux bâtiments" name="politiqueAccesBatiments" checked={form.politiqueAccesBatiments} onChange={handleChange} />
+                <Field label="Catégories de personnes ayant accès">
+                  <Input name="categoriesPersonnesAcces" value={form.categoriesPersonnesAcces} onChange={handleChange} placeholder="Ex: Admins, RH..." />
+                </Field>
               </div>
             </div>
+          )}
+
+          {/* ── ÉTAPE 5 : Droits & Sous-traitance ── */}
+          {step === 5 && (
+            <div className="space-y-3">
+              <SectionTitle title="Droits des Personnes Concernées" />
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Moyens d'information sur les droits">
+                  <Textarea name="moyensInformationDroits" value={form.moyensInformationDroits} onChange={handleChange} placeholder="Affichage, email, site web..." />
+                </Field>
+                <Field label="Moyens d'exercice des droits">
+                  <Textarea name="moyensExerciceDroits" value={form.moyensExerciceDroits} onChange={handleChange} placeholder="Formulaire, courrier..." />
+                </Field>
+                <Field label="Coordonnées pour exercer les droits">
+                  <Input name="coordonneesExerciceDroits" value={form.coordonneesExerciceDroits} onChange={handleChange} placeholder="Email, adresse postale..." />
+                </Field>
+                <Field label="Délai de communication des droits">
+                  <Input name="delaiCommunicationDroits" value={form.delaiCommunicationDroits} onChange={handleChange} placeholder="Ex: 30 jours" />
+                </Field>
+              </div>
+
+              <SectionTitle title="Sous-traitance" />
+              <div className="space-y-3">
+                <div className="flex flex-wrap gap-4">
+                  <CheckField label="Recours à un sous-traitant" name="recoursSousTraitant" checked={form.recoursSousTraitant} onChange={handleChange} />
+                  {form.recoursSousTraitant && (
+                    <CheckField label="Contrat de confidentialité signé" name="contratConfidentialiteSousTraitant" checked={form.contratConfidentialiteSousTraitant} onChange={handleChange} />
+                  )}
+                </div>
+                {form.recoursSousTraitant && (
+                  <Field label="Rôles des sous-traitants">
+                    <Textarea name="rolesSousTraitants" value={form.rolesSousTraitants} onChange={handleChange} placeholder="Hébergement, maintenance..." />
+                  </Field>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* ── ÉTAPE 6 : Champs spécifiques au type ── */}
+          {step === 6 && (
+            <div className="space-y-3">
+
+              {/* ── NORMALE ── */}
+              {typeDeclaration === "NORMALE" && (
+                <>
+                  <SectionTitle title="Identification du Traitement" />
+                  <div className="grid grid-cols-2 gap-3">
+                    <Field label="Dénomination du traitement" required>
+                      <Input name="denominationTraitement" value={form.denominationTraitement} onChange={handleChange} />
+                    </Field>
+                    <Field label="Finalité du traitement" required>
+                      <Input name="finaliteTraitement" value={form.finaliteTraitement} onChange={handleChange} />
+                    </Field>
+                    <div className="col-span-2">
+                      <Field label="Texte juridique">
+                        <Textarea name="texteJuridique" value={form.texteJuridique} onChange={handleChange} placeholder="Base légale..." />
+                      </Field>
+                    </div>
+                    <Field label="Catégories de personnes concernées">
+                      <Input name="categoriesPersonnesConcernees" value={form.categoriesPersonnesConcernees} onChange={handleChange} placeholder="Employés, clients..." />
+                    </Field>
+                    <Field label="Nombre de personnes concernées">
+                      <Input type="number" name="nombrePersonnesConcernees" value={form.nombrePersonnesConcernees} onChange={handleChange} />
+                    </Field>
+                    <Field label="Type de traitement">
+                      <Input name="typeTraitement" value={form.typeTraitement} onChange={handleChange} placeholder="Automatisé, Manuel..." />
+                    </Field>
+                    <Field label="Caractéristiques techniques">
+                      <Input name="caracteristiquesTechniques" value={form.caracteristiquesTechniques} onChange={handleChange} />
+                    </Field>
+                    <div className="col-span-2">
+                      <Field label="Caractéristiques du système">
+                        <Textarea name="caracteristiquesSysteme" value={form.caracteristiquesSysteme} onChange={handleChange} />
+                      </Field>
+                    </div>
+                  </div>
+                  <SectionTitle title="Options supplémentaires" />
+                  <div className="flex flex-wrap gap-4">
+                    <CheckField label="Procédure manuelle décrite" name="descriptionProcedureManuelle" checked={form.descriptionProcedureManuelle} onChange={handleChange} />
+                    <CheckField label="Politique d'accès aux systèmes" name="politiqueAccesSystemes" checked={form.politiqueAccesSystemes} onChange={handleChange} />
+                    <CheckField label="Modalités de diffusion des résultats" name="modalitesDiffusionResultats" checked={form.modalitesDiffusionResultats} onChange={handleChange} />
+                    <CheckField label="Protocole de recherche" name="protocoleRecherche" checked={form.protocoleRecherche} onChange={handleChange} />
+                    <CheckField label="Connexion à d'autres fichiers" name="descriptionConnexionFichiers" checked={form.descriptionConnexionFichiers} onChange={handleChange} />
+                  </div>
+                  {form.descriptionConnexionFichiers && (
+                    <div className="grid grid-cols-2 gap-3 mt-2">
+                      <Field label="Motifs d'interconnexion">
+                        <Input name="motifsInterconnexion" value={form.motifsInterconnexion} onChange={handleChange} />
+                      </Field>
+                      <Field label="Identité des fichiers interconnectés">
+                        <Input name="identiteFichiersInterconnexion" value={form.identiteFichiersInterconnexion} onChange={handleChange} />
+                      </Field>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* ── AUTORISATION ── */}
+              {typeDeclaration === "AUTORISATION" && (
+                <>
+                  <SectionTitle title="Identification du Traitement" />
+                  <div className="grid grid-cols-2 gap-3">
+                    <Field label="Dénomination du traitement" required>
+                      <Input name="denominationTraitement" value={form.denominationTraitement} onChange={handleChange} />
+                    </Field>
+                    <Field label="Finalité du traitement" required>
+                      <Input name="finaliteTraitement" value={form.finaliteTraitement} onChange={handleChange} />
+                    </Field>
+                    <div className="col-span-2">
+                      <Field label="Texte juridique">
+                        <Textarea name="texteJuridique" value={form.texteJuridique} onChange={handleChange} />
+                      </Field>
+                    </div>
+                    <Field label="Catégories de personnes concernées">
+                      <Input name="categoriesPersonnesConcernees" value={form.categoriesPersonnesConcernees} onChange={handleChange} />
+                    </Field>
+                    <Field label="Nombre de personnes concernées">
+                      <Input type="number" name="nombrePersonnesConcernees" value={form.nombrePersonnesConcernees} onChange={handleChange} />
+                    </Field>
+                    <Field label="Type de traitement">
+                      <Input name="typeTraitement" value={form.typeTraitement} onChange={handleChange} />
+                    </Field>
+                    <Field label="Caractéristiques techniques">
+                      <Input name="caracteristiquesTechniques" value={form.caracteristiquesTechniques} onChange={handleChange} />
+                    </Field>
+                    <div className="col-span-2">
+                      <Field label="Fonctionnalités du système">
+                        <Textarea name="fonctionnalitesSysteme" value={form.fonctionnalitesSysteme} onChange={handleChange} />
+                      </Field>
+                    </div>
+                    <Field label="Certification sécurité">
+                      <Input name="certificationSecurite" value={form.certificationSecurite} onChange={handleChange} placeholder="ISO 27001..." />
+                    </Field>
+                    <Field label="Description du fichier">
+                      <Input name="descriptionFichier" value={form.descriptionFichier} onChange={handleChange} />
+                    </Field>
+                    <Field label="Mode de transfert">
+                      <Input name="modeTransfert" value={form.modeTransfert} onChange={handleChange} placeholder="FTP, API, Email..." />
+                    </Field>
+                    <Field label="Destinataire (Nom/Prénom)">
+                      <Input name="destinataireNomPrenom" value={form.destinataireNomPrenom} onChange={handleChange} />
+                    </Field>
+                    <Field label="Destinataire (Entreprise)">
+                      <Input name="destinataireCie" value={form.destinataireCie} onChange={handleChange} />
+                    </Field>
+                    <Field label="Origine des données">
+                      <Input name="origineDonnees" value={form.origineDonnees} onChange={handleChange} />
+                    </Field>
+                    <Field label="Durée conservation données santé">
+                      <Input name="dureeConservationSante" value={form.dureeConservationSante} onChange={handleChange} />
+                    </Field>
+                    <Field label="Fondement juridique">
+                      <Input name="fondementJuridique" value={form.fondementJuridique} onChange={handleChange} />
+                    </Field>
+                    <Field label="Méthode de recueil du consentement">
+                      <Input name="methodeRecueilConsentement" value={form.methodeRecueilConsentement} onChange={handleChange} />
+                    </Field>
+                    <Field label="Mesures sécurité transfert">
+                      <Input name="mesuresSecuriteTransfert" value={form.mesuresSecuriteTransfert} onChange={handleChange} />
+                    </Field>
+                    <Field label="Catégories données interconnexion">
+                      <Input name="categoriesDonneesInterconnexion" value={form.categoriesDonneesInterconnexion} onChange={handleChange} />
+                    </Field>
+                    <Field label="Durée interconnexion">
+                      <Input name="dureeInterconnexion" value={form.dureeInterconnexion} onChange={handleChange} />
+                    </Field>
+                    <Field label="Identité fichiers interconnectés">
+                      <Input name="identiteFichiersInterconnexion" value={form.identiteFichiersInterconnexion} onChange={handleChange} />
+                    </Field>
+                    <Field label="Catégories données transférées">
+                      <Input name="categoriesDonneesTransfert" value={form.categoriesDonneesTransfert} onChange={handleChange} />
+                    </Field>
+                    <Field label="Nombre personnes transférées">
+                      <Input type="number" name="nombrePersonnesTransfert" value={form.nombrePersonnesTransfert} onChange={handleChange} />
+                    </Field>
+                    <Field label="Description fichier transfert">
+                      <Input name="descriptionFichierTransfert" value={form.descriptionFichierTransfert} onChange={handleChange} />
+                    </Field>
+                    <div className="col-span-2">
+                      <Field label="Description sensibilisation">
+                        <Textarea name="descriptionSensibilisation" value={form.descriptionSensibilisation} onChange={handleChange} />
+                      </Field>
+                    </div>
+                    <Field label="Modalités diffusion résultats">
+                      <Input name="modalitesDiffusionResultatsAuto" value={form.modalitesDiffusionResultatsAuto} onChange={handleChange} />
+                    </Field>
+                  </div>
+                  <SectionTitle title="Options" />
+                  <div className="flex flex-wrap gap-4">
+                    <CheckField label="Traitement données de santé" name="traitementDonneesSante" checked={form.traitementDonneesSante} onChange={handleChange} />
+                    <CheckField label="Professionnel de santé" name="professionalSante" checked={form.professionalSante} onChange={handleChange} />
+                    <CheckField label="Connexion à d'autres fichiers" name="connexionFichiers" checked={form.connexionFichiers} onChange={handleChange} />
+                    <CheckField label="Pays destination protège les données" name="paysDestinationProtectionDonnees" checked={form.paysDestinationProtectionDonnees} onChange={handleChange} />
+                    <CheckField label="Consentement des personnes concernées" name="consentementPersonnesConcernees" checked={form.consentementPersonnesConcernees} onChange={handleChange} />
+                    <CheckField label="Politique d'accès aux systèmes" name="politiqueAccesSystemes" checked={form.politiqueAccesSystemes} onChange={handleChange} />
+                  </div>
+                </>
+              )}
+
+              {/* ── COLLECTE SITE INTERNET ── */}
+              {typeDeclaration === "COLLECTE_SITE_INTERNET" && (
+                <>
+                  <SectionTitle title="Identification du Traitement" />
+                  <div className="grid grid-cols-2 gap-3">
+                    <Field label="Dénomination du traitement" required>
+                      <Input name="denominationTraitement" value={form.denominationTraitement} onChange={handleChange} />
+                    </Field>
+                    <Field label="Finalité du traitement" required>
+                      <Input name="finaliteTraitement" value={form.finaliteTraitement} onChange={handleChange} />
+                    </Field>
+                    <div className="col-span-2">
+                      <Field label="Texte juridique">
+                        <Textarea name="texteJuridique" value={form.texteJuridique} onChange={handleChange} />
+                      </Field>
+                    </div>
+                    <Field label="Catégories de personnes concernées">
+                      <Input name="categoriesPersonnesConcernees" value={form.categoriesPersonnesConcernees} onChange={handleChange} />
+                    </Field>
+                    <Field label="Type de traitement">
+                      <Input name="typeTraitement" value={form.typeTraitement} onChange={handleChange} />
+                    </Field>
+                    <Field label="Caractéristiques techniques">
+                      <Input name="caracteristiquesTechniques" value={form.caracteristiquesTechniques} onChange={handleChange} />
+                    </Field>
+                    <Field label="Caractéristiques principales de la structure">
+                      <Input name="caracteristiquesMainStructure" value={form.caracteristiquesMainStructure} onChange={handleChange} />
+                    </Field>
+                    <Field label="Téléchargement / Traitement">
+                      <Input name="telechargementTraitement" value={form.telechargementTraitement} onChange={handleChange} />
+                    </Field>
+                  </div>
+                  <SectionTitle title="Données de Connexion & Cookies" />
+                  <div className="space-y-3">
+                    <div className="flex gap-6">
+                      <CheckField label="Collecte de données de connexion" name="donneesConnexion" checked={form.donneesConnexion} onChange={handleChange} />
+                      <CheckField label="Utilisation de cookies" name="cookies" checked={form.cookies} onChange={handleChange} />
+                    </div>
+                    {form.donneesConnexion && (
+                      <Field label="Description des données de connexion">
+                        <Textarea name="descriptionDonneesConnexion" value={form.descriptionDonneesConnexion} onChange={handleChange} placeholder="IP, logs, sessions..." />
+                      </Field>
+                    )}
+                    {form.cookies && (
+                      <div className="grid grid-cols-2 gap-3">
+                        <Field label="Description des cookies">
+                          <Input name="descriptionCookies" value={form.descriptionCookies} onChange={handleChange} placeholder="Analytiques, publicitaires..." />
+                        </Field>
+                        <Field label="Durée de conservation des cookies">
+                          <Input name="dureeConservationCookies" value={form.dureeConservationCookies} onChange={handleChange} placeholder="Ex: 13 mois" />
+                        </Field>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+
+              {/* ── VIDÉOSURVEILLANCE ── */}
+              {typeDeclaration === "SYSTEME_VIDEO_SURVEILLANCE" && (
+                <>
+                  <SectionTitle title="Identification & Installation" />
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="col-span-2">
+                      <Field label="Finalités du système" required>
+                        <Textarea name="finalites" value={form.finalites} onChange={handleChange} placeholder="Sécurité des locaux, contrôle d'accès..." />
+                      </Field>
+                    </div>
+                    <Field label="Adresse exacte d'installation" required>
+                      <Input name="adresseInstallation" value={form.adresseInstallation} onChange={handleChange} placeholder="Rue, ville..." />
+                    </Field>
+                    <Field label="Nature de l'environnement">
+                      <Input name="natureEnvironnement" value={form.natureEnvironnement} onChange={handleChange} placeholder="Intérieur, extérieur, mixte..." />
+                    </Field>
+                    <Field label="Emplacement des caméras">
+                      <Input name="emplacementCameras" value={form.emplacementCameras} onChange={handleChange} placeholder="Entrées, couloirs, bureaux..." />
+                    </Field>
+                    <Field label="Nombre total de caméras" required>
+                      <Input type="number" name="nombreTotalCameras" value={form.nombreTotalCameras} onChange={handleChange} />
+                    </Field>
+                    <Field label="Modèle du dispositif">
+                      <Input name="modeleDispositif" value={form.modeleDispositif} onChange={handleChange} placeholder="Marque, modèle..." />
+                    </Field>
+                    <Field label="Mode de transfert">
+                      <Input name="modeTransfertVideo" value={form.modeTransfertVideo} onChange={handleChange} placeholder="IP, analogique..." />
+                    </Field>
+                    <Field label="Type d'enregistrement">
+                      <Input name="typeEnregistrement" value={form.typeEnregistrement} onChange={handleChange} placeholder="Continu, détection mouvement..." />
+                    </Field>
+                    <Field label="Nature de l'enregistrement">
+                      <Input name="natureEnregistrement" value={form.natureEnregistrement} onChange={handleChange} placeholder="Vidéo, audio+vidéo..." />
+                    </Field>
+                    <Field label="Liaison réseau">
+                      <Input name="liaisonReseau" value={form.liaisonReseau} onChange={handleChange} placeholder="LAN, Internet, VPN..." />
+                    </Field>
+                    <Field label="Accès physique aux enregistrements">
+                      <Input name="accesPhysique" value={form.accesPhysique} onChange={handleChange} placeholder="Salle sécurisée, badge..." />
+                    </Field>
+                    <Field label="Accès logique aux enregistrements">
+                      <Input name="accesLogique" value={form.accesLogique} onChange={handleChange} placeholder="Mot de passe, rôles..." />
+                    </Field>
+                    <Field label="Localisation des pictogrammes">
+                      <Input name="localisationPictogrammes" value={form.localisationPictogrammes} onChange={handleChange} placeholder="Entrées, couloirs..." />
+                    </Field>
+                    <div className="col-span-2">
+                      <Field label="Fonctionnalités de traitement">
+                        <Textarea name="fonctionnalitesTraitement" value={form.fonctionnalitesTraitement} onChange={handleChange} placeholder="Reconnaissance faciale, détection..." />
+                      </Field>
+                    </div>
+                    {form.utilisationSystemesExperts && (
+                      <div className="col-span-2">
+                        <Field label="Description des systèmes experts">
+                          <Textarea name="descriptionSystemesExperts" value={form.descriptionSystemesExperts} onChange={handleChange} />
+                        </Field>
+                      </div>
+                    )}
+                  </div>
+                  <SectionTitle title="Options" />
+                  <div className="flex flex-wrap gap-4">
+                    <CheckField label="Visualisation en temps réel" name="visualisationTempsReel" checked={form.visualisationTempsReel} onChange={handleChange} />
+                    <CheckField label="Enregistrement du son" name="sonDeSon" checked={form.sonDeSon} onChange={handleChange} />
+                    <CheckField label="Utilisation de systèmes experts (IA)" name="utilisationSystemesExperts" checked={form.utilisationSystemesExperts} onChange={handleChange} />
+                    <CheckField label="Accès aux images à distance" name="accesImagesDistance" checked={form.accesImagesDistance} onChange={handleChange} />
+                    <CheckField label="Mesures de suppression des données" name="mesuresSuppression" checked={form.mesuresSuppression} onChange={handleChange} />
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Footer navigation */}
+        <div className="px-6 py-4 border-t bg-gray-50 flex justify-between items-center flex-shrink-0 rounded-b-2xl">
+          <button
+            onClick={() => step === 1 ? onClose() : setStep(s => s - 1)}
+            className="px-5 py-2 border border-gray-300 rounded-lg text-sm font-semibold text-gray-600 hover:bg-gray-100">
+            {step === 1 ? "Annuler" : "← Précédent"}
+          </button>
+          <span className="text-xs text-gray-400">{step} / {totalSteps}</span>
+          {step < totalSteps ? (
+            <button
+              onClick={() => setStep(s => s + 1)}
+              disabled={(step === 1 && !selectedTraitementId) || (step === 2 && !typeDeclaration)}
+              className="px-6 py-2 bg-green-700 text-white rounded-lg text-sm font-bold hover:bg-green-800 disabled:opacity-40">
+              Suivant →
+            </button>
+          ) : (
+            <button onClick={handleSave} className="px-6 py-2 bg-green-800 text-white rounded-lg text-sm font-bold hover:bg-green-900 shadow-md">
+              ✅ Valider la Déclaration
+            </button>
           )}
         </div>
       </div>
@@ -419,18 +775,77 @@ function ModalCreerDeclaration({ traitements, onClose, onSave }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// MODULE 6 : Composant principal DpoDashboard
-// États : sessions (API), traitements (mock/API), déclarations (mock),
+// MODULE 6 : Modal Détail Traitement
+// ═══════════════════════════════════════════════════════════════════
+function ModalDetailTraitement({ traitement, onClose }) {
+  if (!traitement) return null;
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
+        <div className="bg-green-800 text-white px-6 py-4 rounded-t-2xl flex justify-between items-center">
+          <h3 className="font-bold text-lg">Détail du traitement #{traitement.idTraitement}</h3>
+          <button onClick={onClose} className="text-green-200 hover:text-white text-2xl leading-none">✕</button>
+        </div>
+        <div className="p-6 space-y-3 text-sm">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-green-50 rounded-lg p-3"><p className="text-xs text-green-600 font-semibold">Département</p><p className="font-medium">{traitement.department || "—"}</p></div>
+            <div className="bg-green-50 rounded-lg p-3"><p className="text-xs text-green-600 font-semibold">Statut</p><span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${traitement.envoyeAuDpo ? "bg-blue-100 text-blue-700" : "bg-yellow-100 text-yellow-700"}`}>{traitement.envoyeAuDpo ? "Envoyé DPO" : traitement.statut === "VALIDÉ" ? "Validé" : "En cours"}</span></div>
+            <div className="bg-green-50 rounded-lg p-3 col-span-2"><p className="text-xs text-green-600 font-semibold">Description</p><p>{traitement.description || "—"}</p></div>
+            <div className="bg-green-50 rounded-lg p-3 col-span-2"><p className="text-xs text-green-600 font-semibold">Texte / Finalité</p><p>{traitement.texte || "—"}</p></div>
+            <div className="bg-green-50 rounded-lg p-3"><p className="text-xs text-green-600 font-semibold">Conservation</p><p>{traitement.dureeConservation ? `${traitement.dureeConservation} mois` : "—"}</p></div>
+            <div className="bg-green-50 rounded-lg p-3"><p className="text-xs text-green-600 font-semibold">Date création</p><p>{formatDate(traitement.dateCreation)}</p></div>
+            <div className="bg-green-50 rounded-lg p-3"><p className="text-xs text-green-600 font-semibold">Date fin</p><p>{formatDate(traitement.dateFin)}</p></div>
+            <div className="bg-green-50 rounded-lg p-3"><p className="text-xs text-green-600 font-semibold">Nb données</p><p>{traitement.nombreDonnee ?? 0}</p></div>
+            <div className="bg-green-50 rounded-lg p-3"><p className="text-xs text-green-600 font-semibold">Session</p><p>#{traitement.sessionCollecteId || "Sans session"}</p></div>
+          </div>
+          <button onClick={onClose} className="w-full mt-2 px-4 py-2 rounded-lg border border-gray-300 text-gray-600 text-sm hover:bg-gray-50">Fermer</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// MODULE 7 : Modal Détail Déclaration
+// ═══════════════════════════════════════════════════════════════════
+function ModalDetailDeclaration({ declaration, onClose }) {
+  if (!declaration) return null;
+  const Row = ({ label, value }) => (
+    <div className="bg-gray-50 rounded-lg p-3"><p className="text-xs text-gray-500 font-semibold">{label}</p><p className="font-medium text-sm">{value || "—"}</p></div>
+  );
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        <div className="bg-green-800 text-white px-6 py-4 rounded-t-2xl flex justify-between items-center sticky top-0 z-10">
+          <h3 className="font-bold text-lg">Déclaration #{declaration.idDeclaration}</h3>
+          <button onClick={onClose} className="text-green-200 hover:text-white text-2xl leading-none">✕</button>
+        </div>
+        <div className="p-6 space-y-3 text-sm">
+          <div className="grid grid-cols-2 gap-3">
+            <Row label="Type" value={declaration.typeDeclaration} />
+            <Row label="Statut" value={declaration.statut} />
+            <div className="col-span-2"><Row label="Traitement" value={declaration.traitementDescription || declaration.denominationTraitement} /></div>
+            <Row label="Date de soumission" value={formatDateShort(declaration.dateSoumission)} />
+            <Row label="Secteur" value={declaration.secteur} />
+            <Row label="Responsable" value={declaration.responsableDeclaration} />
+            <Row label="Contact confidentialité" value={declaration.contactConfidentialite} />
+            <Row label="Conservation" value={declaration.dureeConservation} />
+            <Row label="Lieu de stockage" value={declaration.lieuStockage} />
+          </div>
+          <button onClick={onClose} className="w-full mt-2 px-4 py-2 rounded-lg border border-gray-300 text-gray-600 text-sm hover:bg-gray-50">Fermer</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// MODULE 8 : Composant principal DpoDashboard
+// États : sessions (API), traitements (API), déclarations (API),
 // demandes (mock). Gère la création de sessions (POST /sessions) et
 // le changement de statut (PATCH /sessions/{id}/statut).
 // ═══════════════════════════════════════════════════════════════════
 function DpoDashboard() {
-  // Forcer le rôle DPO pour l'affichage des onglets dans le DashboardLayout
-  if (!localStorage.getItem("role") || localStorage.getItem("role") !== "ROLE_DPO") {
-    localStorage.setItem("role", "ROLE_DPO");
-    localStorage.setItem("email", "dpo@sofitex.bf");
-  }
-
   const [activeTab, setActiveTab] = useState("dashboard");
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -441,16 +856,28 @@ function DpoDashboard() {
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    api.get("/traitements")
+      .then((res) => {
+        if (res.data) setAllTraitements(res.data);
+      })
+      .catch(() => {});
+  }, []);
+
   const [traitements, setTraitements] = useState([]);
-  const [allTraitements, setAllTraitements] = useState(mockTraitements);
+  const [allTraitements, setAllTraitements] = useState([]);
   const [selectedSessionId, setSelectedSessionId] = useState("");
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ dateDebut: "", dateFin: "", typeCollecte: "EN_LIGNE", lieu: "", description: "" });
+  const [form, setForm] = useState({ nomSession: "", dateDebut: "", dateFin: "", typeCollecte: "EN_LIGNE", lieu: "", description: "" });
   const [toast, setToast] = useState(null);
-  const [declarations, setDeclarations] = useState(mockDeclarations);
+  const [declarations, setDeclarations] = useState([]);
   const [demandes, setDemandes] = useState(mockDemandes);
   const [notificationsCount, setNotificationsCount] = useState(mockDemandes.filter(d => d.statut === "EN_ATTENTE").length);
   const [showCreerDeclaration, setShowCreerDeclaration] = useState(false);
+  const [detailTraitement, setDetailTraitement] = useState(null);
+  const [detailDeclaration, setDetailDeclaration] = useState(null);
+  const [declarationPreFill, setDeclarationPreFill] = useState(null);
   const [traitementFilterMode, setTraitementFilterMode] = useState("tous");
 
   const showToast = (msg, type = "success") => {
@@ -461,6 +888,7 @@ function DpoDashboard() {
   const handleCreateSession = (e) => {
     e.preventDefault();
     const payload = {
+      nomSession: form.nomSession,
       dateDebut: toLocalDateTime(form.dateDebut),
       dateFin: toLocalDateTime(form.dateFin),
       typeCollecte: form.typeCollecte,
@@ -471,7 +899,7 @@ function DpoDashboard() {
       .then((res) => {
         setSessions((prev) => [...prev, res.data]);
         setShowForm(false);
-        setForm({ dateDebut: "", dateFin: "", typeCollecte: "EN_LIGNE", lieu: "", description: "" });
+        setForm({ nomSession: "", dateDebut: "", dateFin: "", typeCollecte: "EN_LIGNE", lieu: "", description: "" });
         showToast("Session créée avec succès");
       })
       .catch(() => showToast("Erreur lors de la création", "error"));
@@ -490,16 +918,70 @@ function DpoDashboard() {
       });
   };
 
+  const INTEGER_FIELDS = [
+    "nombrePersonnesConcernees", "nombrePersonnesTransfert", "nombreTotalCameras"
+  ];
+
   const handleCreateDeclaration = (data) => {
-    const newDecl = {
-      idDeclaration: declarations.length + 1,
-      typeDeclaration: data.typeDeclaration,
-      denominationTraitement: data.denominationTraitement || "Nouvelle déclaration",
-      dateSoumission: new Date().toISOString().split("T")[0],
-      statut: "EN_ATTENTE",
+    const { traitementId, typeDeclaration, ...formData } = data;
+    const dateSoumission = new Date().toISOString().split("T")[0];
+
+    const sanitized = { ...formData };
+    for (const key of INTEGER_FIELDS) {
+      if (sanitized[key] === "" || sanitized[key] === undefined || sanitized[key] === null) {
+        sanitized[key] = null;
+      } else {
+        const n = parseInt(sanitized[key], 10);
+        sanitized[key] = isNaN(n) ? null : n;
+      }
+    }
+
+    const payload = {
+      ...sanitized,
+      dateSoumission,
+      traitementId: parseInt(traitementId),
+      responsableDeclaration: formData.nomPrenomResponsable || "",
     };
-    setDeclarations((prev) => [...prev, newDecl]);
-    showToast("Déclaration créée avec succès");
+
+    const endpointMap = {
+      NORMALE: "/declarations/normale",
+      AUTORISATION: "/declarations/autorisation",
+      COLLECTE_SITE_INTERNET: "/declarations/collecte-site",
+      SYSTEME_VIDEO_SURVEILLANCE: "/declarations/video-surveillance",
+    };
+
+    const endpoint = endpointMap[typeDeclaration];
+
+    const addLocal = () => {
+      const newDecl = {
+        idDeclaration: Date.now(),
+        typeDeclaration,
+        traitementDescription: formData.denominationTraitement || "Nouvelle déclaration",
+        denominationTraitement: formData.denominationTraitement,
+        dateSoumission,
+        statut: "EN_ATTENTE",
+        secteur: formData.secteur,
+        responsableDeclaration: formData.nomPrenomResponsable,
+        dureeConservation: formData.dureeConservation,
+        lieuStockage: formData.lieuStockage,
+      };
+      setDeclarations((prev) => [...prev, newDecl]);
+      showToast("✅ Déclaration créée !");
+    };
+
+    if (endpoint) {
+      api.post(endpoint, payload)
+        .then((res) => {
+          setDeclarations((prev) => [res.data, ...prev]);
+          showToast("✅ Déclaration soumise avec succès !");
+        })
+        .catch((err) => {
+          console.error("❌ POST déclaration échoué:", err.response?.status, err.response?.data || err.message);
+          addLocal();
+        });
+    } else {
+      addLocal();
+    }
   };
 
   const stats = {
@@ -553,6 +1035,10 @@ function DpoDashboard() {
             <form onSubmit={handleCreateSession} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 space-y-4">
               <h3 className="font-bold text-gray-800">Créer une session</h3>
               <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Nom de la session <span className="text-red-500">*</span></label>
+                  <input type="text" value={form.nomSession} onChange={(e) => setForm((p) => ({ ...p, nomSession: e.target.value }))} placeholder="Ex: Collecte des données RH 2026" required className="w-full h-10 px-3 rounded-lg border border-gray-300 text-sm" />
+                </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Date début</label>
                   <input type="datetime-local" value={form.dateDebut} onChange={(e) => setForm((p) => ({ ...p, dateDebut: e.target.value }))} required className="w-full h-10 px-3 rounded-lg border border-gray-300 text-sm" />
@@ -691,8 +1177,8 @@ function DpoDashboard() {
                       <td className="px-5 py-4 text-xs text-gray-500">{formatDate(t.dateCreation)}</td>
                       <td className="px-5 py-4">
                         <div className="flex items-center justify-center gap-2">
-                          <button onClick={() => { setAllTraitements(current => current); showToast(`Traitement: ${t.description}`, "success"); }} className="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-xs font-medium hover:bg-blue-200">Voir</button>
-                          <button onClick={() => { setActiveTab("declarations"); setShowCreerDeclaration(true); }} className="px-3 py-1 bg-purple-100 text-purple-700 rounded-lg text-xs font-medium hover:bg-purple-200">Déclaration</button>
+                          <button onClick={() => setDetailTraitement(t)} className="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-xs font-medium hover:bg-blue-200">Voir</button>
+                          <button onClick={() => { setDeclarationPreFill(t); setActiveTab("declarations"); setShowCreerDeclaration(true); }} className="px-3 py-1 bg-purple-100 text-purple-700 rounded-lg text-xs font-medium hover:bg-purple-200">Déclaration</button>
                         </div>
                       </td>
                     </tr>
@@ -723,6 +1209,7 @@ function DpoDashboard() {
                     <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Dénomination</th>
                     <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Date</th>
                     <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Statut</th>
+                    <th className="text-center px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
@@ -732,9 +1219,12 @@ function DpoDashboard() {
                       <td className="px-5 py-4">
                         <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">{d.typeDeclaration || "N/A"}</span>
                       </td>
-                      <td className="px-5 py-4 font-medium text-gray-800">{d.denominationTraitement || "—"}</td>
+                      <td className="px-5 py-4 font-medium text-gray-800">{d.traitementDescription || d.denominationTraitement || "—"}</td>
                       <td className="px-5 py-4 text-xs text-gray-500">{formatDateShort(d.dateSoumission)}</td>
                       <td className="px-5 py-4">{declarationStatutBadge(d.statut)}</td>
+                      <td className="px-5 py-4 text-center">
+                        <button onClick={() => setDetailDeclaration(d)} className="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-xs font-medium hover:bg-blue-200">Voir</button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -791,11 +1281,18 @@ function DpoDashboard() {
         </div>
       )}
 
+      {detailTraitement && (
+        <ModalDetailTraitement traitement={detailTraitement} onClose={() => setDetailTraitement(null)} />
+      )}
+      {detailDeclaration && (
+        <ModalDetailDeclaration declaration={detailDeclaration} onClose={() => setDetailDeclaration(null)} />
+      )}
       {showCreerDeclaration && (
         <ModalCreerDeclaration
           traitements={allTraitements}
-          onClose={() => setShowCreerDeclaration(false)}
+          onClose={() => { setDeclarationPreFill(null); setShowCreerDeclaration(false); }}
           onSave={handleCreateDeclaration}
+          preFillTraitement={declarationPreFill}
         />
       )}
 
