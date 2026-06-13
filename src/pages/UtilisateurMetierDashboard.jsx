@@ -193,7 +193,10 @@ function ModalDemandeUsager({ demande, onClose, onTraiter }) {
 // MODULE 7 : Modal Détail Traitement
 // Affiche toutes les infos d'un traitement et permet de l'envoyer au DPO
 // ═══════════════════════════════════════════════════════════════════
-function ModalDetailTraitement({ traitement, onClose, onEnvoyer }) {
+function ModalDetailTraitement({ traitement, onClose, onEnvoyer, dpos }) {
+  const [dpoSelection, setDpoSelection] = useState("");
+  const aUneSession = !!traitement.sessionCollecteId;
+  const dpoRequis = !aUneSession && dpos && dpos.length > 0;
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
@@ -212,12 +215,44 @@ function ModalDetailTraitement({ traitement, onClose, onEnvoyer }) {
             <div className="bg-green-50 rounded-lg p-3"><p className="text-xs text-green-600 font-semibold">Date création</p><p>{formatDate(traitement.dateCreation)}</p></div>
             <div className="bg-green-50 rounded-lg p-3"><p className="text-xs text-green-600 font-semibold">Date fin</p><p>{formatDate(traitement.dateFin)}</p></div>
             <div className="bg-green-50 rounded-lg p-3"><p className="text-xs text-green-600 font-semibold">Nb données</p><p>{traitement.nombreDonnee}</p></div>
-            <div className="bg-green-50 rounded-lg p-3"><p className="text-xs text-green-600 font-semibold">Session ID</p><p>#{traitement.sessionCollecteId || "—"}</p></div>
+            <div className="bg-green-50 rounded-lg p-3"><p className="text-xs text-green-600 font-semibold">Session</p><p>#{traitement.sessionCollecteId || "Aucune"}</p></div>
           </div>
+          {dpoRequis && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-3">
+              <label className="block text-sm font-semibold text-yellow-800 mb-1">
+                Sélectionnez un DPO <span className="text-red-500">*</span>
+              </label>
+              <p className="text-xs text-yellow-600 mb-2">
+                Ce traitement n'est lié à aucune session. Veuillez choisir un DPO destinataire.
+              </p>
+              <select value={dpoSelection} onChange={e => setDpoSelection(e.target.value)} className="w-full border border-yellow-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
+                <option value="">-- Sélectionner un DPO --</option>
+                {dpos.map(d => (
+                  <option key={d.dpoId} value={d.dpoId}>{d.dpoNomComplet}</option>
+                ))}
+              </select>
+            </div>
+          )}
+          {!aUneSession && (!dpos || dpos.length === 0) && (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-3">
+              <p className="text-sm text-red-700">
+                Aucun DPO disponible. Ce traitement n'a pas de session, créez d'abord une session de collecte.
+              </p>
+            </div>
+          )}
           <div className="flex gap-3 justify-end pt-2">
             <button onClick={onClose} className="px-4 py-2 rounded-lg border border-gray-300 text-gray-600 text-sm hover:bg-gray-50">Fermer</button>
             {!traitement.envoyeAuDpo && (
-              <button onClick={() => { onEnvoyer(traitement.idTraitement); onClose(); }} className="px-4 py-2 rounded-lg bg-green-700 text-white text-sm font-semibold hover:bg-green-800">
+              <button
+                onClick={() => {
+                  const dpoId = dpoRequis ? Number(dpoSelection) : undefined;
+                  if (dpoRequis && !dpoSelection) return;
+                  onEnvoyer(traitement.idTraitement, dpoId);
+                  onClose();
+                }}
+                disabled={dpoRequis && !dpoSelection}
+                className="px-4 py-2 rounded-lg bg-green-700 text-white text-sm font-semibold hover:bg-green-800 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
                 <Icon name="send" className="w-4 h-4 mr-1.5" /> Envoyer au DPO
               </button>
             )}
@@ -602,6 +637,9 @@ function UtilisateurMetierDashboard() {
   }, [previousSessionCount]);
 
   const handleCreer = (payload) => {
+    const dateFin = payload.dateFin
+      ? (payload.dateFin.includes("T") ? payload.dateFin : payload.dateFin + "T00:00:00")
+      : null;
     const traitementData = {
       nom: payload.nom || payload.description || "",
       department: payload.secteur || payload.department || "",
@@ -609,7 +647,7 @@ function UtilisateurMetierDashboard() {
       texte: payload.finalite || payload.texte || "",
       certificationSecurite: payload.certificationSecurite || "",
       dureeConservation: payload.duree_conservation || 0,
-      dateFin: payload.dateFin || null,
+      dateFin,
       utilisateurMetierId: utilisateurMetierId,
       sessionCollecteId: payload.sessionCollecteId || null,
       secteur: payload.secteur || "",
@@ -619,20 +657,22 @@ function UtilisateurMetierDashboard() {
       transfertEtranger: payload.transfert_etranger || false,
       sousTraitance: payload.sous_traitance || false,
       communicationTiers: payload.communication_tiers || false,
-      nomRaisonSociale: payload.nom_raisonSociale || "",
-      rccm: payload.RCCM || "",
-      secteurActivite: payload.secteur_activite || "",
-      adresse: payload.adresse || "",
-      boitePostale: payload.boitePostale || "",
-      ville: payload.ville || "",
-      telephone: payload.telephone || "",
-      adresseEmail: payload.adresseEmail || "",
-      activitePrincipale: payload.activite_principale || "",
+      nomRaisonSociale: payload.responsable?.nom_raisonSociale || payload.nom_raisonSociale || "",
+      rccm: payload.responsable?.RCCM || payload.RCCM || "",
+      secteurActivite: payload.responsable?.secteur_activite || payload.secteur_activite || "",
+      adresse: payload.responsable?.adresse || payload.adresse || "",
+      boitePostale: payload.responsable?.boitePostale || payload.boitePostale || "",
+      ville: payload.responsable?.ville || payload.ville || "",
+      telephone: payload.responsable?.telephone || payload.telephone || "",
+      adresseEmail: payload.responsable?.adresseEmail || payload.adresseEmail || "",
+      activitePrincipale: payload.responsable?.activite_principale || payload.activite_principale || "",
     };
     const declarationData = {
       denominationTraitement: payload.nom || payload.description || "",
       finaliteTraitement: payload.finalite || "",
       typeTraitement: payload.type_traitement || "",
+      categoriesPersonnesConcernees: payload.categorie_personnes || "",
+      texteJuridique: payload.texte_juridique || "",
     };
     const formData = new FormData();
     formData.append("traitement", new Blob([JSON.stringify(traitementData)], { type: "application/json" }));
@@ -643,7 +683,8 @@ function UtilisateurMetierDashboard() {
         setShowCreer(false);
         showToast("Traitement créé avec succès !");
       })
-      .catch(() => {
+      .catch((err) => {
+        console.error("POST /traitements/normale failed:", err.response?.status, err.response?.data, err.message);
         const nouveau = {
           idTraitement: Date.now(),
           department: payload.secteur || payload.department || "",
@@ -666,11 +707,27 @@ function UtilisateurMetierDashboard() {
       });
   };
 
-  const handleEnvoyer = (id) => {
+  const dposDisponibles = sessions.reduce((acc, s) => {
+    if (s.dpoId && !acc.find(d => d.dpoId === s.dpoId)) {
+      acc.push({ dpoId: s.dpoId, dpoNomComplet: s.dpoNomComplet || `DPO #${s.dpoId}` });
+    }
+    return acc;
+  }, []);
+
+  const handleEnvoyer = (id, dpoIdOverride) => {
     const t = traitements.find(t => t.idTraitement === id);
-    const dpoId = t?.sessionCollecteId
-      ? sessions.find(s => s.idSession === t.sessionCollecteId)?.dpoId
-      : null;
+    const dpoId = dpoIdOverride
+      ?? (t?.sessionCollecteId
+        ? sessions.find(s => s.idSession === t.sessionCollecteId)?.dpoId
+        : null);
+    if (!dpoId && !t?.sessionCollecteId) {
+      showToast("Ce traitement n'a pas de session. Ouvrez le détail pour sélectionner un DPO.", "error");
+      return;
+    }
+    if (!dpoId) {
+      showToast("Aucun DPO trouvé pour ce traitement.", "error");
+      return;
+    }
     api.patch(`/traitements/${id}/envoyer-dpo`, null, { params: { dpoId } })
       .then((res) => {
         setTraitements(prev => prev.map(t => t.idTraitement === id ? res.data : t));
@@ -1018,7 +1075,7 @@ function UtilisateurMetierDashboard() {
                         <td className="px-4 py-3">
                           <div className="flex gap-2">
                             <button onClick={() => setDetailTraitement(t)} className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-lg hover:bg-green-200">Voir</button>
-                            {!t.envoyeAuDpo && (
+                            {!t.envoyeAuDpo && t.sessionCollecteId && (
                               <button onClick={() => handleEnvoyer(t.idTraitement)} className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-lg hover:bg-blue-200"><Icon name="send" className="w-3.5 h-3.5 mr-1" />DPO</button>
                             )}
                           </div>
@@ -1168,7 +1225,7 @@ function UtilisateurMetierDashboard() {
 
       {/* ── Modals ── */}
       {showCreer && <ModalCreerTraitement onClose={() => setShowCreer(false)} onSave={handleCreer} sessions={sessions} />}
-      {detailTraitement && <ModalDetailTraitement traitement={detailTraitement} onClose={() => setDetailTraitement(null)} onEnvoyer={handleEnvoyer} />}
+      {detailTraitement && <ModalDetailTraitement traitement={detailTraitement} onClose={() => setDetailTraitement(null)} onEnvoyer={handleEnvoyer} dpos={dposDisponibles} />}
       {detailDemande && <ModalDemandeUsager demande={detailDemande} onClose={() => setDetailDemande(null)} onTraiter={handleTraiterDemande} />}
 
       <Toast toast={toast} />
