@@ -29,14 +29,13 @@ function pwdStrength(p) {
 }
 const STRENGTH_LABEL = ["", "Faible", "Moyen", "Fort", "Très fort"];
 const STRENGTH_COLOR = ["", "bg-red-400", "bg-yellow-400", "bg-green-400", "bg-green-600"];
-const STRENGTH_TEXT  = ["", "text-red-500", "text-yellow-500", "text-green-500", "text-green-700"];
+const STRENGTH_TEXT = ["", "text-red-500", "text-yellow-500", "text-green-500", "text-green-700"];
 
 // ─── Types d'utilisateurs ─────────────────────────────────────────────────────
 const TYPES = [
-  { value: "USAGER",             label: "Usager",             icon: "👤", description: "Citoyen ou personne physique" },
-  { value: "CIL",                label: "CIL",                icon: "🛡️", description: "Correspondant Informatique et Libertés" },
-  { value: "DPO",                label: "DPO",                icon: "🔒", description: "Délégué à la Protection des Données" },
+  { value: "DPO", label: "DPO", icon: "🔒", description: "Délégué à la Protection des Données" },
   { value: "UTILISATEUR_METIER", label: "Utilisateur Métier", icon: "💼", description: "Utilisateur interne de l'organisation" },
+  { value: "DG", label: "DG", icon: "🏛️", description: "Directeur Général" },
 ];
 
 const MAIN_STEPS = ["Informations personnelles", "Type & Accès"];
@@ -55,18 +54,18 @@ const inputCls = (err) =>
 
 // ─── Composant principal ─────────────────────────────────────────────────────
 export default function CreateAccount() {
-  const [mainStep, setMainStep]     = useState(0);
-  const [subStep, setSubStep]       = useState(0);
+  const [mainStep, setMainStep] = useState(0);
+  const [subStep, setSubStep] = useState(0);
   const [typeChoisi, setTypeChoisi] = useState("");
-  const [showPwd, setShowPwd]       = useState(false);
-  const [done, setDone]             = useState(false);
-  const [loading, setLoading]       = useState(false);
-  const [errGlobal, setErrGlobal]   = useState("");
+  const [showPwd, setShowPwd] = useState(false);
+  const [done, setDone] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [errGlobal, setErrGlobal] = useState("");
 
   const { register, handleSubmit, watch, trigger, formState: { errors } } = useForm({ mode: "onTouched" });
 
   const motdepasse = watch("motdepasse", "");
-  const score      = pwdStrength(motdepasse);
+  const score = pwdStrength(motdepasse);
 
   const handleNextSubStep = async () => {
     const valid = await trigger(["nom", "prenom", "email", "telephone"]);
@@ -99,11 +98,10 @@ export default function CreateAccount() {
       });
       if (!response.ok) { setErrGlobal("Une erreur est survenue. Veuillez réessayer."); return; }
       setDone(true);
-    } catch(e) { 
+    } catch (e) {
       setErrGlobal("Impossible de contacter le serveur.");
-      alert(e.message)
-     }
-    finally { setLoading(false); }
+      alert(e.message);
+    } finally { setLoading(false); }
   };
 
   // ── Succès ────────────────────────────────────────────────────────────────
@@ -190,7 +188,7 @@ export default function CreateAccount() {
                   </div>
                 </div>
 
-                {/* ── Identité : 2 colonnes ── */}
+                {/* ── Identité ── */}
                 {subStep === 0 && (
                   <>
                     <div className="grid grid-cols-2 gap-4 mb-4">
@@ -203,7 +201,6 @@ export default function CreateAccount() {
                           {...register("prenom", { required: "Champ requis" })} />
                       </Field>
                     </div>
-
                     <div className="grid grid-cols-2 gap-4 mb-6">
                       <Field label="Adresse e-mail" error={errors.email}>
                         <input type="email" placeholder="aminata@gmail.com" className={inputCls(errors.email)}
@@ -217,7 +214,6 @@ export default function CreateAccount() {
                           {...register("telephone", { required: "Champ requis" })} />
                       </Field>
                     </div>
-
                     <button type="button" onClick={handleNextSubStep}
                       className="w-full h-10 bg-green-700 hover:bg-green-800 text-white font-medium rounded-lg text-sm transition-colors">
                       Continuer →
@@ -292,7 +288,7 @@ export default function CreateAccount() {
                     <p className="text-sm font-medium text-gray-700 mb-4">
                       Choisissez votre type de compte <span className="text-red-500">*</span>
                     </p>
-                    <div className="grid grid-cols-2 gap-3 mb-6">
+                    <div className="grid grid-cols-3 gap-3 mb-6">
                       {TYPES.map((t) => (
                         <button key={t.value} type="button" onClick={() => setTypeChoisi(t.value)}
                           className="flex flex-col items-center gap-2 p-4 rounded-xl transition-all text-center"
@@ -332,56 +328,18 @@ export default function CreateAccount() {
                       ⚠️ Votre compte sera en statut <strong>EN_ATTENTE</strong> jusqu'à validation.
                     </div>
 
-                    {/* ── USAGER ── */}
-                    {typeChoisi === "USAGER" && (
-                      <div className="grid grid-cols-2 gap-4 mb-6">
-                        <Field label="Adresse" error={errors.adresse}>
-                          <input placeholder="01 BP 00, Ouagadougou" className={inputCls(errors.adresse)}
-                            {...register("adresse", { required: "Champ requis" })} />
-                        </Field>
-                        <Field label="Matricule" error={errors.matricule}>
-                          <input placeholder="MAT-2024-001" className={inputCls(errors.matricule)}
-                            {...register("matricule", { required: "Champ requis" })} />
-                        </Field>
-                      </div>
-                    )}
-
-                    {/* ── CIL ── */}
-                    {typeChoisi === "CIL" && (
-                      <>
-                        <div className="grid grid-cols-2 gap-4 mb-4">
-                          <Field label="Service" error={errors.service}>
-                            <input placeholder="Ex : Service informatique" className={inputCls(errors.service)}
-                              {...register("service", { required: "Champ requis" })} />
-                          </Field>
-                          <Field label="Niveau de responsabilité" error={errors.niveauResponsabilite}>
-                            <input placeholder="Ex : Responsable" className={inputCls(errors.niveauResponsabilite)}
-                              {...register("niveauResponsabilite", { required: "Champ requis" })} />
-                          </Field>
-                        </div>
-                        <div className="mb-6">
-                          <Field label="Téléphone professionnel" error={errors.telProfessionnel}>
-                            <input type="tel" placeholder="Ex : +226 70 00 00 00" className={inputCls(errors.telProfessionnel)}
-                              {...register("telProfessionnel", { required: "Champ requis" })} />
-                          </Field>
-                        </div>
-                      </>
-                    )}
-
                     {/* ── DPO ── */}
                     {typeChoisi === "DPO" && (
-                      <>
-                        <div className="grid grid-cols-2 gap-4 mb-4">
-                          <Field label="Organisme" error={errors.organisme}>
-                            <input placeholder="Ex : Ministère de la santé" className={inputCls(errors.organisme)}
-                              {...register("organisme", { required: "Champ requis" })} />
-                          </Field>
-                          <Field label="Téléphone professionnel" error={errors.telProfessionnel}>
-                            <input type="tel" placeholder="Ex : +226 70 00 00 00" className={inputCls(errors.telProfessionnel)}
-                              {...register("telProfessionnel", { required: "Champ requis" })} />
-                          </Field>
-                        </div>
-                      </>
+                      <div className="grid grid-cols-2 gap-4 mb-4">
+                        <Field label="Organisme" error={errors.organisme}>
+                          <input placeholder="Ex : Ministère de la santé" className={inputCls(errors.organisme)}
+                            {...register("organisme", { required: "Champ requis" })} />
+                        </Field>
+                        <Field label="Téléphone professionnel" error={errors.telProfessionnel}>
+                          <input type="tel" placeholder="Ex : +226 70 00 00 00" className={inputCls(errors.telProfessionnel)}
+                            {...register("telProfessionnel", { required: "Champ requis" })} />
+                        </Field>
+                      </div>
                     )}
 
                     {/* ── UTILISATEUR_METIER ── */}
@@ -401,6 +359,28 @@ export default function CreateAccount() {
                           <Field label="Téléphone professionnel" error={errors.telProfessionnel}>
                             <input type="tel" placeholder="Ex : +226 70 00 00 00" className={inputCls(errors.telProfessionnel)}
                               {...register("telProfessionnel", { required: "Champ requis" })} />
+                          </Field>
+                        </div>
+                      </>
+                    )}
+
+                    {/* ── DG ── */}
+                    {typeChoisi === "DG" && (
+                      <>
+                        <div className="grid grid-cols-2 gap-4 mb-4">
+                          <Field label="Organisme" error={errors.organisme}>
+                            <input placeholder="Ex : Direction Générale des Finances" className={inputCls(errors.organisme)}
+                              {...register("organisme", { required: "Champ requis" })} />
+                          </Field>
+                          <Field label="Téléphone professionnel" error={errors.telProfessionnel}>
+                            <input type="tel" placeholder="Ex : +226 70 00 00 00" className={inputCls(errors.telProfessionnel)}
+                              {...register("telProfessionnel", { required: "Champ requis" })} />
+                          </Field>
+                        </div>
+                        <div className="mb-4">
+                          <Field label="Département" error={errors.department}>
+                            <input placeholder="Ex : Direction Générale" className={inputCls(errors.department)}
+                              {...register("department", { required: "Champ requis" })} />
                           </Field>
                         </div>
                       </>

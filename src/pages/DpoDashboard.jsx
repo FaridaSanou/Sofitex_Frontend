@@ -1,63 +1,40 @@
-// ═══════════════════════════════════════════════════════════════════
-// MODULE : Tableau de bord DPO (DpoDashboard)
-// Point d'entrée : Délégue le layout (sidebar + onglets) à DashboardLayout
-// Contenu : Sessions, Traitements, Déclarations, Demandes usagers
-// ═══════════════════════════════════════════════════════════════════
-
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import DashboardLayout from "../layouts/DashboardLayout";
 import api from "../services/api";
 
 // ═══════════════════════════════════════════════════════════════════
-// MODULE 1 : Données factices (Mock Data)
-// Utilisées en fallback lorsque l'API n'est pas disponible
+// DONNÉES MOCK (déclarations et demandes — pas encore connectées)
 // ═══════════════════════════════════════════════════════════════════
-const mockTraitements = [
-  { idTraitement: 1, department: "DRH", description: "Gestion des salaires", texte: "Permettre le paiement des employés", certificationSecurite: "ISO 27001", dureeConservation: 60, dateCreation: "2026-05-10T09:00:00", dateFin: "2031-05-10T00:00:00", nombreDonnee: 3, sessionCollecteId: 1, utilisateurMetierId: 1, utilisateurMetierNom: "Ouedraogo Amadou" },
-  { idTraitement: 2, department: "DSI", description: "Gestion des accès réseau", texte: "Contrôler les accès aux systèmes", certificationSecurite: "En cours", dureeConservation: 12, dateCreation: "2026-05-15T14:00:00", dateFin: "2027-05-15T00:00:00", nombreDonnee: 1, sessionCollecteId: 2, utilisateurMetierId: 1, utilisateurMetierNom: "Ouedraogo Amadou" },
-  { idTraitement: 3, department: "Direction Commerciale", description: "Gestion des commandes clients", texte: "Suivi des ventes et facturation", certificationSecurite: "ISO 27001", dureeConservation: 36, dateCreation: "2026-05-20T10:00:00", dateFin: "2029-05-20T00:00:00", nombreDonnee: 12, sessionCollecteId: 1, utilisateurMetierId: 2, utilisateurMetierNom: "Traoré Fatimata" },
-  { idTraitement: 4, department: "DRH", description: "Suivi des formations", texte: "Gérer les inscriptions aux formations", certificationSecurite: "Non renseigné", dureeConservation: 24, dateCreation: "2026-06-01T08:00:00", dateFin: "2028-06-01T00:00:00", nombreDonnee: 0, sessionCollecteId: null, utilisateurMetierId: 1, utilisateurMetierNom: "Ouedraogo Amadou" },
-  { idTraitement: 5, department: "Direction Technique", description: "Maintenance des équipements", texte: "Planifier les maintenances préventives", certificationSecurite: "En cours", dureeConservation: 60, dateCreation: "2026-06-05T11:00:00", dateFin: "2031-06-05T00:00:00", nombreDonnee: 8, sessionCollecteId: null, utilisateurMetierId: 2, utilisateurMetierNom: "Traoré Fatimata" },
-  { idTraitement: 6, department: "DSI", description: "Gestion de la messagerie", texte: "Administration des boîtes mail", certificationSecurite: "ISO 27001", dureeConservation: 12, dateCreation: "2026-06-10T09:00:00", dateFin: "2027-06-10T00:00:00", nombreDonnee: 0, sessionCollecteId: 3, utilisateurMetierId: 1, utilisateurMetierNom: "Ouedraogo Amadou" },
-];
-
 const mockDeclarations = [
   { idDeclaration: 1, typeDeclaration: "NORMALE", denominationTraitement: "Gestion des salaires", dateSoumission: "2026-05-25", statut: "APPROUVEE" },
   { idDeclaration: 2, typeDeclaration: "AUTORISATION", denominationTraitement: "Gestion des accès réseau", dateSoumission: "2026-06-01", statut: "EN_ATTENTE" },
-  { idDeclaration: 3, typeDeclaration: "NORMALE", denominationTraitement: "Gestion des commandes clients", dateSoumission: "2026-06-10", statut: "EN_ATTENTE" },
 ];
 
 const mockDemandes = [
-  { id: 1, usager: "Traoré Fatima", usagerNom: "Traoré Fatima", type: "MODIFICATION", typeDemande: "MODIFICATION", traitement: "Gestion des salaires", traitementNom: "Gestion des salaires", date: "2026-05-20T10:00:00", dateDemande: "2026-05-20T10:00:00", statut: "EN_ATTENTE", statutDemande: "EN_ATTENTE", detail: "Demande de correction de l'adresse mail enregistrée.", descriptionDemande: "Demande de correction de l'adresse mail enregistrée.", utilisateurMetierNom: "Ouedraogo Amadou" },
-  { id: 2, usager: "Kaboré Issouf", usagerNom: "Kaboré Issouf", type: "SUPPRESSION", typeDemande: "SUPPRESSION", traitement: "Gestion des accès réseau", traitementNom: "Gestion des accès réseau", date: "2026-05-21T08:30:00", dateDemande: "2026-05-21T08:30:00", statut: "EN_ATTENTE", statutDemande: "EN_ATTENTE", detail: "Demande de suppression des données suite à fin de contrat.", descriptionDemande: "Demande de suppression des données suite à fin de contrat.", utilisateurMetierNom: "Ouedraogo Amadou" },
-  { id: 3, usager: "Sawadogo Paul", usagerNom: "Sawadogo Paul", type: "MODIFICATION", typeDemande: "MODIFICATION", traitement: "Gestion des salaires", traitementNom: "Gestion des salaires", date: "2026-05-18T16:00:00", dateDemande: "2026-05-18T16:00:00", statut: "TRAITE", statutDemande: "TRAITE", detail: "Correction du numéro de téléphone.", descriptionDemande: "Correction du numéro de téléphone.", utilisateurMetierNom: "Ouedraogo Amadou" },
+  { id: 1, usagerNom: "Traoré Fatima", typeDemande: "MODIFICATION", descriptionDemande: "Correction de l'adresse mail.", dateDemande: "2026-05-20T10:00:00", statutDemande: "EN_ATTENTE", utilisateurMetierNom: "Ouedraogo Amadou" },
+  { id: 2, usagerNom: "Kaboré Issouf", typeDemande: "SUPPRESSION", descriptionDemande: "Suppression suite à fin de contrat.", dateDemande: "2026-05-21T08:30:00", statutDemande: "EN_ATTENTE", utilisateurMetierNom: "Ouedraogo Amadou" },
 ];
 
 // ═══════════════════════════════════════════════════════════════════
-// MODULE 2 : Utilitaires de formatage des dates
-// toDate() gère aussi bien les chaînes ISO que le format tableau
-// Jackson (ex: [2026,4,10,9,0]) renvoyé par le backend
+// UTILITAIRES
 // ═══════════════════════════════════════════════════════════════════
 const toDate = (d) => {
   if (!d) return null;
   if (Array.isArray(d)) return new Date(d[0], d[1] - 1, d[2], d[3] || 0, d[4] || 0);
   return new Date(d);
 };
-
 const formatDate = (d) => {
   const date = toDate(d);
   return date instanceof Date && !isNaN(date)
     ? date.toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })
     : "—";
 };
-
 const formatDateShort = (d) => {
   const date = toDate(d);
   return date instanceof Date && !isNaN(date)
     ? date.toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" })
     : "—";
 };
-
 const toLocalDateTime = (d) => {
   if (!d) return null;
   const date = new Date(d);
@@ -67,31 +44,18 @@ const toLocalDateTime = (d) => {
 };
 
 // ═══════════════════════════════════════════════════════════════════
-// MODULE 3 : Insignes de statut (Badges)
-// statutBadge → Sessions (EN_COURS / TERMINEE / ANNULEE)
-// declarationStatutBadge → Déclarations (EN_ATTENTE / APPROUVEE / REJETEE)
-// demandeStatutBadge → Demandes usagers (EN_ATTENTE / TRAITE)
+// BADGES
 // ═══════════════════════════════════════════════════════════════════
 const statutBadge = (s) => {
-  const map = {
-    EN_COURS: "bg-blue-100 text-blue-800",
-    TERMINEE: "bg-green-100 text-green-800",
-    ANNULEE: "bg-red-100 text-red-800",
-  };
+  const map = { EN_COURS: "bg-blue-100 text-blue-800", TERMINEE: "bg-green-100 text-green-800", ANNULEE: "bg-red-100 text-red-800" };
   const labels = { EN_COURS: "En cours", TERMINEE: "Terminée", ANNULEE: "Annulée" };
   return <span className={`px-2 py-1 rounded-full text-xs font-semibold ${map[s] || "bg-gray-100"}`}>{labels[s] || s}</span>;
 };
-
 const declarationStatutBadge = (s) => {
-  const map = {
-    EN_ATTENTE: "bg-yellow-100 text-yellow-800",
-    APPROUVEE: "bg-green-100 text-green-800",
-    REJETEE: "bg-red-100 text-red-800",
-  };
+  const map = { EN_ATTENTE: "bg-yellow-100 text-yellow-800", APPROUVEE: "bg-green-100 text-green-800", REJETEE: "bg-red-100 text-red-800" };
   const labels = { EN_ATTENTE: "En attente", APPROUVEE: "Approuvée", REJETEE: "Rejetée" };
   return <span className={`px-2 py-1 rounded-full text-xs font-semibold ${map[s] || "bg-gray-100"}`}>{labels[s] || s}</span>;
 };
-
 const demandeStatutBadge = (s) => {
   if (s === "EN_ATTENTE") return <span className="px-2 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800">En attente</span>;
   if (s === "TRAITE") return <span className="px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">Traitée</span>;
@@ -99,9 +63,7 @@ const demandeStatutBadge = (s) => {
 };
 
 // ═══════════════════════════════════════════════════════════════════
-// MODULE 4 : Composants d'affichage
-// StatCard → Carte de statistique (utilisée dans la vue d'ensemble)
-// TYPES_DECLARATION → Liste des types de déclaration disponibles
+// STAT CARD
 // ═══════════════════════════════════════════════════════════════════
 const StatCard = ({ label, value, color }) => (
   <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
@@ -113,6 +75,198 @@ const StatCard = ({ label, value, color }) => (
   </div>
 );
 
+// ═══════════════════════════════════════════════════════════════════
+// MODAL : CRÉER TRAITEMENT
+// Champs alignés avec TraitementRequest.java
+// ═══════════════════════════════════════════════════════════════════
+function ModalCreerTraitement({ sessions, onClose, onSave }) {
+  const [form, setForm] = useState({
+    department: "",
+    description: "",
+    texte: "",
+    certificationSecurite: "",
+    dureeConservation: "",
+    dateFin: "",
+    utilisateurMetierId: "",
+    sessionCollecteId: "",
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!form.sessionCollecteId) { setError("Veuillez sélectionner une session."); return; }
+    setLoading(true);
+    setError("");
+    try {
+      const payload = {
+        department: form.department,
+        description: form.description,
+        texte: form.texte,
+        certificationSecurite: form.certificationSecurite,
+        dureeConservation: form.dureeConservation ? parseInt(form.dureeConservation) : null,
+        dateFin: form.dateFin ? toLocalDateTime(form.dateFin) : null,
+        utilisateurMetierId: form.utilisateurMetierId ? parseInt(form.utilisateurMetierId) : null,
+        sessionCollecteId: parseInt(form.sessionCollecteId),
+      };
+      const res = await api.post("/traitements", payload);
+      onSave(res.data);
+      onClose();
+    } catch (err) {
+      setError(err.response?.data?.message || "Erreur lors de la création du traitement.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const inp = "w-full h-10 px-3 rounded-lg border border-gray-300 text-sm focus:outline-none focus:border-green-500";
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-screen overflow-y-auto">
+        {/* Header */}
+        <div className="bg-green-800 text-white px-6 py-4 rounded-t-2xl flex justify-between items-center sticky top-0">
+          <div>
+            <h3 className="font-bold text-lg">Nouveau Traitement</h3>
+            <p className="text-green-200 text-xs">Rattaché à une session de collecte</p>
+          </div>
+          <button onClick={onClose} className="text-green-200 hover:text-white text-xl">✕</button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">⚠️ {error}</div>
+          )}
+
+          {/* Session (obligatoire) */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Session de collecte <span className="text-red-500">*</span>
+            </label>
+            <select value={form.sessionCollecteId}
+              onChange={e => setForm(p => ({ ...p, sessionCollecteId: e.target.value }))}
+              className={inp} required>
+              <option value="">-- Sélectionner une session --</option>
+              {sessions.map(s => (
+                <option key={s.idSession} value={s.idSession}>
+                  {s.description || `Session #${s.idSession}`} — {s.typeCollecte}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            {/* Département */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Département</label>
+              <input value={form.department} onChange={e => setForm(p => ({ ...p, department: e.target.value }))}
+                placeholder="Ex : DRH" className={inp} />
+            </div>
+
+            {/* Certification sécurité */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Certification sécurité</label>
+              <input value={form.certificationSecurite}
+                onChange={e => setForm(p => ({ ...p, certificationSecurite: e.target.value }))}
+                placeholder="Ex : ISO 27001" className={inp} />
+            </div>
+
+            {/* Durée de conservation */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Durée conservation (mois)</label>
+              <input type="number" min="1" value={form.dureeConservation}
+                onChange={e => setForm(p => ({ ...p, dureeConservation: e.target.value }))}
+                placeholder="Ex : 36" className={inp} />
+            </div>
+
+            {/* Date de fin */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Date de fin</label>
+              <input type="datetime-local" value={form.dateFin}
+                onChange={e => setForm(p => ({ ...p, dateFin: e.target.value }))} className={inp} />
+            </div>
+          </div>
+
+          {/* Description */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Description <span className="text-red-500">*</span>
+            </label>
+            <input value={form.description}
+              onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
+              placeholder="Ex : Gestion des salaires" className={inp} required />
+          </div>
+
+          {/* Texte juridique */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Texte juridique / Finalité</label>
+            <textarea value={form.texte} rows={3}
+              onChange={e => setForm(p => ({ ...p, texte: e.target.value }))}
+              placeholder="Base juridique du traitement..."
+              className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:border-green-500" />
+          </div>
+
+          {/* Boutons */}
+          <div className="flex gap-3 pt-2">
+            <button type="button" onClick={onClose}
+              className="flex-1 py-2.5 rounded-xl border border-gray-300 text-gray-600 text-sm hover:bg-gray-50 transition">
+              Annuler
+            </button>
+            <button type="submit" disabled={loading}
+              className="flex-1 py-2.5 rounded-xl bg-green-700 text-white text-sm font-semibold hover:bg-green-800 transition disabled:opacity-50">
+              {loading ? "Création..." : "Créer le traitement"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// MODAL : DÉTAIL TRAITEMENT
+// ═══════════════════════════════════════════════════════════════════
+function ModalDetailTraitement({ traitement, onClose }) {
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
+        <div className="bg-green-800 text-white px-6 py-4 rounded-t-2xl flex justify-between items-center">
+          <h3 className="font-bold text-lg">Détail du traitement #{traitement.idTraitement}</h3>
+          <button onClick={onClose} className="text-green-200 hover:text-white text-xl">✕</button>
+        </div>
+        <div className="p-6 space-y-3">
+          {[
+            ["Description", traitement.description],
+            ["Département", traitement.department],
+            ["Texte juridique", traitement.texte],
+            ["Certification sécurité", traitement.certificationSecurite],
+            ["Durée conservation", traitement.dureeConservation ? `${traitement.dureeConservation} mois` : "—"],
+            ["Date création", formatDate(traitement.dateCreation)],
+            ["Date fin", formatDate(traitement.dateFin)],
+            ["Responsable", traitement.utilisateurMetierNom],
+            ["Session", traitement.sessionCollecteId ? `#${traitement.sessionCollecteId}` : "—"],
+            ["Nombre de données", traitement.nombreDonnee ?? "0"],
+          ].map(([label, value]) => (
+            <div key={label} className="flex justify-between py-2 border-b border-gray-100">
+              <span className="text-sm text-gray-500">{label}</span>
+              <span className="text-sm font-medium text-gray-800">{value ?? "—"}</span>
+            </div>
+          ))}
+        </div>
+        <div className="px-6 pb-6">
+          <button onClick={onClose}
+            className="w-full py-2.5 rounded-xl bg-green-700 text-white text-sm font-semibold hover:bg-green-800 transition">
+            Fermer
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// TYPES DE DÉCLARATION
+// ═══════════════════════════════════════════════════════════════════
 const TYPES_DECLARATION = [
   { id: "NORMALE", label: "Déclaration Normale", desc: "Traitement standard de données" },
   { id: "AUTORISATION", label: "Demande d'Autorisation", desc: "Traitement nécessitant une autorisation" },
@@ -121,417 +275,151 @@ const TYPES_DECLARATION = [
 ];
 
 // ═══════════════════════════════════════════════════════════════════
-// MODULE 5 : Modal Créer Déclaration
-// Fenêtre modale en 3 étapes (Traitement → Type → Détails)
-// Pré-remplit les champs depuis le traitement sélectionné
-// ═══════════════════════════════════════════════════════════════════
-function ModalCreerDeclaration({ traitements, onClose, onSave }) {
-  const [step, setStep] = useState(1);
-  const [selectedTraitementId, setSelectedTraitementId] = useState("");
-  const [typeDeclaration, setTypeDeclaration] = useState("");
-  const [form, setForm] = useState({
-    secteur: "", denominationTraitement: "", texteJuridique: "",
-    certificationSecurite: "", dureeConservation: "", responsableDeclaration: "",
-    natureDemande: "PREMIERE",
-    dateMiseEnOeuvre: "", lieuStockage: "", categoriesDonnees: "", origineDonnees: "",
-    categoriesPersonnesConcernees: "", nombrePersonnesConcernees: "", typeTraitement: "",
-    caracteristiquesTechniques: "", fonctionnalitesSysteme: "", politiqueAccesSystemes: false,
-    finaliteTraitement: "", mesuresSecurite: "", destinataireNom: "", destinataireAdresse: "",
-    communicationAutresOrganismes: false, transfertPaysEtranger: false, recoursSousTraitant: false,
-    finalites: "", adresseInstallation: "", emplacementCameras: "", nombreTotalCameras: "",
-    donneesConnexion: false, cookies: false, dureeConservationCookies: "",
-  });
-
-  const selectedTraitement = traitements.find(t => t.idTraitement === parseInt(selectedTraitementId));
-
-  useEffect(() => {
-    if (selectedTraitement) {
-      setForm(prev => ({
-        ...prev,
-        secteur: selectedTraitement.department || "",
-        denominationTraitement: selectedTraitement.description || "",
-        texteJuridique: selectedTraitement.texte || "",
-        certificationSecurite: selectedTraitement.certificationSecurite || "",
-        dureeConservation: selectedTraitement.dureeConservation ? `${selectedTraitement.dureeConservation} mois` : "",
-        responsableDeclaration: selectedTraitement.utilisateurMetierNom || "",
-      }));
-    }
-  }, [selectedTraitement]);
-
-  const handleSave = () => {
-    if (!selectedTraitementId || !typeDeclaration) return;
-    onSave({
-      traitementId: parseInt(selectedTraitementId),
-      typeDeclaration,
-      ...form,
-    });
-    onClose();
-  };
-
-  const canSave = selectedTraitementId && typeDeclaration;
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-screen overflow-y-auto">
-        <div className="bg-green-800 text-white px-6 py-4 rounded-t-2xl flex justify-between items-center sticky top-0 z-10">
-          <div>
-            <h3 className="font-bold text-lg">Nouvelle Déclaration</h3>
-            <p className="text-green-200 text-xs">{step === 1 ? "Choisir le traitement" : step === 2 ? "Type de déclaration" : "Formulaire"}</p>
-          </div>
-          <button onClick={onClose} className="text-green-200 hover:text-white text-xl">✕</button>
-        </div>
-
-        <div className="flex bg-green-900">
-          {[1, 2, 3].map(s => (
-            <div key={s} className={`flex-1 py-2 text-center text-xs font-semibold ${step === s ? "bg-green-600 text-white" : step > s ? "bg-green-700 text-green-200" : "text-green-400"}`}>
-              {step > s ? "✓ " : `${s}. `}{s === 1 ? "Traitement" : s === 2 ? "Type" : "Détails"}
-            </div>
-          ))}
-        </div>
-
-        <div className="p-6 space-y-5">
-          {step === 1 && (
-            <div className="space-y-4">
-              <h4 className="font-bold text-green-800">Sélectionner le traitement</h4>
-              <select value={selectedTraitementId} onChange={e => setSelectedTraitementId(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
-                <option value="">-- Choisir un traitement --</option>
-                {traitements.map(t => (
-                  <option key={t.idTraitement} value={t.idTraitement}>
-                    {t.description || `Traitement #${t.idTraitement}`} — {t.department || "N/A"}
-                  </option>
-                ))}
-              </select>
-              {selectedTraitement && (
-                <div className="bg-green-50 rounded-xl p-4 space-y-2 text-sm">
-                  <p><span className="font-semibold">Description :</span> {selectedTraitement.description}</p>
-                  <p><span className="font-semibold">Département :</span> {selectedTraitement.department}</p>
-                  <p><span className="font-semibold">Texte juridique :</span> {selectedTraitement.texte}</p>
-                  <p><span className="font-semibold">Certification sécurité :</span> {selectedTraitement.certificationSecurite}</p>
-                  <p><span className="font-semibold">Conservation :</span> {selectedTraitement.dureeConservation} mois</p>
-                  <p><span className="font-semibold">Responsable :</span> {selectedTraitement.utilisateurMetierNom}</p>
-                </div>
-              )}
-              <div className="flex justify-end">
-                <button onClick={() => setStep(2)} disabled={!selectedTraitementId} className="px-5 py-2 rounded-lg bg-green-700 text-white text-sm font-semibold hover:bg-green-800 disabled:opacity-40">
-                  Suivant →
-                </button>
-              </div>
-            </div>
-          )}
-
-          {step === 2 && (
-            <div className="space-y-4">
-              <h4 className="font-bold text-green-800">Type de déclaration</h4>
-              <div className="grid gap-3">
-                {TYPES_DECLARATION.map(t => (
-                  <label key={t.id} className={`flex items-start gap-4 p-4 rounded-xl border cursor-pointer transition-all ${typeDeclaration === t.id ? "border-green-500 bg-green-50" : "border-gray-200 hover:border-green-300"}`}>
-                    <input type="radio" name="typeDecl" value={t.id} checked={typeDeclaration === t.id} onChange={e => setTypeDeclaration(e.target.value)} className="mt-1 accent-green-600" />
-                    <div>
-                      <p className="font-semibold text-gray-800">{t.label}</p>
-                      <p className="text-sm text-gray-500">{t.desc}</p>
-                    </div>
-                  </label>
-                ))}
-              </div>
-              <div className="flex justify-between">
-                <button onClick={() => setStep(1)} className="px-4 py-2 rounded-lg border border-gray-300 text-gray-600 text-sm">← Précédent</button>
-                <button onClick={() => setStep(3)} disabled={!typeDeclaration} className="px-5 py-2 rounded-lg bg-green-700 text-white text-sm font-semibold hover:bg-green-800 disabled:opacity-40">
-                  Suivant →
-                </button>
-              </div>
-            </div>
-          )}
-
-          {step === 3 && (
-            <div className="space-y-5">
-              <h4 className="font-bold text-green-800">Informations de la déclaration</h4>
-
-              {/* Champs pré-remplis depuis le traitement (readonly) */}
-              <div className="bg-green-50 rounded-xl p-4 space-y-3">
-                <p className="font-semibold text-green-700 text-sm">✅ Champs pré-remplis depuis le traitement</p>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600">Secteur</label>
-                    <input value={form.secteur} readOnly className="w-full h-9 px-3 rounded-lg border border-green-200 bg-green-100 text-sm text-gray-700" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600">Dénomination traitement</label>
-                    <input value={form.denominationTraitement} readOnly className="w-full h-9 px-3 rounded-lg border border-green-200 bg-green-100 text-sm text-gray-700" />
-                  </div>
-                  <div className="col-span-2">
-                    <label className="block text-xs font-medium text-gray-600">Texte juridique</label>
-                    <textarea value={form.texteJuridique} readOnly rows={2} className="w-full px-3 py-2 rounded-lg border border-green-200 bg-green-100 text-sm text-gray-700" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600">Certification sécurité</label>
-                    <input value={form.certificationSecurite} readOnly className="w-full h-9 px-3 rounded-lg border border-green-200 bg-green-100 text-sm text-gray-700" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600">Durée de conservation</label>
-                    <input value={form.dureeConservation} readOnly className="w-full h-9 px-3 rounded-lg border border-green-200 bg-green-100 text-sm text-gray-700" />
-                  </div>
-                  <div className="col-span-2">
-                    <label className="block text-xs font-medium text-gray-600">Responsable déclaration</label>
-                    <input value={form.responsableDeclaration} readOnly className="w-full h-9 px-3 rounded-lg border border-green-200 bg-green-100 text-sm text-gray-700" />
-                  </div>
-                </div>
-              </div>
-
-              {/* Champs à remplir par le DPO */}
-              <div className="border-t border-gray-200 pt-4">
-                <p className="font-semibold text-gray-700 text-sm mb-3">📝 Informations à renseigner</p>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Nature de la demande</label>
-                    <select value={form.natureDemande} onChange={e => setForm(p => ({ ...p, natureDemande: e.target.value }))} className="w-full h-10 px-3 rounded-lg border border-gray-300 text-sm">
-                      <option value="PREMIERE">Première déclaration</option>
-                      <option value="MODIFICATION">Modification</option>
-                      <option value="SUPPRESSION">Suppression</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Date mise en œuvre</label>
-                    <input type="date" value={form.dateMiseEnOeuvre} onChange={e => setForm(p => ({ ...p, dateMiseEnOeuvre: e.target.value }))} className="w-full h-10 px-3 rounded-lg border border-gray-300 text-sm" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Lieu de stockage</label>
-                    <input value={form.lieuStockage} onChange={e => setForm(p => ({ ...p, lieuStockage: e.target.value }))} className="w-full h-10 px-3 rounded-lg border border-gray-300 text-sm" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Catégories de données</label>
-                    <input value={form.categoriesDonnees} onChange={e => setForm(p => ({ ...p, categoriesDonnees: e.target.value }))} className="w-full h-10 px-3 rounded-lg border border-gray-300 text-sm" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Origine des données</label>
-                    <input value={form.origineDonnees} onChange={e => setForm(p => ({ ...p, origineDonnees: e.target.value }))} className="w-full h-10 px-3 rounded-lg border border-gray-300 text-sm" />
-                  </div>
-                  <div className="col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Mesures de sécurité</label>
-                    <textarea value={form.mesuresSecurite} onChange={e => setForm(p => ({ ...p, mesuresSecurite: e.target.value }))} rows={2} className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm" />
-                  </div>
-
-                  {typeDeclaration === "NORMALE" && (
-                    <>
-                      <div className="col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Finalité du traitement</label>
-                        <textarea value={form.finaliteTraitement} onChange={e => setForm(p => ({ ...p, finaliteTraitement: e.target.value }))} rows={2} className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm" />
-                      </div>
-                      <div className="col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Catégories de personnes concernées</label>
-                        <input value={form.categoriesPersonnesConcernees} onChange={e => setForm(p => ({ ...p, categoriesPersonnesConcernees: e.target.value }))} className="w-full h-10 px-3 rounded-lg border border-gray-300 text-sm" />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Nombre de personnes</label>
-                        <input type="number" value={form.nombrePersonnesConcernees} onChange={e => setForm(p => ({ ...p, nombrePersonnesConcernees: e.target.value }))} className="w-full h-10 px-3 rounded-lg border border-gray-300 text-sm" />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Type de traitement</label>
-                        <input value={form.typeTraitement} onChange={e => setForm(p => ({ ...p, typeTraitement: e.target.value }))} className="w-full h-10 px-3 rounded-lg border border-gray-300 text-sm" />
-                      </div>
-                      <div className="col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Caractéristiques techniques</label>
-                        <textarea value={form.caracteristiquesTechniques} onChange={e => setForm(p => ({ ...p, caracteristiquesTechniques: e.target.value }))} rows={2} className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm" />
-                      </div>
-                    </>
-                  )}
-
-                  {typeDeclaration === "AUTORISATION" && (
-                    <>
-                      <div className="col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Finalité du traitement</label>
-                        <textarea value={form.finaliteTraitement} onChange={e => setForm(p => ({ ...p, finaliteTraitement: e.target.value }))} rows={2} className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm" />
-                      </div>
-                      <div className="col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Fonctionnalités du système</label>
-                        <textarea value={form.fonctionnalitesSysteme} onChange={e => setForm(p => ({ ...p, fonctionnalitesSysteme: e.target.value }))} rows={2} className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm" />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Destinataire</label>
-                        <input value={form.destinataireNom} onChange={e => setForm(p => ({ ...p, destinataireNom: e.target.value }))} className="w-full h-10 px-3 rounded-lg border border-gray-300 text-sm" />
-                      </div>
-                      <div>
-                        <label className="flex items-center gap-2 pt-6">
-                          <input type="checkbox" checked={form.politiqueAccesSystemes} onChange={e => setForm(p => ({ ...p, politiqueAccesSystemes: e.target.checked }))} className="accent-green-600" />
-                          <span className="text-sm">Politique d'accès aux systèmes</span>
-                        </label>
-                      </div>
-                    </>
-                  )}
-
-                  {typeDeclaration === "COLLECTE_SITE_INTERNET" && (
-                    <>
-                      <div className="col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Finalité du traitement</label>
-                        <textarea value={form.finaliteTraitement} onChange={e => setForm(p => ({ ...p, finaliteTraitement: e.target.value }))} rows={2} className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm" />
-                      </div>
-                      <label className="flex items-center gap-2">
-                        <input type="checkbox" checked={form.donneesConnexion} onChange={e => setForm(p => ({ ...p, donneesConnexion: e.target.checked }))} className="accent-green-600" />
-                        <span className="text-sm">Données de connexion</span>
-                      </label>
-                      <label className="flex items-center gap-2">
-                        <input type="checkbox" checked={form.cookies} onChange={e => setForm(p => ({ ...p, cookies: e.target.checked }))} className="accent-green-600" />
-                        <span className="text-sm">Utilisation de cookies</span>
-                      </label>
-                      {form.cookies && (
-                        <div className="col-span-2">
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Durée de conservation des cookies</label>
-                          <input value={form.dureeConservationCookies} onChange={e => setForm(p => ({ ...p, dureeConservationCookies: e.target.value }))} className="w-full h-10 px-3 rounded-lg border border-gray-300 text-sm" />
-                        </div>
-                      )}
-                    </>
-                  )}
-
-                  {typeDeclaration === "SYSTEME_VIDEO_SURVEILLANCE" && (
-                    <>
-                      <div className="col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Finalités du système</label>
-                        <textarea value={form.finalites} onChange={e => setForm(p => ({ ...p, finalites: e.target.value }))} rows={2} className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm" />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Adresse d'installation</label>
-                        <input value={form.adresseInstallation} onChange={e => setForm(p => ({ ...p, adresseInstallation: e.target.value }))} className="w-full h-10 px-3 rounded-lg border border-gray-300 text-sm" />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Emplacement caméras</label>
-                        <input value={form.emplacementCameras} onChange={e => setForm(p => ({ ...p, emplacementCameras: e.target.value }))} className="w-full h-10 px-3 rounded-lg border border-gray-300 text-sm" />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Nombre de caméras</label>
-                        <input type="number" value={form.nombreTotalCameras} onChange={e => setForm(p => ({ ...p, nombreTotalCameras: e.target.value }))} className="w-full h-10 px-3 rounded-lg border border-gray-300 text-sm" />
-                      </div>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex justify-between pt-4 border-t border-gray-100">
-                <button onClick={() => setStep(2)} className="px-4 py-2 rounded-lg border border-gray-300 text-gray-600 text-sm">← Précédent</button>
-                <button onClick={handleSave} disabled={!canSave} className="px-6 py-2 rounded-lg bg-green-700 text-white text-sm font-semibold hover:bg-green-800 disabled:opacity-40">
-                  Créer la déclaration
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// MODULE 6 : Composant principal DpoDashboard
-// États : sessions (API), traitements (mock/API), déclarations (mock),
-// demandes (mock). Gère la création de sessions (POST /sessions) et
-// le changement de statut (PATCH /sessions/{id}/statut).
+// COMPOSANT PRINCIPAL
 // ═══════════════════════════════════════════════════════════════════
 function DpoDashboard() {
-  // Forcer le rôle DPO pour l'affichage des onglets dans le DashboardLayout
-  if (!localStorage.getItem("role") || localStorage.getItem("role") !== "ROLE_DPO") {
-    localStorage.setItem("role", "ROLE_DPO");
-    localStorage.setItem("email", "dpo@sofitex.bf");
-  }
-
   const [activeTab, setActiveTab] = useState("dashboard");
   const [sessions, setSessions] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    api.get("/sessions")
-      .then((res) => setSessions(res.data))
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
-  const [traitements, setTraitements] = useState([]);
-  const [allTraitements, setAllTraitements] = useState(mockTraitements);
+  const [traitements, setTraitements] = useState([]);   // tous les traitements chargés
+  const [loadingTraitements, setLoadingTraitements] = useState(false);
+  const [loadingSessions, setLoadingSessions] = useState(true);
   const [selectedSessionId, setSelectedSessionId] = useState("");
-  const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ dateDebut: "", dateFin: "", typeCollecte: "EN_LIGNE", lieu: "", description: "" });
-  const [toast, setToast] = useState(null);
+  const [filterMode, setFilterMode] = useState("tous"); // "tous" | "parSession"
   const [declarations, setDeclarations] = useState(mockDeclarations);
   const [demandes, setDemandes] = useState(mockDemandes);
-  const [notificationsCount, setNotificationsCount] = useState(mockDemandes.filter(d => d.statut === "EN_ATTENTE").length);
+  const [showForm, setShowForm] = useState(false);
+
   const [showCreerDeclaration, setShowCreerDeclaration] = useState(false);
-  const [traitementFilterMode, setTraitementFilterMode] = useState("tous");
+  const [detailTraitement, setDetailTraitement] = useState(null);
+  const [toast, setToast] = useState(null);
+  const [sessionForm, setSessionForm] = useState({
+    dateDebut: "", dateFin: "", typeCollecte: "EN_LIGNE", lieu: "", description: "",
+  });
 
   const showToast = (msg, type = "success") => {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 3000);
   };
 
+  // ── Charger toutes les sessions ──────────────────────────────────
+  const fetchSessions = useCallback(async () => {
+    setLoadingSessions(true);
+    try {
+      const res = await api.get("/sessions");
+      setSessions(res.data);
+    } catch {
+      showToast("Impossible de charger les sessions", "error");
+    } finally {
+      setLoadingSessions(false);
+    }
+  }, []);
+
+  // ── Charger les traitements d'une session ────────────────────────
+  const fetchTraitementsParSession = useCallback(async (sessionId) => {
+    setLoadingTraitements(true);
+    try {
+      const res = await api.get(`/traitements/session/${sessionId}`);
+      return res.data;
+    } catch {
+      showToast("Impossible de charger les traitements", "error");
+      return [];
+    } finally {
+      setLoadingTraitements(false);
+    }
+  }, []);
+
+  // ── Charger tous les traitements (toutes sessions) ───────────────
+  const fetchTousTraitements = useCallback(async (sessionsList) => {
+    if (!sessionsList.length) { setTraitements([]); return; }
+    setLoadingTraitements(true);
+    try {
+      const results = await Promise.all(
+        sessionsList.map(s => api.get(`/traitements/session/${s.idSession}`).then(r => r.data).catch(() => []))
+      );
+      setTraitements(results.flat());
+    } catch {
+      showToast("Impossible de charger les traitements", "error");
+    } finally {
+      setLoadingTraitements(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchSessions(); }, [fetchSessions]);
+
+  // Quand les sessions sont chargées, charger tous les traitements
+  useEffect(() => {
+    if (sessions.length > 0) fetchTousTraitements(sessions);
+  }, [sessions, fetchTousTraitements]);
+
+  // Quand une session est sélectionnée en mode "parSession"
+  useEffect(() => {
+    if (filterMode === "parSession" && selectedSessionId) {
+      fetchTraitementsParSession(selectedSessionId).then(data => setTraitements(data));
+    } else if (filterMode === "tous" && sessions.length > 0) {
+      fetchTousTraitements(sessions);
+    }
+  }, [filterMode, selectedSessionId]);
+
+  // ── Créer une session ────────────────────────────────────────────
   const handleCreateSession = (e) => {
     e.preventDefault();
     const payload = {
-      dateDebut: toLocalDateTime(form.dateDebut),
-      dateFin: toLocalDateTime(form.dateFin),
-      typeCollecte: form.typeCollecte,
-      lieu: form.lieu,
-      description: form.description,
+      dateDebut: toLocalDateTime(sessionForm.dateDebut),
+      dateFin: toLocalDateTime(sessionForm.dateFin),
+      typeCollecte: sessionForm.typeCollecte,
+      lieu: sessionForm.lieu,
+      description: sessionForm.description,
     };
     api.post("/sessions", payload)
-      .then((res) => {
-        setSessions((prev) => [...prev, res.data]);
+      .then(res => {
+        setSessions(prev => [...prev, res.data]);
         setShowForm(false);
-        setForm({ dateDebut: "", dateFin: "", typeCollecte: "EN_LIGNE", lieu: "", description: "" });
+        setSessionForm({ dateDebut: "", dateFin: "", typeCollecte: "EN_LIGNE", lieu: "", description: "" });
         showToast("Session créée avec succès");
       })
-      .catch(() => showToast("Erreur lors de la création", "error"));
+      .catch(() => showToast("Erreur lors de la création de la session", "error"));
   };
 
+  // ── Changer statut session ───────────────────────────────────────
   const handleChangeStatut = (id, valeur) => {
     api.patch(`/sessions/${id}/statut`, null, { params: { valeur } })
-      .then((res) => {
-        setSessions((prev) => prev.map((s) => s.idSession === id ? { ...s, statutSession: valeur } : s));
+      .then(() => {
+        setSessions(prev => prev.map(s => s.idSession === id ? { ...s, statutSession: valeur } : s));
         showToast("Statut mis à jour");
       })
-      .catch((err) => {
-        console.error("Erreur statut:", err.response?.data || err.message);
-        setSessions((prev) => prev.map((s) => s.idSession === id ? { ...s, statutSession: valeur } : s));
-        showToast("Statut mis à jour (hors ligne)");
-      });
+      .catch(() => showToast("Erreur lors du changement de statut", "error"));
   };
 
-  const handleCreateDeclaration = (data) => {
-    const newDecl = {
-      idDeclaration: declarations.length + 1,
-      typeDeclaration: data.typeDeclaration,
-      denominationTraitement: data.denominationTraitement || "Nouvelle déclaration",
-      dateSoumission: new Date().toISOString().split("T")[0],
-      statut: "EN_ATTENTE",
-    };
-    setDeclarations((prev) => [...prev, newDecl]);
-    showToast("Déclaration créée avec succès");
+  // ── Nouveau traitement créé ──────────────────────────────────────
+  const handleTraitementCreated = (newTraitement) => {
+    setTraitements(prev => [newTraitement, ...prev]);
+    showToast("Traitement créé avec succès ✓");
   };
 
+  // ── Stats ────────────────────────────────────────────────────────
   const stats = {
     sessionsTotal: sessions.length,
-    enCours: sessions.filter((s) => s.statutSession === "EN_COURS").length,
-    terminees: sessions.filter((s) => s.statutSession === "TERMINEE").length,
-    traitementsTotal: allTraitements.length,
-    demandesEnAttente: demandes.filter(d => d.statut === "EN_ATTENTE" || d.statutDemande === "EN_ATTENTE").length,
+    enCours: sessions.filter(s => s.statutSession === "EN_COURS").length,
+    terminees: sessions.filter(s => s.statutSession === "TERMINEE").length,
+    traitementsTotal: traitements.length,
+    demandesEnAttente: demandes.filter(d => d.statutDemande === "EN_ATTENTE").length,
   };
 
-  useEffect(() => {
-    if (selectedSessionId) {
-      setTraitements(allTraitements.filter(t => t.sessionCollecteId === Number(selectedSessionId)));
-    } else {
-      setTraitements([]);
-    }
-  }, [selectedSessionId, allTraitements]);
-
-  const traitementsToShow = traitementFilterMode === "tous" ? allTraitements : traitements;
+  // Traitements affichés selon le filtre
+  const traitementsAffiches = filterMode === "parSession" && selectedSessionId
+    ? traitements.filter(t => t.sessionCollecteId === parseInt(selectedSessionId))
+    : traitements;
 
   return (
-    <DashboardLayout
-      activeTab={activeTab}
-      setActiveTab={setActiveTab}
-      notificationsCount={notificationsCount}
-      onBellClick={() => setActiveTab("demandes")}
-    >
+    <DashboardLayout activeTab={activeTab} setActiveTab={setActiveTab}
+      notificationsCount={stats.demandesEnAttente} onBellClick={() => setActiveTab("demandes")}>
+
+      {/* ── DASHBOARD ── */}
       {activeTab === "dashboard" && (
         <div className="space-y-6">
           <h2 className="text-xl font-bold text-gray-800">Vue d'ensemble</h2>
           <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-            <StatCard label="Sessions totales" value={stats.sessionsTotal} color="bg-green-700" />
+            <StatCard label="Sessions" value={stats.sessionsTotal} color="bg-green-700" />
             <StatCard label="En cours" value={stats.enCours} color="bg-blue-500" />
             <StatCard label="Terminées" value={stats.terminees} color="bg-emerald-500" />
             <StatCard label="Traitements" value={stats.traitementsTotal} color="bg-purple-500" />
@@ -540,46 +428,60 @@ function DpoDashboard() {
         </div>
       )}
 
+      {/* ── SESSIONS ── */}
       {activeTab === "sessions" && (
         <div className="space-y-4">
           <div className="flex justify-between items-center">
             <h2 className="text-xl font-bold text-gray-800">Sessions de collecte</h2>
-            <button onClick={() => setShowForm(true)} className="px-4 py-2 bg-green-700 text-white rounded-xl text-sm font-medium hover:bg-green-800 transition">
+            <button onClick={() => setShowForm(true)}
+              className="px-4 py-2 bg-green-700 text-white rounded-xl text-sm font-medium hover:bg-green-800 transition">
               + Nouvelle session
             </button>
           </div>
 
           {showForm && (
-            <form onSubmit={handleCreateSession} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 space-y-4">
+            <form onSubmit={handleCreateSession}
+              className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 space-y-4">
               <h3 className="font-bold text-gray-800">Créer une session</h3>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Date début</label>
-                  <input type="datetime-local" value={form.dateDebut} onChange={(e) => setForm((p) => ({ ...p, dateDebut: e.target.value }))} required className="w-full h-10 px-3 rounded-lg border border-gray-300 text-sm" />
+                  <input type="datetime-local" value={sessionForm.dateDebut}
+                    onChange={e => setSessionForm(p => ({ ...p, dateDebut: e.target.value }))}
+                    required className="w-full h-10 px-3 rounded-lg border border-gray-300 text-sm" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Date fin</label>
-                  <input type="datetime-local" value={form.dateFin} onChange={(e) => setForm((p) => ({ ...p, dateFin: e.target.value }))} required className="w-full h-10 px-3 rounded-lg border border-gray-300 text-sm" />
+                  <input type="datetime-local" value={sessionForm.dateFin}
+                    onChange={e => setSessionForm(p => ({ ...p, dateFin: e.target.value }))}
+                    required className="w-full h-10 px-3 rounded-lg border border-gray-300 text-sm" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
-                  <select value={form.typeCollecte} onChange={(e) => setForm((p) => ({ ...p, typeCollecte: e.target.value }))} className="w-full h-10 px-3 rounded-lg border border-gray-300 text-sm">
+                  <select value={sessionForm.typeCollecte}
+                    onChange={e => setSessionForm(p => ({ ...p, typeCollecte: e.target.value }))}
+                    className="w-full h-10 px-3 rounded-lg border border-gray-300 text-sm">
                     <option value="EN_LIGNE">En ligne</option>
                     <option value="TERRAIN">Terrain</option>
                   </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Lieu</label>
-                  <input type="text" value={form.lieu} onChange={(e) => setForm((p) => ({ ...p, lieu: e.target.value }))} className="w-full h-10 px-3 rounded-lg border border-gray-300 text-sm" />
+                  <input value={sessionForm.lieu}
+                    onChange={e => setSessionForm(p => ({ ...p, lieu: e.target.value }))}
+                    className="w-full h-10 px-3 rounded-lg border border-gray-300 text-sm" />
                 </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                <textarea value={form.description} onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))} rows={2} className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm" />
+                <textarea value={sessionForm.description} rows={2}
+                  onChange={e => setSessionForm(p => ({ ...p, description: e.target.value }))}
+                  className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm" />
               </div>
               <div className="flex gap-3">
-                <button type="submit" className="px-6 py-2 bg-green-700 text-white rounded-xl text-sm font-medium hover:bg-green-800 transition">Créer</button>
-                <button type="button" onClick={() => setShowForm(false)} className="px-6 py-2 border border-gray-300 text-gray-600 rounded-xl text-sm hover:bg-gray-50 transition">Annuler</button>
+                <button type="submit" className="px-6 py-2 bg-green-700 text-white rounded-xl text-sm font-medium hover:bg-green-800">Créer</button>
+                <button type="button" onClick={() => setShowForm(false)}
+                  className="px-6 py-2 border border-gray-300 text-gray-600 rounded-xl text-sm hover:bg-gray-50">Annuler</button>
               </div>
             </form>
           )}
@@ -589,31 +491,31 @@ function DpoDashboard() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-gray-50 border-b border-gray-100">
-                    <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Session</th>
-                    <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Type</th>
-                    <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Dates</th>
-                    <th className="text-center px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Traitements</th>
-                    <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Statut</th>
-                    <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">DPO</th>
-                    <th className="text-center px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Actions</th>
+                    {["Session", "Type", "Dates", "Traitements", "Statut", "DPO", "Actions"].map((h, i) => (
+                      <th key={h} className={`px-5 py-3 text-xs font-semibold text-gray-500 uppercase ${i === 3 ? "text-center" : "text-left"}`}>{h}</th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
-                  {sessions.map((s) => (
+                  {sessions.map(s => (
                     <tr key={s.idSession} className="hover:bg-gray-50 transition">
                       <td className="px-5 py-4">
                         <p className="font-semibold text-gray-800">{s.description || `Session #${s.idSession}`}</p>
                         <p className="text-xs text-gray-400">{s.lieu || "—"}</p>
                       </td>
                       <td className="px-5 py-4">
-                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">{s.typeCollecte === "EN_LIGNE" ? "En ligne" : "Terrain"}</span>
+                        <span className="px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-700">
+                          {s.typeCollecte === "EN_LIGNE" ? "En ligne" : "Terrain"}
+                        </span>
                       </td>
                       <td className="px-5 py-4 text-xs text-gray-500">
                         <p>Du {formatDate(s.dateDebut)}</p>
                         <p>Au {formatDate(s.dateFin)}</p>
                       </td>
                       <td className="px-5 py-4 text-center">
-                        <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">{s.nombreTraitements ?? 0}</span>
+                        <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
+                          {s.nombreTraitements ?? 0}
+                        </span>
                       </td>
                       <td className="px-5 py-4">{statutBadge(s.statutSession)}</td>
                       <td className="px-5 py-4 text-sm text-gray-600">{s.dpoNomComplet || "—"}</td>
@@ -621,8 +523,14 @@ function DpoDashboard() {
                         <div className="flex items-center justify-center gap-2">
                           {s.statutSession === "EN_COURS" && (
                             <>
-                              <button onClick={() => handleChangeStatut(s.idSession, "TERMINEE")} className="px-3 py-1 bg-green-100 text-green-700 rounded-lg text-xs font-medium hover:bg-green-200">Terminer</button>
-                              <button onClick={() => handleChangeStatut(s.idSession, "ANNULEE")} className="px-3 py-1 bg-red-100 text-red-600 rounded-lg text-xs font-medium hover:bg-red-200">Annuler</button>
+                              <button onClick={() => handleChangeStatut(s.idSession, "TERMINEE")}
+                                className="px-3 py-1 bg-green-100 text-green-700 rounded-lg text-xs font-medium hover:bg-green-200">
+                                Terminer
+                              </button>
+                              <button onClick={() => handleChangeStatut(s.idSession, "ANNULEE")}
+                                className="px-3 py-1 bg-red-100 text-red-600 rounded-lg text-xs font-medium hover:bg-red-200">
+                                Annuler
+                              </button>
                             </>
                           )}
                         </div>
@@ -631,85 +539,123 @@ function DpoDashboard() {
                   ))}
                 </tbody>
               </table>
-              {sessions.length === 0 && <div className="py-12 text-center text-gray-400 text-sm">Aucune session</div>}
+              {!loadingSessions && sessions.length === 0 && (
+                <div className="py-12 text-center text-gray-400 text-sm">Aucune session</div>
+              )}
             </div>
           </div>
         </div>
       )}
 
+      {/* ══════════════════════════════════════════════════════════
+          ── TRAITEMENTS (connecté au backend) ──
+      ══════════════════════════════════════════════════════════ */}
       {activeTab === "traitements" && (
         <div className="space-y-4">
           <div className="flex justify-between items-center">
             <h2 className="text-xl font-bold text-gray-800">Traitements</h2>
+            <span className="text-xs text-gray-400 italic">Créés par les Utilisateurs Métier</span>
           </div>
-          <div className="flex gap-4 items-end">
-            <div className="max-w-xs">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Filtrer</label>
-              <div className="flex gap-2">
-                <button onClick={() => { setTraitementFilterMode("tous"); setSelectedSessionId(""); }} className={`px-3 py-2 rounded-lg text-xs font-medium transition ${traitementFilterMode === "tous" ? "bg-green-700 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>Tous</button>
-                <button onClick={() => setTraitementFilterMode("parSession")} className={`px-3 py-2 rounded-lg text-xs font-medium transition ${traitementFilterMode === "parSession" ? "bg-green-700 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>Par session</button>
-              </div>
+
+          {/* Filtres */}
+          <div className="flex flex-wrap gap-3 items-end">
+            <div className="flex gap-2">
+              <button onClick={() => { setFilterMode("tous"); setSelectedSessionId(""); }}
+                className={`px-4 py-2 rounded-xl text-sm font-medium transition ${filterMode === "tous" ? "bg-green-700 text-white" : "bg-white border border-gray-200 text-gray-600 hover:border-green-400"}`}>
+                Tous ({traitements.length})
+              </button>
+              <button onClick={() => setFilterMode("parSession")}
+                className={`px-4 py-2 rounded-xl text-sm font-medium transition ${filterMode === "parSession" ? "bg-green-700 text-white" : "bg-white border border-gray-200 text-gray-600 hover:border-green-400"}`}>
+                Par session
+              </button>
             </div>
-            {traitementFilterMode === "parSession" && (
-              <div className="max-w-xs">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Session de collecte</label>
-                <select value={selectedSessionId} onChange={(e) => setSelectedSessionId(e.target.value)} className="w-full h-10 px-3 rounded-lg border border-gray-300 text-sm">
-                  <option value="">Sélectionner une session...</option>
-                  {sessions.map((s) => (
-                    <option key={s.idSession} value={s.idSession}>
-                      {s.description || `Session #${s.idSession}`} - {s.typeCollecte}
-                    </option>
-                  ))}
-                </select>
-              </div>
+            {filterMode === "parSession" && (
+              <select value={selectedSessionId}
+                onChange={e => setSelectedSessionId(e.target.value)}
+                className="h-10 px-3 rounded-xl border border-gray-300 text-sm focus:outline-none focus:border-green-500">
+                <option value="">-- Toutes les sessions --</option>
+                {sessions.map(s => (
+                  <option key={s.idSession} value={s.idSession}>
+                    {s.description || `Session #${s.idSession}`}
+                  </option>
+                ))}
+              </select>
             )}
           </div>
+
+          {/* Tableau */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-gray-50 border-b border-gray-100">
-                    <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Description</th>
-                    <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Département</th>
-                    <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Session</th>
-                    <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Données</th>
-                    <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Date création</th>
-                    <th className="text-center px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50">
-                  {traitementsToShow.map((t) => (
-                    <tr key={t.idTraitement} className="hover:bg-gray-50 transition">
-                      <td className="px-5 py-4">
-                        <p className="font-semibold text-gray-800">{t.description || `Traitement #${t.idTraitement}`}</p>
-                      </td>
-                      <td className="px-5 py-4 text-gray-600 text-sm">{t.department || "—"}</td>
-                      <td className="px-5 py-4 text-gray-600 text-sm">#{t.sessionCollecteId || "Sans session"}</td>
-                      <td className="px-5 py-4">
-                        <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">{t.nombreDonnee || 0}</span>
-                      </td>
-                      <td className="px-5 py-4 text-xs text-gray-500">{formatDate(t.dateCreation)}</td>
-                      <td className="px-5 py-4">
-                        <div className="flex items-center justify-center gap-2">
-                          <button onClick={() => { setAllTraitements(current => current); showToast(`Traitement: ${t.description}`, "success"); }} className="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-xs font-medium hover:bg-blue-200">Voir</button>
-                          <button onClick={() => { setActiveTab("declarations"); setShowCreerDeclaration(true); }} className="px-3 py-1 bg-purple-100 text-purple-700 rounded-lg text-xs font-medium hover:bg-purple-200">Déclaration</button>
-                        </div>
-                      </td>
+            {loadingTraitements ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="w-8 h-8 border-4 border-green-200 border-t-green-700 rounded-full animate-spin" />
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-gray-50 border-b border-gray-100">
+                      {["Description", "Département", "Session", "Données", "Date création", "Actions"].map((h, i) => (
+                        <th key={h} className={`px-5 py-3 text-xs font-semibold text-gray-500 uppercase ${i === 2 || i === 3 ? "text-center" : "text-left"}`}>{h}</th>
+                      ))}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-              {traitementsToShow.length === 0 && <div className="py-12 text-center text-gray-400 text-sm">Aucun traitement</div>}
-            </div>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {traitementsAffiches.map(t => (
+                      <tr key={t.idTraitement} className="hover:bg-gray-50 transition">
+                        <td className="px-5 py-4">
+                          <p className="font-semibold text-gray-800">{t.description || `#${t.idTraitement}`}</p>
+                          <p className="text-xs text-gray-400 mt-0.5 max-w-xs truncate">{t.texte || "—"}</p>
+                        </td>
+                        <td className="px-5 py-4">
+                          <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium">
+                            {t.department || "—"}
+                          </span>
+                        </td>
+                        <td className="px-5 py-4 text-center text-xs text-gray-500">
+                          {t.sessionCollecteId ? `#${t.sessionCollecteId}` : "—"}
+                        </td>
+                        <td className="px-5 py-4 text-center">
+                          <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
+                            {t.nombreDonnee ?? 0}
+                          </span>
+                        </td>
+                        <td className="px-5 py-4 text-xs text-gray-500">{formatDateShort(t.dateCreation)}</td>
+                        <td className="px-5 py-4">
+                          <div className="flex items-center gap-2">
+                            <button onClick={() => setDetailTraitement(t)}
+                              className="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-xs font-medium hover:bg-blue-200">
+                              Voir
+                            </button>
+                            <button onClick={() => { setShowCreerDeclaration(true); setActiveTab("declarations"); }}
+                              className="px-3 py-1 bg-purple-100 text-purple-700 rounded-lg text-xs font-medium hover:bg-purple-200">
+                              Déclaration
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {traitementsAffiches.length === 0 && (
+                  <div className="py-12 text-center text-gray-400 text-sm">
+                    {filterMode === "parSession" && !selectedSessionId
+                      ? "Sélectionnez une session pour voir ses traitements"
+                      : "Aucun traitement trouvé"}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}
 
+      {/* ── DÉCLARATIONS ── */}
       {activeTab === "declarations" && (
         <div className="space-y-4">
           <div className="flex justify-between items-center">
             <h2 className="text-xl font-bold text-gray-800">Déclarations</h2>
-            <button onClick={() => setShowCreerDeclaration(true)} className="px-4 py-2 bg-green-700 text-white rounded-xl text-sm font-medium hover:bg-green-800 transition">
+            <button onClick={() => setShowCreerDeclaration(true)}
+              className="px-4 py-2 bg-green-700 text-white rounded-xl text-sm font-medium hover:bg-green-800 transition">
               + Nouvelle déclaration
             </button>
           </div>
@@ -718,33 +664,29 @@ function DpoDashboard() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-gray-50 border-b border-gray-100">
-                    <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">ID</th>
-                    <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Type</th>
-                    <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Dénomination</th>
-                    <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Date</th>
-                    <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Statut</th>
+                    {["ID", "Type", "Dénomination", "Date", "Statut"].map(h => (
+                      <th key={h} className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">{h}</th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
-                  {declarations.map((d) => (
+                  {declarations.map(d => (
                     <tr key={d.idDeclaration} className="hover:bg-gray-50 transition">
                       <td className="px-5 py-4 font-mono text-xs text-gray-400">#{d.idDeclaration}</td>
-                      <td className="px-5 py-4">
-                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">{d.typeDeclaration || "N/A"}</span>
-                      </td>
-                      <td className="px-5 py-4 font-medium text-gray-800">{d.denominationTraitement || "—"}</td>
+                      <td className="px-5 py-4"><span className="px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-700">{d.typeDeclaration}</span></td>
+                      <td className="px-5 py-4 font-medium text-gray-800">{d.denominationTraitement}</td>
                       <td className="px-5 py-4 text-xs text-gray-500">{formatDateShort(d.dateSoumission)}</td>
                       <td className="px-5 py-4">{declarationStatutBadge(d.statut)}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-              {declarations.length === 0 && <div className="py-12 text-center text-gray-400 text-sm">Aucune déclaration</div>}
             </div>
           </div>
         </div>
       )}
 
+      {/* ── DEMANDES ── */}
       {activeTab === "demandes" && (
         <div className="space-y-4">
           <div className="flex justify-between items-center">
@@ -760,42 +702,40 @@ function DpoDashboard() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-gray-50 border-b border-gray-100">
-                    <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Usager</th>
-                    <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Type</th>
-                    <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Description</th>
-                    <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Date</th>
-                    <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Statut</th>
-                    <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Traité par</th>
+                    {["Usager", "Type", "Description", "Date", "Statut", "Traité par"].map(h => (
+                      <th key={h} className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">{h}</th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
-                  {demandes.map((d) => (
+                  {demandes.map(d => (
                     <tr key={d.id} className="hover:bg-gray-50 transition">
-                      <td className="px-5 py-4 font-medium text-gray-800">{d.usagerNom || d.usager || "—"}</td>
+                      <td className="px-5 py-4 font-medium text-gray-800">{d.usagerNom}</td>
                       <td className="px-5 py-4">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${d.type === "MODIFICATION" || d.typeDemande === "MODIFICATION" ? "bg-orange-100 text-orange-700" : "bg-red-100 text-red-700"}`}>
-                          {d.type || d.typeDemande || "—"}
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${d.typeDemande === "MODIFICATION" ? "bg-orange-100 text-orange-700" : "bg-red-100 text-red-700"}`}>
+                          {d.typeDemande}
                         </span>
                       </td>
-                      <td className="px-5 py-4 text-gray-600 text-sm max-w-xs truncate">{d.descriptionDemande || d.detail || "—"}</td>
-                      <td className="px-5 py-4 text-xs text-gray-500">{formatDateShort(d.dateDemande || d.date)}</td>
-                      <td className="px-5 py-4">{demandeStatutBadge(d.statut || d.statutDemande)}</td>
-                      <td className="px-5 py-4 text-sm text-gray-600">{d.utilisateurMetierNom || "—"}</td>
+                      <td className="px-5 py-4 text-gray-600 text-sm max-w-xs truncate">{d.descriptionDemande}</td>
+                      <td className="px-5 py-4 text-xs text-gray-500">{formatDateShort(d.dateDemande)}</td>
+                      <td className="px-5 py-4">{demandeStatutBadge(d.statutDemande)}</td>
+                      <td className="px-5 py-4 text-sm text-gray-600">{d.utilisateurMetierNom}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-              {demandes.length === 0 && <div className="py-12 text-center text-gray-400 text-sm">Aucune demande</div>}
             </div>
           </div>
         </div>
       )}
 
-      {showCreerDeclaration && (
-        <ModalCreerDeclaration
-          traitements={allTraitements}
-          onClose={() => setShowCreerDeclaration(false)}
-          onSave={handleCreateDeclaration}
+      {/* ── MODALS ── */}
+
+
+      {detailTraitement && (
+        <ModalDetailTraitement
+          traitement={detailTraitement}
+          onClose={() => setDetailTraitement(null)}
         />
       )}
 

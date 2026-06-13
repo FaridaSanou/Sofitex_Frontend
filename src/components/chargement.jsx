@@ -8,6 +8,7 @@ const fonctionController = async (adresseEmail, navigate ) => {
   const token = localStorage.getItem("token");
   // alert("Token récupéré : " + token);
   try {
+    // alert("Envoi de la requête pour récupérer la fonction...");
     const response = await fetch(`http://localhost:8080/api/verification/fonction?email=${adresseEmail}`, {
       method: "GET",
       headers: { 
@@ -15,13 +16,17 @@ const fonctionController = async (adresseEmail, navigate ) => {
       },
     });
 
-    // alert("Réponse reçue du serveur : " );
+    // alert("Réponse reçue du serveur : " + response.status);
     if (!response.ok) throw new Error("Échec");
+
+  //  alert("Réponse OK, traitement des données...");
 
     const data = await response.json();
     // alert(JSON.stringify(data));
     // alert("Fonction récupérée : " + JSON.stringify(data));
-    
+
+  //  alert(JSON.stringify(data));
+
     const ROUTES_PAR_TYPE = {
       "DG": "/dg",
       "DPO": "/dpo",
@@ -29,6 +34,8 @@ const fonctionController = async (adresseEmail, navigate ) => {
       "Usager": "/tableau-de-bord/usager",
       "UTILISATEUR_METIER": "/metier",
     };
+
+    // alert("Détermination de la route en fonction du type...");
 
   // Guard: données manquantes ou corrompues
   if (!data || !data.type) {
@@ -56,18 +63,7 @@ const fonctionController = async (adresseEmail, navigate ) => {
 
 
   } catch (err) {
-      const savedRole = localStorage.getItem("role");
-      if (savedRole) {
-        const ROUTES_PAR_ROLE = {
-          "ROLE_ADMINISTRATEUR": "/dashboard",
-          "ROLE_DPO": "/dpo",
-          "ROLE_CIL": "/cil",
-          "ROLE_DG": "/dg",
-          "ROLE_UTILISATEUR_METIER": "/metier",
-        };
-        const route = ROUTES_PAR_ROLE[savedRole];
-        if (route) { navigate(route); return; }
-      }
+      // alert("Erreur lors de la récupération de la fonction.");
       navigate("/");
   }
 };

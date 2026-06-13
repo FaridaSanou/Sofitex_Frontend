@@ -67,7 +67,7 @@ export default function EnAttente() {
 
           <p className="text-sm text-gray-500 mb-8">
             Votre demande d'accès a bien été enregistrée.<br />
-            Un administrateur doit valider votre compte avant que vous puissiez vous connecter.
+            Un administrateur doit valider votre compte avant que vous puissiez vous connecter et acceder à votre tableau de bord
           </p>
 
           {/* Étapes de progression */}
@@ -111,13 +111,6 @@ export default function EnAttente() {
 
           </div>
 
-          {/* Info box */}
-          <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 mb-6 text-left">
-            <p className="text-xs text-blue-700 font-semibold mb-1">ℹ️ Que se passe-t-il ensuite ?</p>
-            <p className="text-xs text-blue-600">
-              Une fois votre compte validé par l'administrateur, vous pourrez vous connecter normalement et accéder à votre tableau de bord.
-            </p>
-          </div>
 
           {/* Boutons */}
           <div className="flex gap-3">
