@@ -56,17 +56,17 @@ function Icon({ name, className = "w-5 h-5" }) {
 // MODULE 1 : Données de référence
 // Listes utilisées dans le formulaire de création de traitement
 // ═══════════════════════════════════════════════════════════════════
-const DIRECTIONS = ["DSI","DRH","Direction Commerciale","Direction Financière","Direction Générale","Direction Technique","Direction Qualité","Direction Logistique","Direction Juridique","Autre"];
-const ORIGINES = ["Directement auprès des personnes (formulaires en ligne, papier)","Via des objets connectés ou capteurs","Importation de fichiers externes ou bases de données existantes"];
-const CATEGORIES_PERSONNES = ["Employés SOFITEX","Producteurs de coton","Clients","Fournisseurs / Sous-traitants","Visiteurs","Candidats à l'embauche","Usagers externes"];
+const DIRECTIONS = ["DSI", "DRH", "Direction Commerciale", "Direction Financière", "Direction Générale", "Direction Technique", "Direction Qualité", "Direction Logistique", "Direction Juridique", "Autre"];
+const ORIGINES = ["Directement auprès des personnes (formulaires en ligne, papier)", "Via des objets connectés ou capteurs", "Importation de fichiers externes ou bases de données existantes"];
+const CATEGORIES_PERSONNES = ["Employés SOFITEX", "Producteurs de coton", "Clients", "Fournisseurs / Sous-traitants", "Visiteurs", "Candidats à l'embauche", "Usagers externes"];
 const GROUPES_DONNEES = [
-  { groupe: "État Civil", items: ["Nom","Prénom","Genre","CNIB / Passeport"] },
-  { groupe: "Coordonnées", items: ["Téléphone","Adresse mail","Adresse postale"] },
-  { groupe: "Professionnel", items: ["Diplômes","Poste occupé","Historique de carrière"] },
-  { groupe: "Financier", items: ["Numéro de compte bancaire","Salaire"] },
-  { groupe: "Données technologiques / visuelles", items: ["Adresse IP","Images de caméras","Empreintes (biométrie)"] },
+  { groupe: "État Civil", items: ["Nom", "Prénom", "Genre", "CNIB / Passeport"] },
+  { groupe: "Coordonnées", items: ["Téléphone", "Adresse mail", "Adresse postale"] },
+  { groupe: "Professionnel", items: ["Diplômes", "Poste occupé", "Historique de carrière"] },
+  { groupe: "Financier", items: ["Numéro de compte bancaire", "Salaire"] },
+  { groupe: "Données technologiques / visuelles", items: ["Adresse IP", "Images de caméras", "Empreintes (biométrie)"] },
 ];
-const UNITES = ["Mois","Années","Durée indéterminée"];
+const UNITES = ["Mois", "Années", "Durée indéterminée"];
 
 // ═══════════════════════════════════════════════════════════════════
 // MODULE 2 : Utilitaires de formatage des dates
@@ -452,7 +452,7 @@ function ModalCreerTraitement({ onClose, onSave, sessions }) {
                 <label className="block text-sm font-semibold text-gray-700 mb-1">Catégorie de personnes concernées <span className="text-red-500">*</span></label>
                 <select value={form.categorie_personnes} onChange={e => set("categorie_personnes", e.target.value)} className={inp}>
                   <option value="">-- Sélectionner --</option>
-                  {["Employés SOFITEX","Producteurs de coton","Clients","Fournisseurs / Sous-traitants","Visiteurs","Candidats à l'embauche","Usagers externes"].map(c => (
+                  {["Employés SOFITEX", "Producteurs de coton", "Clients", "Fournisseurs / Sous-traitants", "Visiteurs", "Candidats à l'embauche", "Usagers externes"].map(c => (
                     <option key={c} value={c}>{c}</option>
                   ))}
                 </select>
@@ -605,7 +605,7 @@ function UtilisateurMetierDashboard() {
         setSessions(res.data);
         setPreviousSessionCount(res.data.length);
       })
-      .catch(() => {});
+      .catch(() => { });
     if (email) {
       api.get("/verification/fonction", { params: { email } })
         .then(res => {
@@ -617,7 +617,7 @@ function UtilisateurMetierDashboard() {
           throw new Error("no id");
         })
         .then(res => setTraitements(res.data))
-        .catch(() => {});
+        .catch(() => { });
     }
   }, []);
 
@@ -631,7 +631,7 @@ function UtilisateurMetierDashboard() {
           }
           setPreviousSessionCount(res.data.length);
         })
-        .catch(() => {});
+        .catch(() => { });
     }, 30000);
     return () => clearInterval(interval);
   }, [previousSessionCount]);
@@ -949,11 +949,10 @@ function UtilisateurMetierDashboard() {
                               <p>Au {formatDateTime(s.dateFin)}</p>
                             </td>
                             <td className="px-4 py-3">
-                              <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-                                s.statutSession === "EN_COURS" ? "bg-blue-100 text-blue-700" :
-                                s.statutSession === "TERMINEE" ? "bg-green-100 text-green-700" :
-                                "bg-red-100 text-red-700"
-                              }`}>
+                              <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${s.statutSession === "EN_COURS" ? "bg-blue-100 text-blue-700" :
+                                  s.statutSession === "TERMINEE" ? "bg-green-100 text-green-700" :
+                                    "bg-red-100 text-red-700"
+                                }`}>
                                 {s.statutSession === "EN_COURS" ? "En cours" : s.statutSession === "TERMINEE" ? "Terminée" : "Annulée"}
                               </span>
                             </td>
