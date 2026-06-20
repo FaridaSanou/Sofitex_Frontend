@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom"
 import Login from "./pages/Login"
 import CreateAccount from "./pages/CreateAccount"
+import ForgotPassword from "./pages/ForgotPassword"
 import AdminDashboard from "./pages/AdminDashboard"
 import DpoDashboard from "./pages/DpoDashboard"
 import CilDashboard from "./pages/CilDashboard"
@@ -14,6 +15,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Login />} />
         <Route path="/register" element={<CreateAccount />} />
+        <Route path="/mot-de-passe-oublie" element={<ForgotPassword />} />
         <Route path="/dashboard" element={<AdminDashboard />} />
         <Route path="/dpo" element={<DpoDashboard />} />
         {/* <Route path="/" element={<DpoDashboard />} /> */}

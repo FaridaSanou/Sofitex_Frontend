@@ -171,6 +171,13 @@ export default function Login() {
               {erreurs.motdepasse && <p className="text-red-500 text-xs mt-1">{erreurs.motdepasse}</p>}
             </div>
 
+            {/* Lien mot de passe oublié */}
+            <div className="text-right mb-4">
+              <a href="/mot-de-passe-oublie" className="text-sm text-green-700 hover:underline font-medium">
+                Mot de passe oublié ?
+              </a>
+            </div>
+
             {/* Bouton Se connecter */}
             <button
               type="submit"
