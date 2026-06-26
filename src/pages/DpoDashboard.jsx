@@ -59,7 +59,7 @@ const toLocalDateTime = (d) => {
 // ═══════════════════════════════════════════════════════════════════
 const statutBadge = (s) => {
   const map = {
-    EN_COURS: "bg-blue-100 text-blue-800",
+    EN_COURS: "bg-green-100 text-green-800",
     TERMINEE: "bg-green-100 text-green-800",
     ANNULEE: "bg-red-100 text-red-800",
   };
@@ -69,11 +69,14 @@ const statutBadge = (s) => {
 
 const declarationStatutBadge = (s) => {
   const map = {
+    BROUILLON: "bg-gray-200 text-gray-700",
     EN_ATTENTE: "bg-yellow-100 text-yellow-800",
+    APPROUVEE_DG: "bg-green-100 text-green-800",
+    REJETEE_DG: "bg-red-100 text-red-800",
     APPROUVEE: "bg-green-100 text-green-800",
     REJETEE: "bg-red-100 text-red-800",
   };
-  const labels = { EN_ATTENTE: "En attente", APPROUVEE: "Approuvée", REJETEE: "Rejetée" };
+  const labels = { BROUILLON: "Brouillon", EN_ATTENTE: "En attente", APPROUVEE_DG: "Approuvée DG", REJETEE_DG: "Rejetée DG", APPROUVEE: "Approuvée", REJETEE: "Rejetée" };
   return <span className={`px-2 py-1 rounded-full text-xs font-semibold ${map[s] || "bg-gray-100"}`}>{labels[s] || s}</span>;
 };
 
@@ -789,7 +792,7 @@ function ModalDetailTraitement({ traitement, onClose }) {
         <div className="p-6 space-y-3 text-sm">
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-green-50 rounded-lg p-3"><p className="text-xs text-green-600 font-semibold">Département</p><p className="font-medium">{traitement.department || "—"}</p></div>
-            <div className="bg-green-50 rounded-lg p-3"><p className="text-xs text-green-600 font-semibold">Statut</p><span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${traitement.envoyeAuDpo ? "bg-blue-100 text-blue-700" : "bg-yellow-100 text-yellow-700"}`}>{traitement.envoyeAuDpo ? "Envoyé DPO" : traitement.statut === "VALIDÉ" ? "Validé" : "En cours"}</span></div>
+            <div className="bg-green-50 rounded-lg p-3"><p className="text-xs text-green-600 font-semibold">Statut</p><span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${traitement.envoyeAuDpo ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}`}>{traitement.envoyeAuDpo ? "Envoyé DPO" : traitement.statut === "VALIDÉ" ? "Validé" : "En cours"}</span></div>
             <div className="bg-green-50 rounded-lg p-3 col-span-2"><p className="text-xs text-green-600 font-semibold">Description</p><p>{traitement.description || "—"}</p></div>
             <div className="bg-green-50 rounded-lg p-3 col-span-2"><p className="text-xs text-green-600 font-semibold">Texte / Finalité</p><p>{traitement.texte || "—"}</p></div>
             <div className="bg-green-50 rounded-lg p-3"><p className="text-xs text-green-600 font-semibold">Conservation</p><p>{traitement.dureeConservation ? `${traitement.dureeConservation} mois` : "—"}</p></div>
@@ -848,13 +851,10 @@ function ModalDetailDeclaration({ declaration, onClose }) {
 function DpoDashboard() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [sessions, setSessions] = useState([]);
-  const [loading, setLoading] = useState(true);
-
   useEffect(() => {
     api.get("/sessions")
       .then((res) => setSessions(res.data))
-      .catch(() => {})
-      .finally(() => setLoading(false));
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -872,8 +872,8 @@ function DpoDashboard() {
   const [form, setForm] = useState({ nomSession: "", dateDebut: "", dateFin: "", typeCollecte: "EN_LIGNE", lieu: "", description: "" });
   const [toast, setToast] = useState(null);
   const [declarations, setDeclarations] = useState([]);
-  const [demandes, setDemandes] = useState(mockDemandes);
-  const [notificationsCount, setNotificationsCount] = useState(mockDemandes.filter(d => d.statut === "EN_ATTENTE").length);
+  const [demandes] = useState(mockDemandes);
+  const [notificationsCount] = useState(mockDemandes.filter(d => d.statut === "EN_ATTENTE").length);
   const [showCreerDeclaration, setShowCreerDeclaration] = useState(false);
   const [detailTraitement, setDetailTraitement] = useState(null);
   const [detailDeclaration, setDetailDeclaration] = useState(null);
@@ -959,7 +959,7 @@ function DpoDashboard() {
         traitementDescription: formData.denominationTraitement || "Nouvelle déclaration",
         denominationTraitement: formData.denominationTraitement,
         dateSoumission,
-        statut: "EN_ATTENTE",
+        statut: "BROUILLON",
         secteur: formData.secteur,
         responsableDeclaration: formData.nomPrenomResponsable,
         dureeConservation: formData.dureeConservation,
@@ -981,6 +981,21 @@ function DpoDashboard() {
         });
     } else {
       addLocal();
+    }
+  };
+
+  const handleSoumettreAuDG = async (declaration) => {
+    try {
+      await api.put(`/declarations/${declaration.idDeclaration}/soumettre`);
+      setDeclarations((prev) =>
+        prev.map((d) =>
+          d.idDeclaration === declaration.idDeclaration ? { ...d, statut: "EN_ATTENTE" } : d
+        )
+      );
+      showToast("Déclaration #" + declaration.idDeclaration + " envoyée au DG avec succès");
+    } catch (err) {
+      console.error("Erreur soumission DG:", err.response?.status, err.response?.data || err.message);
+      showToast("Erreur lors de l'envoi au DG", "error");
     }
   };
 
@@ -1014,7 +1029,7 @@ function DpoDashboard() {
           <h2 className="text-xl font-bold text-gray-800">Vue d'ensemble</h2>
           <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
             <StatCard label="Sessions totales" value={stats.sessionsTotal} color="bg-green-700" />
-            <StatCard label="En cours" value={stats.enCours} color="bg-blue-500" />
+            <StatCard label="En cours" value={stats.enCours} color="bg-green-500" />
             <StatCard label="Terminées" value={stats.terminees} color="bg-emerald-500" />
             <StatCard label="Traitements" value={stats.traitementsTotal} color="bg-purple-500" />
             <StatCard label="Demandes en attente" value={stats.demandesEnAttente} color="bg-orange-500" />
@@ -1099,7 +1114,7 @@ function DpoDashboard() {
                         <p>Au {formatDate(s.dateFin)}</p>
                       </td>
                       <td className="px-5 py-4 text-center">
-                        <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">{s.nombreTraitements ?? 0}</span>
+                        <span className="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">{s.nombreTraitements ?? 0}</span>
                       </td>
                       <td className="px-5 py-4">{statutBadge(s.statutSession)}</td>
                       <td className="px-5 py-4 text-sm text-gray-600">{s.dpoNomComplet || "—"}</td>
@@ -1172,12 +1187,12 @@ function DpoDashboard() {
                       <td className="px-5 py-4 text-gray-600 text-sm">{t.department || "—"}</td>
                       <td className="px-5 py-4 text-gray-600 text-sm">#{t.sessionCollecteId || "Sans session"}</td>
                       <td className="px-5 py-4">
-                        <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">{t.nombreDonnee || 0}</span>
+                        <span className="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">{t.nombreDonnee || 0}</span>
                       </td>
                       <td className="px-5 py-4 text-xs text-gray-500">{formatDate(t.dateCreation)}</td>
                       <td className="px-5 py-4">
                         <div className="flex items-center justify-center gap-2">
-                          <button onClick={() => setDetailTraitement(t)} className="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-xs font-medium hover:bg-blue-200">Voir</button>
+                          <button onClick={() => setDetailTraitement(t)} className="px-3 py-1 bg-green-100 text-green-700 rounded-lg text-xs font-medium hover:bg-green-200">Voir</button>
                           <button onClick={() => { setDeclarationPreFill(t); setActiveTab("declarations"); setShowCreerDeclaration(true); }} className="px-3 py-1 bg-purple-100 text-purple-700 rounded-lg text-xs font-medium hover:bg-purple-200">Déclaration</button>
                         </div>
                       </td>
@@ -1223,7 +1238,14 @@ function DpoDashboard() {
                       <td className="px-5 py-4 text-xs text-gray-500">{formatDateShort(d.dateSoumission)}</td>
                       <td className="px-5 py-4">{declarationStatutBadge(d.statut)}</td>
                       <td className="px-5 py-4 text-center">
-                        <button onClick={() => setDetailDeclaration(d)} className="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-xs font-medium hover:bg-blue-200">Voir</button>
+                        <div className="flex items-center justify-center gap-2">
+                          <button onClick={() => setDetailDeclaration(d)} className="px-3 py-1 bg-green-100 text-green-700 rounded-lg text-xs font-medium hover:bg-green-200">Voir</button>
+                          {d.statut === "BROUILLON" && (
+                            <button onClick={() => handleSoumettreAuDG(d)} className="px-3 py-1 bg-green-700 text-white rounded-lg text-xs font-medium hover:bg-green-800">
+                              Envoyer au DG
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}

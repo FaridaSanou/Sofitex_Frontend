@@ -39,7 +39,7 @@ const statutBadge = (statut) => {
 // typeUtilisateur = nom de la classe Java (Usager, DPO, CIL, DG, UtilisateurMetier)
 const typeBadge = (type) => {
   const map = {
-    CIL:              "bg-blue-100 text-blue-700",
+    CIL:              "bg-green-100 text-green-700",
     DPO:              "bg-purple-100 text-purple-700",
     DG:               "bg-indigo-100 text-indigo-700",
     Usager:           "bg-teal-100 text-teal-700",
@@ -286,7 +286,7 @@ const StatCards = ({ stats }) => (
       { label: "Total demandes",      value: stats.total,       color: "bg-green-700",  sub: "Toutes les demandes" },
       { label: "En attente",          value: stats.enAttente,   color: "bg-yellow-500", sub: "À traiter" },
       { label: "Approuvées",          value: stats.approuvees,  color: "bg-emerald-500",sub: "Comptes activés" },
-      { label: "Utilisateurs actifs", value: stats.utilisateurs,color: "bg-blue-500",   sub: "Comptes actifs" },
+      { label: "Utilisateurs actifs", value: stats.utilisateurs,color: "bg-green-500",   sub: "Comptes actifs" },
     ].map((s) => (
       <div key={s.label} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
         <div className={`w-10 h-10 ${s.color} rounded-xl flex items-center justify-center mb-3`}>
@@ -428,7 +428,7 @@ const DemandesTable = ({ demandesFiltered, loading, setDetailModal, handleValide
                 <td className="px-5 py-4 text-gray-500 text-xs">{formatDate(d.dateDemande)}</td>
                 <td className="px-5 py-4">
                   <div className="flex items-center justify-center gap-2">
-                    <button onClick={() => setDetailModal(d)} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition" title="Détails">
+                    <button onClick={() => setDetailModal(d)} className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition" title="Détails">
                       <Icon name="eye" className="w-4 h-4" />
                     </button>
                     {d.statutDemandeAcces === "EN_ATTENTE" && (
@@ -485,8 +485,8 @@ const UtilisateursTable = ({ utilisateursFiltres, loading, handleSuspendre, hand
               <tr key={u.id} className="hover:bg-gray-50 transition">
                 <td className="px-5 py-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                      <span className="text-blue-700 font-bold text-xs">
+                    <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                      <span className="text-green-700 font-bold text-xs">
                         {(u.prenom ?? "?")[0].toUpperCase()}
                       </span>
                     </div>

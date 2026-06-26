@@ -1,9 +1,6 @@
 import { useState, useEffect } from "react";
 import api from "../services/api";
 
-// ═══════════════════════════════════════════════════════════════════
-// Utilitaires dates
-// ═══════════════════════════════════════════════════════════════════
 const toDate = (d) => {
     if (!d) return null;
     if (Array.isArray(d)) return new Date(d[0], d[1] - 1, d[2], d[3] || 0, d[4] || 0);
@@ -16,9 +13,6 @@ const formatDate = (d) => {
         : "—";
 };
 
-// ═══════════════════════════════════════════════════════════════════
-// Icônes SVG
-// ═══════════════════════════════════════════════════════════════════
 function Icon({ name, className = "w-5 h-5" }) {
     const cls = `inline-block flex-shrink-0 ${className}`;
     switch (name) {
@@ -43,22 +37,23 @@ function Icon({ name, className = "w-5 h-5" }) {
     }
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// Badge statut traitement
-// ═══════════════════════════════════════════════════════════════════
 function BadgeStatut({ statut }) {
     const map = {
-        EN_COURS: { label: "En attente", cls: "bg-yellow-100 text-yellow-800" },
-        VALIDE: { label: "Validé", cls: "bg-green-100 text-green-800" },
-        REJETE: { label: "Rejeté", cls: "bg-red-100 text-red-800" },
+        EN_ATTENTE: { label: "En attente", cls: "bg-yellow-100 text-yellow-800" },
+        APPROUVEE_DG: { label: "Validée", cls: "bg-green-100 text-green-800" },
+        REJETEE_DG: { label: "Rejetée", cls: "bg-red-100 text-red-800" },
     };
-    const s = map[statut] || { label: statut, cls: "bg-gray-100 text-gray-600" };
+    const s = map[statut] || { label: statut || "Inconnu", cls: "bg-gray-100 text-gray-600" };
     return <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${s.cls}`}>{s.label}</span>;
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// Toast
-// ═══════════════════════════════════════════════════════════════════
+const TYPE_LABELS = {
+    NORMALE: "Normale",
+    AUTORISATION: "Autorisation",
+    COLLECTE_SITE_INTERNET: "Collecte site",
+    SYSTEME_VIDEO_SURVEILLANCE: "Vidéosurveillance",
+};
+
 function Toast({ toast }) {
     if (!toast) return null;
     const ok = toast.type !== "error";
@@ -70,72 +65,76 @@ function Toast({ toast }) {
     );
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// Modal Détail + Décision
-// ═══════════════════════════════════════════════════════════════════
-function ModalDecision({ traitement, onClose, onDecision }) {
+function ModalDecision({ declaration, onClose, onValider, onRejeter }) {
     const [commentaire, setCommentaire] = useState("");
-    const [action, setAction] = useState(null); // "VALIDE" | "REJETE"
+    const [action, setAction] = useState(null);
+    const [loading, setLoading] = useState(false);
 
-    const handleConfirm = () => {
+    const handleConfirm = async () => {
         if (!action) return;
-        onDecision(traitement.idTraitement, action, commentaire);
-        onClose();
+        setLoading(true);
+        try {
+            if (action === "VALIDE") {
+                await onValider(declaration.idDeclaration);
+            } else {
+                await onRejeter(declaration.idDeclaration, commentaire);
+            }
+            onClose();
+        } catch {
+            setLoading(false);
+        }
     };
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl">
-                {/* Header */}
                 <div className="bg-green-900 text-white px-6 py-4 rounded-t-2xl flex justify-between items-center">
                     <div>
                         <h3 className="font-bold text-lg">Décision sur la déclaration</h3>
-                        <p className="text-green-300 text-xs">#{traitement.idTraitement} — {traitement.description}</p>
+                        <p className="text-green-300 text-xs">#{declaration.idDeclaration} — {declaration.traitementDescription || declaration.typeDeclaration}</p>
                     </div>
-                    <button onClick={onClose} className="text-green-300 hover:text-white">
+                    <button onClick={onClose} className="text-green-300 hover:text-white" disabled={loading}>
                         <Icon name="close" className="w-5 h-5" />
                     </button>
                 </div>
 
-                {/* Détails */}
                 <div className="p-6 space-y-4 text-sm">
                     <div className="grid grid-cols-2 gap-3">
                         <div className="bg-gray-50 rounded-xl p-3">
-                            <p className="text-xs text-gray-400 font-semibold mb-0.5">Département</p>
-                            <p className="font-medium text-gray-800">{traitement.department || "—"}</p>
+                            <p className="text-xs text-gray-400 font-semibold mb-0.5">Type</p>
+                            <p className="font-medium text-gray-800">{TYPE_LABELS[declaration.typeDeclaration] || declaration.typeDeclaration || "—"}</p>
                         </div>
                         <div className="bg-gray-50 rounded-xl p-3">
-                            <p className="text-xs text-gray-400 font-semibold mb-0.5">Statut actuel</p>
-                            <BadgeStatut statut={traitement.statut} />
+                            <p className="text-xs text-gray-400 font-semibold mb-0.5">Statut</p>
+                            <BadgeStatut statut={declaration.statut} />
                         </div>
                         <div className="bg-gray-50 rounded-xl p-3 col-span-2">
-                            <p className="text-xs text-gray-400 font-semibold mb-0.5">Description</p>
-                            <p className="text-gray-800">{traitement.description || "—"}</p>
-                        </div>
-                        <div className="bg-gray-50 rounded-xl p-3 col-span-2">
-                            <p className="text-xs text-gray-400 font-semibold mb-0.5">Finalité</p>
-                            <p className="text-gray-800">{traitement.texte || "—"}</p>
+                            <p className="text-xs text-gray-400 font-semibold mb-0.5">Dénomination</p>
+                            <p className="text-gray-800">{declaration.traitementDescription || "—"}</p>
                         </div>
                         <div className="bg-gray-50 rounded-xl p-3">
-                            <p className="text-xs text-gray-400 font-semibold mb-0.5">Conservation</p>
-                            <p className="text-gray-800">{traitement.dureeConservation} mois</p>
+                            <p className="text-xs text-gray-400 font-semibold mb-0.5">Secteur</p>
+                            <p className="text-gray-800">{declaration.secteur || "—"}</p>
                         </div>
                         <div className="bg-gray-50 rounded-xl p-3">
-                            <p className="text-xs text-gray-400 font-semibold mb-0.5">Date création</p>
-                            <p className="text-gray-800">{formatDate(traitement.dateCreation)}</p>
+                            <p className="text-xs text-gray-400 font-semibold mb-0.5">Date soumission</p>
+                            <p className="text-gray-800">{formatDate(declaration.dateSoumission)}</p>
                         </div>
                         <div className="bg-gray-50 rounded-xl p-3">
-                            <p className="text-xs text-gray-400 font-semibold mb-0.5">Certification</p>
-                            <p className="text-gray-800">{traitement.certificationSecurite || "—"}</p>
+                            <p className="text-xs text-gray-400 font-semibold mb-0.5">Responsable</p>
+                            <p className="text-gray-800">{declaration.responsableDeclaration || "—"}</p>
+                        </div>
+                        <div className="bg-gray-50 rounded-xl p-3">
+                            <p className="text-xs text-gray-400 font-semibold mb-0.5">Contact confidentialité</p>
+                            <p className="text-gray-800">{declaration.contactConfidentialite || "—"}</p>
                         </div>
                         <div className="bg-gray-50 rounded-xl p-3">
                             <p className="text-xs text-gray-400 font-semibold mb-0.5">DPO responsable</p>
-                            <p className="text-gray-800">{traitement.dpoNomComplet || "—"}</p>
+                            <p className="text-gray-800">{declaration.dpoNomPrenom || "—"}</p>
                         </div>
                     </div>
 
-                    {/* Choix de décision */}
-                    {traitement.statut === "EN_COURS" && (
+                    {declaration.statut === "EN_ATTENTE" && (
                         <>
                             <div className="border-t border-gray-100 pt-4">
                                 <p className="text-sm font-semibold text-gray-700 mb-3">Votre décision <span className="text-red-500">*</span></p>
@@ -169,27 +168,27 @@ function ModalDecision({ traitement, onClose, onDecision }) {
                             </div>
 
                             <div className="flex gap-3 justify-end pt-2">
-                                <button onClick={onClose} className="px-4 py-2 rounded-lg border border-gray-300 text-gray-600 text-sm hover:bg-gray-50">
+                                <button onClick={onClose} className="px-4 py-2 rounded-lg border border-gray-300 text-gray-600 text-sm hover:bg-gray-50" disabled={loading}>
                                     Annuler
                                 </button>
                                 <button
                                     onClick={handleConfirm}
-                                    disabled={!action || (action === "REJETE" && !commentaire.trim())}
-                                    className={`px-5 py-2 rounded-lg text-white text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed transition-all ${action === "REJETE" ? "bg-red-500 hover:bg-red-600" : "bg-green-700 hover:bg-green-800"}`}
+                                    disabled={!action || loading || (action === "REJETE" && !commentaire.trim())}
+                                    className={`px-5 py-2 rounded-lg text-white text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed transition-all ${loading ? "bg-gray-400" : action === "REJETE" ? "bg-red-500 hover:bg-red-600" : "bg-green-700 hover:bg-green-800"}`}
                                 >
-                                    {action === "VALIDE" ? <><Icon name="check" className="w-4 h-4 mr-1.5" />Confirmer la validation</> :
+                                    {loading ? "Traitement..." :
+                                        action === "VALIDE" ? <><Icon name="check" className="w-4 h-4 mr-1.5" />Confirmer la validation</> :
                                         action === "REJETE" ? <><Icon name="close" className="w-4 h-4 mr-1.5" />Confirmer le rejet</> :
-                                            "Choisir une décision"}
+                                        "Choisir une décision"}
                                 </button>
                             </div>
                         </>
                     )}
 
-                    {/* Déjà traité */}
-                    {traitement.statut !== "EN_COURS" && (
-                        <div className={`rounded-xl p-4 text-sm font-medium flex items-center gap-2 ${traitement.statut === "VALIDE" ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"}`}>
-                            <Icon name={traitement.statut === "VALIDE" ? "check" : "close"} className="w-4 h-4" />
-                            Cette déclaration a déjà été {traitement.statut === "VALIDE" ? "validée" : "rejetée"}.
+                    {declaration.statut !== "EN_ATTENTE" && (
+                        <div className={`rounded-xl p-4 text-sm font-medium flex items-center gap-2 ${declaration.statut === "APPROUVEE_DG" ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"}`}>
+                            <Icon name={declaration.statut === "APPROUVEE_DG" ? "check" : "close"} className="w-4 h-4" />
+                            Cette déclaration a déjà été {declaration.statut === "APPROUVEE_DG" ? "validée" : "rejetée"}.
                             <button onClick={onClose} className="ml-auto underline text-xs">Fermer</button>
                         </div>
                     )}
@@ -199,15 +198,12 @@ function ModalDecision({ traitement, onClose, onDecision }) {
     );
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// Composant principal DgDashboard
-// ═══════════════════════════════════════════════════════════════════
 function DgDashboard() {
     const [activeSection, setActiveSection] = useState("dashboard");
     const [sidebarOpen, setSidebarOpen] = useState(true);
-    const [traitements, setTraitements] = useState([]);
-    const [sessions, setSessions] = useState([]);
-    const [selectedTraitement, setSelectedTraitement] = useState(null);
+    const [declarations, setDeclarations] = useState([]);
+    const [historique, setHistorique] = useState([]);
+    const [selectedDeclaration, setSelectedDeclaration] = useState(null);
     const [toast, setToast] = useState(null);
     const [recherche, setRecherche] = useState("");
     const [filtreStatut, setFiltreStatut] = useState("tous");
@@ -218,22 +214,25 @@ function DgDashboard() {
     };
 
     useEffect(() => {
-        // Charger tous les traitements envoyés (visibles par DG = ADMINISTRATEUR)
-        api.get("/traitements").then(res => setTraitements(res.data)).catch(() => { });
-        api.get("/sessions").then(res => setSessions(res.data)).catch(() => { });
+        api.get("/declarations/en-attente")
+            .then(res => setDeclarations(res.data))
+            .catch(() => {});
     }, []);
 
-    // Décision DG : VALIDE ou REJETE via PATCH /api/traitements/{id}/statut
-    const handleDecision = (id, statut, commentaire) => {
-        api.patch(`/traitements/${id}/statut`, null, { params: { statut } })
-            .then(res => {
-                setTraitements(prev => prev.map(t => t.idTraitement === id ? res.data : t));
-                showToast(statut === "VALIDE" ? "Déclaration validée avec succès !" : "Déclaration rejetée.");
-            })
-            .catch(err => {
-                console.error("Erreur décision DG:", err.response?.status, err.response?.data);
-                showToast("Erreur lors de l'enregistrement de la décision.", "error");
-            });
+    const handleValider = async (id) => {
+        const res = await api.put(`/declarations/${id}/valider`);
+        const updated = res.data;
+        setDeclarations(prev => prev.filter(d => d.idDeclaration !== id));
+        setHistorique(prev => [{ ...updated, decidedAt: new Date().toISOString(), decision: "APPROUVEE_DG" }, ...prev]);
+        showToast("Déclaration validée avec succès !");
+    };
+
+    const handleRejeter = async (id, commentaire) => {
+        const res = await api.put(`/declarations/${id}/rejeter`, { commentaire });
+        const updated = res.data;
+        setDeclarations(prev => prev.filter(d => d.idDeclaration !== id));
+        setHistorique(prev => [{ ...updated, decidedAt: new Date().toISOString(), decision: "REJETEE_DG" }, ...prev]);
+        showToast("Déclaration rejetée.");
     };
 
     const handleLogout = () => {
@@ -241,24 +240,22 @@ function DgDashboard() {
         window.location.href = "/";
     };
 
-    // Stats
-    const enAttente = traitements.filter(t => t.statut === "EN_COURS" && t.envoyeAuDpo).length;
-    const valides = traitements.filter(t => t.statut === "VALIDE").length;
-    const rejetes = traitements.filter(t => t.statut === "REJETE").length;
+    const enAttente = declarations.length;
+    const valides = historique.filter(h => h.decision === "APPROUVEE_DG").length;
+    const rejetes = historique.filter(h => h.decision === "REJETEE_DG").length;
 
-    // Filtres
-    const traitementsFiltres = traitements
-        .filter(t => t.envoyeAuDpo) // uniquement ceux transmis au DPO/DG
-        .filter(t => {
-            if (filtreStatut === "EN_COURS") return t.statut === "EN_COURS";
-            if (filtreStatut === "VALIDE") return t.statut === "VALIDE";
-            if (filtreStatut === "REJETE") return t.statut === "REJETE";
+    const declarationsFiltrees = declarations
+        .filter(d => {
+            if (filtreStatut === "EN_ATTENTE") return d.statut === "EN_ATTENTE";
+            if (filtreStatut === "APPROUVEE_DG") return d.statut === "APPROUVEE_DG";
+            if (filtreStatut === "REJETEE_DG") return d.statut === "REJETEE_DG";
             return true;
         })
-        .filter(t =>
+        .filter(d =>
             !recherche ||
-            t.description?.toLowerCase().includes(recherche.toLowerCase()) ||
-            t.department?.toLowerCase().includes(recherche.toLowerCase())
+            d.traitementDescription?.toLowerCase().includes(recherche.toLowerCase()) ||
+            d.secteur?.toLowerCase().includes(recherche.toLowerCase()) ||
+            d.responsableDeclaration?.toLowerCase().includes(recherche.toLowerCase())
         );
 
     const navItems = [
@@ -269,7 +266,6 @@ function DgDashboard() {
 
     return (
         <div className="flex h-screen bg-gray-100 font-sans">
-            {/* ── Sidebar ── */}
             <aside className={`${sidebarOpen ? "w-64" : "w-16"} bg-green-900 text-white flex flex-col transition-all duration-300 shadow-xl`}>
                 <div className="flex items-center gap-3 px-4 py-5 border-b border-green-800">
                     <div className="w-9 h-9 bg-white rounded-lg flex items-center justify-center flex-shrink-0">
@@ -322,9 +318,7 @@ function DgDashboard() {
                 </div>
             </aside>
 
-            {/* ── Main ── */}
             <div className="flex-1 flex flex-col overflow-hidden">
-                {/* Header */}
                 <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between flex-shrink-0">
                     <div className="flex items-center gap-4">
                         <button onClick={() => setSidebarOpen(o => !o)} className="text-gray-500 hover:text-gray-700">
@@ -353,15 +347,13 @@ function DgDashboard() {
 
                 <main className="flex-1 overflow-y-auto p-6">
 
-                    {/* ── Dashboard ── */}
                     {activeSection === "dashboard" && (
                         <div className="space-y-6">
-                            {/* Stats */}
                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                                 <div className="bg-white rounded-2xl p-5 shadow-sm border border-yellow-100">
                                     <p className="text-3xl font-black text-yellow-600">{enAttente}</p>
                                     <p className="text-sm font-semibold text-gray-700 mt-1">En attente de décision</p>
-                                    <p className="text-xs text-gray-400 mt-0.5">Déclarations transmises par le DPO</p>
+                                    <p className="text-xs text-gray-400 mt-0.5">Déclarations soumises par le DPO</p>
                                 </div>
                                 <div className="bg-white rounded-2xl p-5 shadow-sm border border-green-100">
                                     <p className="text-3xl font-black text-green-600">{valides}</p>
@@ -375,7 +367,6 @@ function DgDashboard() {
                                 </div>
                             </div>
 
-                            {/* Déclarations en attente */}
                             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
                                 <div className="flex justify-between items-center mb-4">
                                     <h2 className="font-bold text-gray-800">Déclarations en attente de décision</h2>
@@ -386,18 +377,18 @@ function DgDashboard() {
                                     )}
                                 </div>
                                 <div className="space-y-3">
-                                    {traitements.filter(t => t.envoyeAuDpo && t.statut === "EN_COURS").slice(0, 5).map(t => (
+                                    {declarations.slice(0, 5).map(d => (
                                         <div
-                                            key={t.idTraitement}
+                                            key={d.idDeclaration}
                                             className="flex items-center justify-between p-3 bg-yellow-50 rounded-xl hover:bg-yellow-100 transition cursor-pointer"
-                                            onClick={() => setSelectedTraitement(t)}
+                                            onClick={() => setSelectedDeclaration(d)}
                                         >
                                             <div>
-                                                <p className="font-semibold text-sm text-gray-800">{t.description}</p>
-                                                <p className="text-xs text-gray-400">{t.department} · {formatDate(t.dateCreation)}</p>
+                                                <p className="font-semibold text-sm text-gray-800">{d.traitementDescription || `Déclaration #${d.idDeclaration}`}</p>
+                                                <p className="text-xs text-gray-400">{d.secteur || "—"} · {formatDate(d.dateSoumission)}</p>
                                             </div>
                                             <div className="flex items-center gap-2">
-                                                <BadgeStatut statut={t.statut} />
+                                                <BadgeStatut statut={d.statut} />
                                                 <button className="text-xs bg-green-700 text-white px-3 py-1 rounded-lg hover:bg-green-800">
                                                     Décider
                                                 </button>
@@ -415,14 +406,12 @@ function DgDashboard() {
                         </div>
                     )}
 
-                    {/* ── Déclarations ── */}
                     {activeSection === "declarations" && (
                         <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
-                            {/* Filtres */}
                             <div className="p-5 border-b border-gray-100 space-y-3">
                                 <div className="flex flex-col sm:flex-row gap-3 justify-between items-start sm:items-center">
                                     <h2 className="font-bold text-gray-800">
-                                        Déclarations ({traitementsFiltres.length})
+                                        Déclarations ({declarationsFiltrees.length})
                                     </h2>
                                     <input
                                         value={recherche}
@@ -434,9 +423,7 @@ function DgDashboard() {
                                 <div className="flex gap-2 flex-wrap">
                                     {[
                                         { key: "tous", label: "Toutes" },
-                                        { key: "EN_COURS", label: "En attente" },
-                                        { key: "VALIDE", label: "Validées" },
-                                        { key: "REJETE", label: "Rejetées" },
+                                        { key: "EN_ATTENTE", label: "En attente" },
                                     ].map(f => (
                                         <button
                                             key={f.key}
@@ -449,14 +436,14 @@ function DgDashboard() {
                                 </div>
                             </div>
 
-                            {/* Table */}
                             <div className="overflow-x-auto">
                                 <table className="w-full text-sm">
                                     <thead className="bg-green-50 text-green-900">
                                         <tr>
                                             <th className="px-4 py-3 text-left font-semibold">#</th>
-                                            <th className="px-4 py-3 text-left font-semibold">Description</th>
-                                            <th className="px-4 py-3 text-left font-semibold">Département</th>
+                                            <th className="px-4 py-3 text-left font-semibold">Dénomination</th>
+                                            <th className="px-4 py-3 text-left font-semibold">Type</th>
+                                            <th className="px-4 py-3 text-left font-semibold">Secteur</th>
                                             <th className="px-4 py-3 text-left font-semibold">DPO</th>
                                             <th className="px-4 py-3 text-left font-semibold">Date</th>
                                             <th className="px-4 py-3 text-left font-semibold">Statut</th>
@@ -464,31 +451,28 @@ function DgDashboard() {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-100">
-                                        {traitementsFiltres.map(t => (
-                                            <tr key={t.idTraitement} className="hover:bg-green-50 transition">
-                                                <td className="px-4 py-3 text-gray-400 text-xs">#{t.idTraitement}</td>
-                                                <td className="px-4 py-3 font-medium text-gray-800">{t.description}</td>
-                                                <td className="px-4 py-3 text-gray-600">{t.department || "—"}</td>
-                                                <td className="px-4 py-3 text-gray-600">{t.dpoNomComplet || "—"}</td>
-                                                <td className="px-4 py-3 text-gray-500 text-xs">{formatDate(t.dateCreation)}</td>
-                                                <td className="px-4 py-3"><BadgeStatut statut={t.statut} /></td>
+                                        {declarationsFiltrees.map(d => (
+                                            <tr key={d.idDeclaration} className="hover:bg-green-50 transition">
+                                                <td className="px-4 py-3 text-gray-400 text-xs">#{d.idDeclaration}</td>
+                                                <td className="px-4 py-3 font-medium text-gray-800">{d.traitementDescription || "—"}</td>
+                                                <td className="px-4 py-3 text-gray-600 text-xs">{TYPE_LABELS[d.typeDeclaration] || d.typeDeclaration || "—"}</td>
+                                                <td className="px-4 py-3 text-gray-600">{d.secteur || "—"}</td>
+                                                <td className="px-4 py-3 text-gray-600">{d.dpoNomPrenom || "—"}</td>
+                                                <td className="px-4 py-3 text-gray-500 text-xs">{formatDate(d.dateSoumission)}</td>
+                                                <td className="px-4 py-3"><BadgeStatut statut={d.statut} /></td>
                                                 <td className="px-4 py-3">
                                                     <button
-                                                        onClick={() => setSelectedTraitement(t)}
-                                                        className={`text-xs px-3 py-1 rounded-lg font-medium ${t.statut === "EN_COURS"
-                                                            ? "bg-green-700 text-white hover:bg-green-800"
-                                                            : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                                                            }`}
+                                                        onClick={() => setSelectedDeclaration(d)}
+                                                        className="text-xs px-3 py-1 rounded-lg font-medium bg-green-700 text-white hover:bg-green-800"
                                                     >
-                                                        <Icon name="eye" className="w-3.5 h-3.5 mr-1" />
-                                                        {t.statut === "EN_COURS" ? "Décider" : "Voir"}
+                                                        <Icon name="eye" className="w-3.5 h-3.5 mr-1" /> Décider
                                                     </button>
                                                 </td>
                                             </tr>
                                         ))}
                                     </tbody>
                                 </table>
-                                {traitementsFiltres.length === 0 && (
+                                {declarationsFiltrees.length === 0 && (
                                     <div className="py-12 text-center text-gray-400 text-sm">
                                         <Icon name="clipboard" className="w-10 h-10 mx-auto mb-2 text-gray-300" />
                                         Aucune déclaration trouvée
@@ -498,67 +482,71 @@ function DgDashboard() {
                         </div>
                     )}
 
-                    {/* ── Historique ── */}
                     {activeSection === "historique" && (
                         <div className="space-y-4">
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                                {/* Validées */}
                                 <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
                                     <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
                                         <Icon name="check" className="w-4 h-4 text-green-600" /> Déclarations validées
                                     </h3>
                                     <div className="space-y-2">
-                                        {traitements.filter(t => t.statut === "VALIDE").length === 0 && (
+                                        {historique.filter(h => h.decision === "APPROUVEE_DG").length === 0 && (
                                             <p className="text-sm text-gray-400 text-center py-4">Aucune déclaration validée</p>
                                         )}
-                                        {traitements.filter(t => t.statut === "VALIDE").map(t => (
-                                            <div key={t.idTraitement} className="flex items-center justify-between p-3 bg-green-50 rounded-xl">
+                                        {historique.filter(h => h.decision === "APPROUVEE_DG").map(d => (
+                                            <div key={d.idDeclaration} className="flex items-center justify-between p-3 bg-green-50 rounded-xl">
                                                 <div>
-                                                    <p className="font-semibold text-sm text-gray-800">{t.description}</p>
-                                                    <p className="text-xs text-gray-400">{t.department} · {formatDate(t.dateCreation)}</p>
+                                                    <p className="font-semibold text-sm text-gray-800">{d.traitementDescription || `Déclaration #${d.idDeclaration}`}</p>
+                                                    <p className="text-xs text-gray-400">{d.secteur || "—"} · {formatDate(d.dateSoumission)}</p>
                                                 </div>
                                                 <span className="text-xs text-green-600 font-semibold flex items-center gap-1">
-                                                    <Icon name="check" className="w-3 h-3" /> Validé
+                                                    <Icon name="check" className="w-3 h-3" /> Validée
                                                 </span>
                                             </div>
                                         ))}
                                     </div>
                                 </div>
 
-                                {/* Rejetées */}
                                 <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
                                     <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
                                         <Icon name="close" className="w-4 h-4 text-red-500" /> Déclarations rejetées
                                     </h3>
                                     <div className="space-y-2">
-                                        {traitements.filter(t => t.statut === "REJETE").length === 0 && (
+                                        {historique.filter(h => h.decision === "REJETEE_DG").length === 0 && (
                                             <p className="text-sm text-gray-400 text-center py-4">Aucune déclaration rejetée</p>
                                         )}
-                                        {traitements.filter(t => t.statut === "REJETE").map(t => (
-                                            <div key={t.idTraitement} className="flex items-center justify-between p-3 bg-red-50 rounded-xl">
+                                        {historique.filter(h => h.decision === "REJETEE_DG").map(d => (
+                                            <div key={d.idDeclaration} className="flex items-center justify-between p-3 bg-red-50 rounded-xl">
                                                 <div>
-                                                    <p className="font-semibold text-sm text-gray-800">{t.description}</p>
-                                                    <p className="text-xs text-gray-400">{t.department} · {formatDate(t.dateCreation)}</p>
+                                                    <p className="font-semibold text-sm text-gray-800">{d.traitementDescription || `Déclaration #${d.idDeclaration}`}</p>
+                                                    <p className="text-xs text-gray-400">{d.secteur || "—"} · {formatDate(d.dateSoumission)}</p>
                                                 </div>
                                                 <span className="text-xs text-red-500 font-semibold flex items-center gap-1">
-                                                    <Icon name="close" className="w-3 h-3" /> Rejeté
+                                                    <Icon name="close" className="w-3 h-3" /> Rejetée
                                                 </span>
                                             </div>
                                         ))}
                                     </div>
                                 </div>
                             </div>
+
+                            {historique.length === 0 && (
+                                <div className="py-8 text-center text-gray-400 text-sm">
+                                    <Icon name="history" className="w-10 h-10 mx-auto mb-2 text-gray-300" />
+                                    Aucune décision prise pour le moment
+                                </div>
+                            )}
                         </div>
                     )}
                 </main>
             </div>
 
-            {/* ── Modal décision ── */}
-            {selectedTraitement && (
+            {selectedDeclaration && (
                 <ModalDecision
-                    traitement={selectedTraitement}
-                    onClose={() => setSelectedTraitement(null)}
-                    onDecision={handleDecision}
+                    declaration={selectedDeclaration}
+                    onClose={() => setSelectedDeclaration(null)}
+                    onValider={handleValider}
+                    onRejeter={handleRejeter}
                 />
             )}
 

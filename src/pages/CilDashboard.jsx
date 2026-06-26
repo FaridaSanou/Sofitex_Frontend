@@ -31,7 +31,7 @@ function CilDashboard() {
           <h2 className="text-xl font-bold text-gray-800">Tableau de bord CIL</h2>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-              <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center mb-3">
+              <div className="w-10 h-10 bg-green-500 rounded-xl flex items-center justify-center mb-3">
                 <span className="text-white font-bold text-lg">0</span>
               </div>
               <p className="text-2xl font-bold text-gray-800">0</p>
