@@ -1,12 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import sofitexLogo from "../assets/image.png";
-
-const API_BASE = "http://localhost:8080/api";
-
-const authHeaders = () => ({
-  "Content-Type": "application/json",
-  Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
-});
+import api from "../services/api";
 
 // ── Helpers ──────────────────────────────────────────────────────
 
@@ -557,13 +551,11 @@ function AdminDashboard() {
     setTimeout(() => setToast(null), 3000);
   };
 
-  // GET /api/admin/demandes
   const fetchDemandes = useCallback(async () => {
     setLoadingDemandes(true);
     try {
-      const res = await fetch(`${API_BASE}/admin/demandes`, { headers: authHeaders() });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      setDemandes(await res.json());
+      const res = await api.get("/admin/demandes");
+      setDemandes(res.data);
     } catch (err) {
       showToast("Impossible de charger les demandes", "error");
     } finally {
@@ -571,13 +563,11 @@ function AdminDashboard() {
     }
   }, []);
 
-  // GET /api/admin/utilisateurs
   const fetchUtilisateurs = useCallback(async () => {
     setLoadingUsers(true);
     try {
-      const res = await fetch(`${API_BASE}/admin/utilisateurs`, { headers: authHeaders() });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      setUtilisateurs(await res.json());
+      const res = await api.get("/admin/utilisateurs");
+      setUtilisateurs(res.data);
     } catch (err) {
       showToast("Impossible de charger les utilisateurs", "error");
     } finally {
@@ -590,17 +580,9 @@ function AdminDashboard() {
     fetchUtilisateurs();
   }, [fetchDemandes, fetchUtilisateurs]);
 
-  // PUT /api/admin/demandes/{id}/valider
   const handleValider = async (idDemande) => {
     try {
-      const res = await fetch(`${API_BASE}/admin/demandes/${idDemande}/valider`, {
-        method: "PUT",
-        headers: authHeaders(),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.message || `HTTP ${res.status}`);
-      }
+      await api.put(`/admin/demandes/${idDemande}/valider`);
       setDemandes((prev) =>
         prev.map((d) => d.idDemande === idDemande
           ? { ...d, statutDemandeAcces: "APPROUVEE", dateValidation: new Date().toISOString() }
@@ -609,22 +591,13 @@ function AdminDashboard() {
       );
       showToast("Demande approuvée avec succès ✓");
     } catch (err) {
-      showToast(err.message || "Erreur lors de l'approbation", "error");
+      showToast(err.response?.data?.message || "Erreur lors de l'approbation", "error");
     }
   };
 
-  // PUT /api/admin/demandes/{id}/rejeter
   const handleRejeter = async (idDemande, motif) => {
     try {
-      const res = await fetch(`${API_BASE}/admin/demandes/${idDemande}/rejeter`, {
-        method: "PUT",
-        headers: authHeaders(),
-        body: JSON.stringify({ motif }),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.message || `HTTP ${res.status}`);
-      }
+      await api.put(`/admin/demandes/${idDemande}/rejeter`, { motif });
       setDemandes((prev) =>
         prev.map((d) => d.idDemande === idDemande
           ? { ...d, statutDemandeAcces: "REJETEE", motif, dateValidation: new Date().toISOString() }
@@ -634,49 +607,37 @@ function AdminDashboard() {
       setRejetModal(null);
       showToast("Demande rejetée", "error");
     } catch (err) {
-      showToast(err.message || "Erreur lors du rejet", "error");
+      showToast(err.response?.data?.message || "Erreur lors du rejet", "error");
     }
   };
 
-  // PUT /api/admin/utilisateurs/{id}/suspendre
   const handleSuspendre = async (id) => {
     try {
-      const res = await fetch(`${API_BASE}/admin/utilisateurs/${id}/suspendre`, {
-        method: "PUT", headers: authHeaders(),
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      await api.put(`/admin/utilisateurs/${id}/statut`, { statut: "SUSPENDU" });
       setUtilisateurs((prev) => prev.map((u) => u.id === id ? { ...u, statutUtilisateur: "SUSPENDU" } : u));
       showToast("Compte suspendu", "error");
     } catch (err) {
-      showToast(err.message || "Erreur lors de la suspension", "error");
+      showToast(err.response?.data?.message || "Erreur lors de la suspension", "error");
     }
   };
 
-  // PUT /api/admin/utilisateurs/{id}/reactiver
   const handleReactiver = async (id) => {
     try {
-      const res = await fetch(`${API_BASE}/admin/utilisateurs/${id}/reactiver`, {
-        method: "PUT", headers: authHeaders(),
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      await api.put(`/admin/utilisateurs/${id}/statut`, { statut: "ACTIF" });
       setUtilisateurs((prev) => prev.map((u) => u.id === id ? { ...u, statutUtilisateur: "ACTIF" } : u));
       showToast("Compte réactivé ✓");
     } catch (err) {
-      showToast(err || "Erreur lors de la réactivation", "error");
+      showToast(err.response?.data?.message || "Erreur lors de la réactivation", "error");
     }
   };
 
-  // PUT /api/admin/utilisateurs/{id}/desactiver
   const handleDesactiver = async (id) => {
     try {
-      const res = await fetch(`${API_BASE}/admin/utilisateurs/${id}/desactiver`, {
-        method: "PUT", headers: authHeaders(),
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      await api.put(`/admin/utilisateurs/${id}/statut`, { statut: "INACTIF" });
       setUtilisateurs((prev) => prev.map((u) => u.id === id ? { ...u, statutUtilisateur: "INACTIF" } : u));
       showToast("Compte désactivé", "error");
     } catch (err) {
-      showToast(err.message || "Erreur lors de la désactivation", "error");
+      showToast(err.response?.data?.message || "Erreur lors de la désactivation", "error");
     }
   };
 

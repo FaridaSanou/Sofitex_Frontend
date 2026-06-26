@@ -1,7 +1,6 @@
 import { useState } from "react";
 import nature from "../assets/nature.png"
 import logo from "../assets/image.png"
-import Chargement from "../components/chargement";
 
 
 // ─── Icônes SVG ───────────────────────────────────────────────────────────────
@@ -26,8 +25,6 @@ export default function Login() {
   const [showPwd, setShowPwd]       = useState(false);
   const [erreurs, setErreurs]       = useState({});
   const [loading, setLoading]       = useState(false);
-
-  const [isloading , setIsloading] = useState(false)
 
   // ── Validation ───────────────────────────────────────────────────────────────
   const valider = () => {
@@ -56,20 +53,17 @@ export default function Login() {
         return;
       }
       const data = await response.json();
-      localStorage.removeItem("email");
       localStorage.setItem("token", data.token);
       localStorage.setItem("role", data.role);
       localStorage.setItem("email", data.email);
-      // const home = {
-      //   ROLE_ADMINISTRATEUR: "/dashboard",
-      //   ROLE_DPO: "/dpo",
-      //   ROLE_CIL: "/cil",
-      //   ROLE_DG: "/dg",
-      //   ROLE_UTILISATEUR_METIER: "/metier",
-      // };
-      // window.location.href = home[data.role] || "/dashboard";
-      // window.location.href = "/dashboard";
-      setIsloading(true)
+      const home = {
+        ROLE_ADMINISTRATEUR: "/dashboard",
+        ROLE_DPO: "/dpo",
+        ROLE_CIL: "/cil",
+        ROLE_DG: "/dg",
+        ROLE_UTILISATEUR_METIER: "/metier",
+      };
+      window.location.href = home[data.role] || "/dashboard";
     } catch (err) {
       setErreurs({ global: "Impossible de contacter le serveur" });
     } finally {
@@ -213,7 +207,6 @@ export default function Login() {
 
         </div>
       </div>
-      { isloading && <Chargement texte="Bien venu ............." /> }
     </div>
   );
 }

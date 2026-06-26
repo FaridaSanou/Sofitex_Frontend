@@ -47,6 +47,10 @@ function Icon({ name, className = "w-5 h-5" }) {
       return <svg className={cls} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>;
     case "clock":
       return <svg className={cls} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>;
+    case "upload":
+      return <svg className={cls} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5-5m0 0l5 5m-5-5v12" /></svg>;
+    case "file":
+      return <svg className={cls} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>;
     default:
       return null;
   }
@@ -193,7 +197,7 @@ function ModalDemandeUsager({ demande, onClose, onTraiter }) {
 // MODULE 7 : Modal Détail Traitement
 // Affiche toutes les infos d'un traitement et permet de l'envoyer au DPO
 // ═══════════════════════════════════════════════════════════════════
-function ModalDetailTraitement({ traitement, onClose, onEnvoyer, dpos }) {
+function ModalDetailTraitement({ traitement, onClose, onEnvoyer, dpos, onAjouterDonnees }) {
   const [dpoSelection, setDpoSelection] = useState("");
   const aUneSession = !!traitement.sessionCollecteId;
   const dpoRequis = !aUneSession && dpos && dpos.length > 0;
@@ -242,6 +246,9 @@ function ModalDetailTraitement({ traitement, onClose, onEnvoyer, dpos }) {
           )}
           <div className="flex gap-3 justify-end pt-2">
             <button onClick={onClose} className="px-4 py-2 rounded-lg border border-gray-300 text-gray-600 text-sm hover:bg-gray-50">Fermer</button>
+            <button onClick={() => { onAjouterDonnees(traitement); onClose(); }} className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700">
+              <Icon name="upload" className="w-4 h-4 mr-1.5" /> Ajouter des données
+            </button>
             {!traitement.envoyeAuDpo && (
               <button
                 onClick={() => {
@@ -264,7 +271,243 @@ function ModalDetailTraitement({ traitement, onClose, onEnvoyer, dpos }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// MODULE 8 : Modal Créer Traitement (3 étapes)
+// MODULE 8 : Modal Ajouter Données
+// Permet d'ajouter des données à un traitement existant par :
+// - Saisie manuelle (POST /api/donnees)
+// - Import fichier Excel (POST /api/donnees/import-excel)
+// ═══════════════════════════════════════════════════════════════════
+const TYPES_PAR_DEFAUT = [
+  { idTypeDonnee: 1, nom: "Nom", sensible: false },
+  { idTypeDonnee: 2, nom: "Prénom", sensible: false },
+  { idTypeDonnee: 3, nom: "Email", sensible: false },
+  { idTypeDonnee: 4, nom: "Téléphone", sensible: false },
+  { idTypeDonnee: 5, nom: "Adresse", sensible: false },
+  { idTypeDonnee: 6, nom: "Date de naissance", sensible: false },
+  { idTypeDonnee: 7, nom: "Numéro CNIB", sensible: true },
+  { idTypeDonnee: 8, nom: "Genre", sensible: false },
+  { idTypeDonnee: 9, nom: "Situation matrimoniale", sensible: false },
+  { idTypeDonnee: 10, nom: "Numéro de contrat", sensible: false },
+];
+
+function ModalAjouterDonnees({ traitement, onClose, onSave, showToast }) {
+  const [onglet, setOnglet] = useState("manuel");
+  const [typesDonnee, setTypesDonnee] = useState([]);
+  const [typeDonneeId, setTypeDonneeId] = useState("");
+  const [valeur, setValeur] = useState("");
+  const [usagerId, setUsagerId] = useState("");
+  const [fichier, setFichier] = useState(null);
+  const [resultat, setResultat] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    api.get("/types-donnee")
+      .then(res => setTypesDonnee(res.data.length ? res.data : TYPES_PAR_DEFAUT))
+      .catch(() => { setTypesDonnee(TYPES_PAR_DEFAUT); showToast("Utilisation des types de données par défaut", "error"); });
+  }, []);
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const ext = file.name.split('.').pop().toLowerCase();
+      if (!["xlsx"].includes(ext)) {
+        alert("Veuillez sélectionner un fichier Excel (.xlsx)");
+        e.target.value = "";
+        return;
+      }
+      setFichier(file);
+    }
+  };
+
+  const handleSubmitManuel = () => {
+    if (!typeDonneeId || !valeur.trim()) {
+      alert("Veuillez remplir tous les champs obligatoires.");
+      return;
+    }
+    setLoading(true);
+    const payload = {
+      valeur: valeur.trim(),
+      typeDonneeId: Number(typeDonneeId),
+      traitementId: traitement.idTraitement,
+      usagerId: usagerId ? Number(usagerId) : null,
+      dateCollecte: new Date().toISOString(),
+    };
+    onSave(payload, () => setLoading(false), false);
+  };
+
+  const handleSubmitExcel = () => {
+    if (!fichier) {
+      alert("Veuillez sélectionner un fichier Excel.");
+      return;
+    }
+    setLoading(true);
+    const formData = new FormData();
+    formData.append("fichier", fichier);
+    formData.append("traitementId", traitement.idTraitement);
+    onSave(formData, () => setLoading(false), true);
+  };
+
+  const inp = "w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500";
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-screen overflow-y-auto">
+        <div className="bg-green-800 text-white px-6 py-4 rounded-t-2xl flex justify-between items-center">
+          <h3 className="font-bold text-lg">Ajouter des données</h3>
+          <button onClick={onClose} className="text-green-200 hover:text-white"><Icon name="close" className="w-5 h-5" /></button>
+        </div>
+
+        <div className="flex border-b border-gray-200">
+          <button
+            onClick={() => { setOnglet("manuel"); setResultat(null); }}
+            className={`flex-1 py-3 text-sm font-semibold transition-all ${onglet === "manuel" ? "text-green-700 border-b-2 border-green-700 bg-green-50" : "text-gray-500 hover:text-green-600"}`}
+          >
+            <Icon name="edit" className="w-4 h-4 mr-1.5 inline" /> Saisie manuelle
+          </button>
+          <button
+            onClick={() => { setOnglet("excel"); setResultat(null); }}
+            className={`flex-1 py-3 text-sm font-semibold transition-all ${onglet === "excel" ? "text-green-700 border-b-2 border-green-700 bg-green-50" : "text-gray-500 hover:text-green-600"}`}
+          >
+            <Icon name="file" className="w-4 h-4 mr-1.5 inline" /> Import Excel
+          </button>
+        </div>
+
+        <div className="p-6 space-y-4">
+          <div className="bg-green-50 rounded-xl p-3 text-sm">
+            <p className="font-semibold text-green-800">Traitement : {traitement.description}</p>
+            <p className="text-xs text-green-600">{traitement.department} · {traitement.nombreDonnee || 0} donnée(s) existante(s)</p>
+          </div>
+
+          {resultat && (
+            <div className={`rounded-xl p-3 text-sm ${resultat.type === "success" ? "bg-green-50 border border-green-200 text-green-700" : "bg-red-50 border border-red-200 text-red-700"}`}>
+              <p className="font-semibold">{resultat.message}</p>
+              {resultat.details && <p className="text-xs mt-1">{resultat.details}</p>}
+            </div>
+          )}
+
+          {/* ── SAISIE MANUELLE ── */}
+          {onglet === "manuel" && (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">
+                  Type de donnée <span className="text-red-500">*</span>
+                </label>
+                <select value={typeDonneeId} onChange={e => setTypeDonneeId(e.target.value)} className={inp}>
+                  <option value="">-- Sélectionner un type --</option>
+                  {typesDonnee.map(t => (
+                    <option key={t.idTypeDonnee} value={t.idTypeDonnee}>
+                      {t.nom} {t.sensible ? "🔒" : ""}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">
+                  Valeur <span className="text-red-500">*</span>
+                </label>
+                <input
+                  value={valeur}
+                  onChange={e => setValeur(e.target.value)}
+                  placeholder="Ex: Jean Dupont, 01 23 45 67 89, jean@email.com"
+                  className={inp}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">
+                  ID Usager <span className="text-gray-400 text-xs">(optionnel, requis si pas de personne)</span>
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  value={usagerId}
+                  onChange={e => setUsagerId(e.target.value)}
+                  placeholder="Ex: 1"
+                  className={inp}
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 pt-2">
+                <button onClick={onClose} className="px-4 py-2 rounded-lg border border-gray-300 text-gray-600 text-sm hover:bg-gray-50">Annuler</button>
+                <button
+                  onClick={handleSubmitManuel}
+                  disabled={loading || !typeDonneeId || !valeur.trim()}
+                  className="px-5 py-2 rounded-lg bg-green-700 text-white text-sm font-semibold hover:bg-green-800 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {loading ? "En cours..." : <><Icon name="check" className="w-4 h-4" /> Ajouter</>}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ── IMPORT EXCEL ── */}
+          {onglet === "excel" && (
+            <div className="space-y-4">
+              <div
+                className={`border-2 border-dashed rounded-xl p-8 text-center transition-all ${fichier ? "border-green-500 bg-green-50" : "border-gray-300 hover:border-green-400"}`}
+                onDragOver={e => e.preventDefault()}
+                onDrop={e => {
+                  e.preventDefault();
+                  const file = e.dataTransfer.files[0];
+                  if (file) {
+                    const ext = file.name.split('.').pop().toLowerCase();
+                    if (["xlsx"].includes(ext)) setFichier(file);
+                    else alert("Veuillez sélectionner un fichier Excel (.xlsx)");
+                  }
+                }}
+              >
+                {fichier ? (
+                  <div className="flex flex-col items-center gap-2">
+                    <Icon name="file" className="w-10 h-10 text-green-600" />
+                    <p className="font-medium text-gray-800">{fichier.name}</p>
+                    <p className="text-xs text-gray-400">{(fichier.size / 1024).toFixed(1)} Ko</p>
+                    <button onClick={() => setFichier(null)} className="text-xs text-red-500 hover:text-red-700 mt-1">Supprimer</button>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center gap-2">
+                    <Icon name="upload" className="w-10 h-10 text-gray-400" />
+                    <p className="font-medium text-gray-600">Glissez-déposez votre fichier Excel ici</p>
+                    <p className="text-xs text-gray-400 mb-2">ou cliquez pour parcourir</p>
+                    <label className="px-4 py-2 bg-green-700 text-white rounded-lg text-sm font-semibold cursor-pointer hover:bg-green-800">
+                      Parcourir
+                      <input type="file" accept=".xlsx" onChange={handleFileChange} className="hidden" />
+                    </label>
+                    <p className="text-xs text-gray-400 mt-2">Format : .xlsx</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 text-xs text-blue-700">
+                <p className="font-semibold mb-1">Format attendu du fichier Excel :</p>
+                <ol className="list-decimal list-inside space-y-1">
+                  <li><strong>Colonne A</strong> : Valeur de la donnée (texte) — obligatoire</li>
+                  <li><strong>Colonne B</strong> : Date de collecte (date) — optionnelle</li>
+                  <li><strong>Colonne C</strong> : ID Usager (nombre) — obligatoire</li>
+                  <li><strong>Colonne D</strong> : ID Type de donnée (nombre) — obligatoire</li>
+                </ol>
+                <p className="mt-2">La ligne 1 est ignorée (en-têtes). Les données commencent à la ligne 2.</p>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-2">
+                <button onClick={onClose} className="px-4 py-2 rounded-lg border border-gray-300 text-gray-600 text-sm hover:bg-gray-50">Annuler</button>
+                <button
+                  onClick={handleSubmitExcel}
+                  disabled={loading || !fichier}
+                  className="px-5 py-2 rounded-lg bg-green-700 text-white text-sm font-semibold hover:bg-green-800 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {loading ? "Import en cours..." : <><Icon name="upload" className="w-4 h-4" /> Importer</>}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// MODULE 9 : Modal Créer Traitement (3 étapes)
 // Étape 1 : Informations du traitement (nom, description, finalite, type, secteur, lieu, texte juridique)
 // Étape 2 : Détails & Conformité (conservation, dates, booléens, catégories personnes)
 // Étape 3 : Responsable du traitement (identité, coordonnées, activité)
@@ -277,74 +520,54 @@ function ModalCreerTraitement({ onClose, onSave, sessions }) {
   const [form, setForm] = useState({
     // Étape 1 — Traitement
     nom: "",
-    description: "",
     finalite: "",
+    denomination: "",
+    date_mise_en_oeuvre: "",
     type_traitement: "",
-    secteur: "",
-    lieu_stockage: "",
-    texte_juridique: "",
     // Étape 2 — Détails & Conformité
     duree_conservation: "",
-    dateFin: "",
-    date_mise_en_oeuvre: "",
-    transfert_etranger: false,
-    sous_traitance: false,
-    communication_tiers: false,
+    nombre_personnes: "",
     categorie_personnes: "",
+    origine_donnees: "",
+    lieu_stockage: "",
     sessionCollecteId: "",
     // Étape 3 — Responsable
-    nom_raisonSociale: "",
-    RCCM: "",
-    secteur_activite: "",
-    adresse: "",
-    boitePostale: "",
-    ville: "",
-    telephone: "",
-    adresseEmail: "",
-    activite_principale: "",
+    responsable_nom: "",
+    responsable_departement: "",
+    responsable_fonction: "",
+    responsable_email: "",
   });
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
   const etape1Ok = form.nom && form.finalite && form.type_traitement;
   const etape2Ok = form.duree_conservation && form.categorie_personnes;
-  const etape3Ok = form.nom_raisonSociale && form.adresseEmail;
-  const canNext = etape === 1 ? etape1Ok : etape === 2 ? etape2Ok : false;
+  const etape3Ok = form.responsable_nom && form.responsable_email;
+  const canNext = etape === 1 ? etape1Ok : etape === 2 ? etape2Ok : etape === 3 ? etape3Ok : false;
 
   const handleSave = () => {
     const payload = {
       nom: form.nom,
-      description: form.description,
       finalite: form.finalite,
-      duree_conservation: parseInt(form.duree_conservation) || 0,
-      dateFin: form.dateFin || null,
-      type_traitement: form.type_traitement,
-      lieu_stockage: form.lieu_stockage,
-      texte_juridique: form.texte_juridique,
+      denomination: form.denomination,
       date_mise_en_oeuvre: form.date_mise_en_oeuvre || null,
-      transfert_etranger: form.transfert_etranger,
-      sous_traitance: form.sous_traitance,
-      communication_tiers: form.communication_tiers,
-      secteur: form.secteur,
+      type_traitement: form.type_traitement,
+      duree_conservation: parseInt(form.duree_conservation) || 0,
+      nombre_personnes: form.nombre_personnes ? parseInt(form.nombre_personnes) : 0,
       categorie_personnes: form.categorie_personnes,
+      origine_donnees: form.origine_donnees,
+      lieu_stockage: form.lieu_stockage,
       sessionCollecteId: form.sessionCollecteId ? parseInt(form.sessionCollecteId) : null,
-      responsable: {
-        nom_raisonSociale: form.nom_raisonSociale,
-        RCCM: form.RCCM,
-        secteur_activite: form.secteur_activite,
-        adresse: form.adresse,
-        boitePostale: form.boitePostale,
-        ville: form.ville,
-        telephone: form.telephone,
-        adresseEmail: form.adresseEmail,
-        activite_principale: form.activite_principale,
-      },
+      responsable_nom: form.responsable_nom,
+      responsable_departement: form.responsable_departement,
+      responsable_fonction: form.responsable_fonction,
+      responsable_email: form.responsable_email,
       creePar: creePar,
     };
     onSave(payload);
   };
 
-  const steps = ["Traitement", "Détails & Conformité", "Responsable"];
+  const steps = ["Traitement", "Détails & Conformité", "Responsable", "Données"];
   const inp = "w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500";
 
   return (
@@ -354,7 +577,7 @@ function ModalCreerTraitement({ onClose, onSave, sessions }) {
         <div className="bg-green-800 text-white px-6 py-4 rounded-t-2xl flex justify-between items-center sticky top-0 z-10">
           <div>
             <h3 className="font-bold text-lg">Nouveau Traitement</h3>
-            <p className="text-green-200 text-xs">Étape {etape} / 3 — {steps[etape - 1]} · Créé par : <span className="font-semibold">{creePar}</span></p>
+            <p className="text-green-200 text-xs">Étape {etape} / 4 — {steps[etape - 1]} · Créé par : <span className="font-semibold">{creePar}</span></p>
           </div>
           <button onClick={onClose} className="text-green-200 hover:text-white"><Icon name="close" className="w-5 h-5" /></button>
         </div>
@@ -370,27 +593,31 @@ function ModalCreerTraitement({ onClose, onSave, sessions }) {
 
         <div className="p-6 space-y-5">
 
-          {/* ── ÉTAPE 1 : Informations du traitement ── */}
+          {/* ── ÉTAPE 1 : Traitement ── */}
           {etape === 1 && (
             <div className="space-y-4">
               <h4 className="font-bold text-green-800 text-base border-b border-green-100 pb-2"><Icon name="clipboard" className="w-5 h-5 mr-1.5 inline" /> Informations du Traitement</h4>
 
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1">Nom du traitement <span className="text-red-500">*</span></label>
-                <input value={form.nom} onChange={e => set("nom", e.target.value)} placeholder='Ex: Gestion de la paie des employés' className={inp} />
+                <input value={form.nom} onChange={e => set("nom", e.target.value)} placeholder="Ex: Gestion de la paie des employés" className={inp} />
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Description</label>
-                <textarea rows={3} value={form.description} onChange={e => set("description", e.target.value)} placeholder="Description détaillée du traitement..." className={inp} />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Finalité <span className="text-red-500">*</span></label>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Finalité du traitement <span className="text-red-500">*</span></label>
                 <input value={form.finalite} onChange={e => set("finalite", e.target.value)} placeholder="Ex: Permettre le paiement des producteurs de coton" className={inp} />
               </div>
 
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Dénomination du traitement</label>
+                <input value={form.denomination} onChange={e => set("denomination", e.target.value)} placeholder="Ex: Traitement des données salariales" className={inp} />
+              </div>
+
               <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">Date de mise en œuvre</label>
+                  <input type="date" value={form.date_mise_en_oeuvre} onChange={e => set("date_mise_en_oeuvre", e.target.value)} className={inp} />
+                </div>
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1">Type de traitement <span className="text-red-500">*</span></label>
                   <select value={form.type_traitement} onChange={e => set("type_traitement", e.target.value)} className={inp}>
@@ -406,23 +633,6 @@ function ModalCreerTraitement({ onClose, onSave, sessions }) {
                     <option value="Effacement">Effacement / Destruction</option>
                   </select>
                 </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Secteur</label>
-                  <select value={form.secteur} onChange={e => set("secteur", e.target.value)} className={inp}>
-                    <option value="">-- Sélectionner --</option>
-                    {DIRECTIONS.map(d => <option key={d} value={d}>{d}</option>)}
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Lieu de stockage</label>
-                <input value={form.lieu_stockage} onChange={e => set("lieu_stockage", e.target.value)} placeholder="Ex: Serveur interne DSI, Cloud AWS, Disque local..." className={inp} />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Texte juridique / Base légale</label>
-                <textarea rows={2} value={form.texte_juridique} onChange={e => set("texte_juridique", e.target.value)} placeholder="Ex: Loi n°010-2004/AN relative à la protection des données personnelles..." className={inp} />
               </div>
             </div>
           )}
@@ -438,14 +648,9 @@ function ModalCreerTraitement({ onClose, onSave, sessions }) {
                   <input type="number" min="1" value={form.duree_conservation} onChange={e => set("duree_conservation", e.target.value)} placeholder="Ex: 60" className={inp} />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Date de fin</label>
-                  <input type="date" value={form.dateFin} onChange={e => set("dateFin", e.target.value)} className={inp} />
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">Nombre de personnes connectés</label>
+                  <input type="number" min="0" value={form.nombre_personnes} onChange={e => set("nombre_personnes", e.target.value)} placeholder="Ex: 500" className={inp} />
                 </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Date de mise en œuvre</label>
-                <input type="date" value={form.date_mise_en_oeuvre} onChange={e => set("date_mise_en_oeuvre", e.target.value)} className={inp} />
               </div>
 
               <div>
@@ -459,6 +664,19 @@ function ModalCreerTraitement({ onClose, onSave, sessions }) {
               </div>
 
               <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Origine des données</label>
+                <select value={form.origine_donnees} onChange={e => set("origine_donnees", e.target.value)} className={inp}>
+                  <option value="">-- Sélectionner --</option>
+                  {ORIGINES.map(o => <option key={o} value={o}>{o}</option>)}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Lieu de stockage</label>
+                <input value={form.lieu_stockage} onChange={e => set("lieu_stockage", e.target.value)} placeholder="Ex: Serveur interne DSI, Cloud AWS, Disque local..." className={inp} />
+              </div>
+
+              <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1">Session de collecte</label>
                 <select value={form.sessionCollecteId} onChange={e => set("sessionCollecteId", e.target.value)} className={inp}>
                   <option value="">-- Aucune session --</option>
@@ -466,23 +684,6 @@ function ModalCreerTraitement({ onClose, onSave, sessions }) {
                     <option key={s.idSession} value={s.idSession}>{s.description || `Session #${s.idSession}`}</option>
                   ))}
                 </select>
-              </div>
-
-              <div className="bg-gray-50 rounded-xl p-4 space-y-3">
-                <p className="text-sm font-semibold text-gray-700 mb-2">Caractéristiques spéciales</p>
-                {[
-                  { key: "transfert_etranger", labelComponent: <><Icon name="globe" className="w-4 h-4 mr-1.5" />Transfert vers l'étranger</>, desc: "Les données sont transmises à un pays étranger" },
-                  { key: "sous_traitance", labelComponent: <><Icon name="handshake" className="w-4 h-4 mr-1.5" />Sous-traitance</>, desc: "Un sous-traitant traite ces données pour votre compte" },
-                  { key: "communication_tiers", labelComponent: <><Icon name="megaphone" className="w-4 h-4 mr-1.5" />Communication à des tiers</>, desc: "Les données sont partagées avec des tiers" },
-                ].map(({ key, labelComponent, desc }) => (
-                  <label key={key} className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all ${form[key] ? "border-green-500 bg-green-50" : "border-gray-200 hover:border-green-300"}`}>
-                    <input type="checkbox" checked={form[key]} onChange={e => set(key, e.target.checked)} className="mt-0.5 accent-green-600 w-4 h-4" />
-                    <div>
-                      <p className="text-sm font-medium text-gray-800">{labelComponent}</p>
-                      <p className="text-xs text-gray-400">{desc}</p>
-                    </div>
-                  </label>
-                ))}
               </div>
             </div>
           )}
@@ -498,50 +699,77 @@ function ModalCreerTraitement({ onClose, onSave, sessions }) {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Nom / Raison Sociale <span className="text-red-500">*</span></label>
-                <input value={form.nom_raisonSociale} onChange={e => set("nom_raisonSociale", e.target.value)} placeholder="Ex: SOFITEX SA" className={inp} />
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Nom et prénom du responsable <span className="text-red-500">*</span></label>
+                <input value={form.responsable_nom} onChange={e => set("responsable_nom", e.target.value)} placeholder="Ex: Ouedraogo Amadou" className={inp} />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">RCCM</label>
-                  <input value={form.RCCM} onChange={e => set("RCCM", e.target.value)} placeholder="Ex: BF-OUA-2005-B-1234" className={inp} />
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">Département</label>
+                  <select value={form.responsable_departement} onChange={e => set("responsable_departement", e.target.value)} className={inp}>
+                    <option value="">-- Sélectionner --</option>
+                    {DIRECTIONS.map(d => <option key={d} value={d}>{d}</option>)}
+                  </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Secteur d'activité</label>
-                  <input value={form.secteur_activite} onChange={e => set("secteur_activite", e.target.value)} placeholder="Ex: Agro-industrie" className={inp} />
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">Fonction</label>
+                  <input value={form.responsable_fonction} onChange={e => set("responsable_fonction", e.target.value)} placeholder="Ex: Responsable RH" className={inp} />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Activité principale</label>
-                <input value={form.activite_principale} onChange={e => set("activite_principale", e.target.value)} placeholder="Ex: Production et égrenage du coton" className={inp} />
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Adresse email <span className="text-red-500">*</span></label>
+                <input type="email" value={form.responsable_email} onChange={e => set("responsable_email", e.target.value)} placeholder="contact@sofitex.bf" className={inp} />
+              </div>
+            </div>
+          )}
+
+          {/* ── ÉTAPE 4 : Données (optionnel) ── */}
+          {etape === 4 && (
+            <div className="space-y-4">
+              <h4 className="font-bold text-green-800 text-base border-b border-green-100 pb-2"><Icon name="file" className="w-5 h-5 mr-1.5 inline" /> Ajout de Données</h4>
+
+              <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3 text-sm text-green-700">
+                <p><strong>Optionnel :</strong> Vous pouvez ajouter des données maintenant ou le faire plus tard depuis la liste des traitements.</p>
               </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Adresse</label>
-                <input value={form.adresse} onChange={e => set("adresse", e.target.value)} placeholder="Ex: Avenue de la Nation, Bobo-Dioulasso" className={inp} />
-              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="border border-gray-200 rounded-xl p-5 text-center space-y-3 hover:border-green-400 transition-all">
+                  <Icon name="edit" className="w-10 h-10 text-green-600 mx-auto" />
+                  <h5 className="font-semibold text-gray-800">Saisie manuelle</h5>
+                  <p className="text-xs text-gray-400">Ajouter une donnée via un formulaire</p>
+                  <button
+                    onClick={() => onSave({
+                      ...form,
+                      duree_conservation: parseInt(form.duree_conservation) || 0,
+                      nombre_personnes: form.nombre_personnes ? parseInt(form.nombre_personnes) : 0,
+                      sessionCollecteId: form.sessionCollecteId ? parseInt(form.sessionCollecteId) : null,
+                      date_mise_en_oeuvre: form.date_mise_en_oeuvre || null,
+                      ouvrirDonnees: true,
+                    })}
+                    className="px-4 py-2 bg-green-700 text-white rounded-lg text-sm font-semibold hover:bg-green-800"
+                  >
+                    Saisir une donnée
+                  </button>
+                </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Boîte postale</label>
-                  <input value={form.boitePostale} onChange={e => set("boitePostale", e.target.value)} placeholder="Ex: BP 147" className={inp} />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Ville</label>
-                  <input value={form.ville} onChange={e => set("ville", e.target.value)} placeholder="Ex: Bobo-Dioulasso" className={inp} />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Téléphone</label>
-                  <input value={form.telephone} onChange={e => set("telephone", e.target.value)} placeholder="+226 XX XX XX XX" className={inp} />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Adresse email <span className="text-red-500">*</span></label>
-                  <input type="email" value={form.adresseEmail} onChange={e => set("adresseEmail", e.target.value)} placeholder="contact@sofitex.bf" className={inp} />
+                <div className="border border-gray-200 rounded-xl p-5 text-center space-y-3 hover:border-green-400 transition-all">
+                  <Icon name="file" className="w-10 h-10 text-green-600 mx-auto" />
+                  <h5 className="font-semibold text-gray-800">Import Excel</h5>
+                  <p className="text-xs text-gray-400">Importer un fichier .xlsx</p>
+                  <button
+                    onClick={() => onSave({
+                      ...form,
+                      duree_conservation: parseInt(form.duree_conservation) || 0,
+                      nombre_personnes: form.nombre_personnes ? parseInt(form.nombre_personnes) : 0,
+                      sessionCollecteId: form.sessionCollecteId ? parseInt(form.sessionCollecteId) : null,
+                      date_mise_en_oeuvre: form.date_mise_en_oeuvre || null,
+                      ouvrirDonnees: true,
+                    })}
+                    className="px-4 py-2 bg-green-700 text-white rounded-lg text-sm font-semibold hover:bg-green-800"
+                  >
+                    Choisir un fichier
+                  </button>
                 </div>
               </div>
             </div>
@@ -553,13 +781,13 @@ function ModalCreerTraitement({ onClose, onSave, sessions }) {
           <button onClick={() => etape > 1 ? setEtape(e => e - 1) : onClose()} className="px-4 py-2 rounded-lg border border-gray-300 text-gray-600 text-sm hover:bg-gray-50">
             {etape === 1 ? "Annuler" : "← Précédent"}
           </button>
-          {etape < 3 ? (
+          {etape < 4 ? (
             <button onClick={() => setEtape(e => e + 1)} disabled={!canNext} className="px-5 py-2 rounded-lg bg-green-700 text-white text-sm font-semibold hover:bg-green-800 disabled:opacity-40 disabled:cursor-not-allowed">
               Suivant →
             </button>
           ) : (
-            <button onClick={handleSave} disabled={!etape3Ok} className="px-5 py-2 rounded-lg bg-green-700 text-white text-sm font-semibold hover:bg-green-800 disabled:opacity-40 disabled:cursor-not-allowed">
-              <Icon name="check" className="w-4 h-4 mr-1.5" /> Créer le traitement
+            <button onClick={handleSave} className="px-5 py-2 rounded-lg bg-green-700 text-white text-sm font-semibold hover:bg-green-800 flex items-center gap-2">
+              <Icon name="check" className="w-4 h-4" /> Créer le traitement
             </button>
           )}
         </div>
@@ -582,6 +810,8 @@ function UtilisateurMetierDashboard() {
   const [demandes, setDemandes] = useState(mockDemandes);
   const [sessions, setSessions] = useState([]);
   const [showCreer, setShowCreer] = useState(false);
+  const [showAjouterDonnees, setShowAjouterDonnees] = useState(false);
+  const [traitementPourDonnees, setTraitementPourDonnees] = useState(null);
   const [detailTraitement, setDetailTraitement] = useState(null);
   const [detailDemande, setDetailDemande] = useState(null);
   const [toast, setToast] = useState(null);
@@ -637,42 +867,36 @@ function UtilisateurMetierDashboard() {
   }, [previousSessionCount]);
 
   const handleCreer = (payload) => {
-    const dateFin = payload.dateFin
-      ? (payload.dateFin.includes("T") ? payload.dateFin : payload.dateFin + "T00:00:00")
-      : null;
+    const ouvrirDonnees = payload.ouvrirDonnees;
     const traitementData = {
-      nom: payload.nom || payload.description || "",
-      department: payload.secteur || payload.department || "",
-      description: payload.description || "",
-      texte: payload.finalite || payload.texte || "",
-      certificationSecurite: payload.certificationSecurite || "",
+      nom: payload.nom || payload.denomination || "",
+      department: payload.responsable_departement || "",
+      description: payload.denomination || payload.nom || "",
+      texte: payload.finalite || "",
+      certificationSecurite: "",
       dureeConservation: payload.duree_conservation || 0,
-      dateFin,
+      dateFin: null,
       utilisateurMetierId: utilisateurMetierId,
       sessionCollecteId: payload.sessionCollecteId || null,
-      secteur: payload.secteur || "",
+      secteur: payload.responsable_departement || "",
       lieuStockage: payload.lieu_stockage || "",
       dureeConservationDeclaration: payload.duree_conservation ? String(payload.duree_conservation) : "",
       dateMiseEnOeuvre: payload.date_mise_en_oeuvre || null,
-      transfertEtranger: payload.transfert_etranger || false,
-      sousTraitance: payload.sous_traitance || false,
-      communicationTiers: payload.communication_tiers || false,
-      nomRaisonSociale: payload.responsable?.nom_raisonSociale || payload.nom_raisonSociale || "",
-      rccm: payload.responsable?.RCCM || payload.RCCM || "",
-      secteurActivite: payload.responsable?.secteur_activite || payload.secteur_activite || "",
-      adresse: payload.responsable?.adresse || payload.adresse || "",
-      boitePostale: payload.responsable?.boitePostale || payload.boitePostale || "",
-      ville: payload.responsable?.ville || payload.ville || "",
-      telephone: payload.responsable?.telephone || payload.telephone || "",
-      adresseEmail: payload.responsable?.adresseEmail || payload.adresseEmail || "",
-      activitePrincipale: payload.responsable?.activite_principale || payload.activite_principale || "",
+      transfertEtranger: false,
+      sousTraitance: false,
+      communicationTiers: false,
+      nomPrenomResponsable: payload.responsable_nom || "",
+      fonctionResponsable: payload.responsable_fonction || "",
+      contactConfidentialite: payload.responsable_email || "",
+      origineDonnees: payload.origine_donnees || "",
+      categoriesDonnees: payload.categorie_personnes || "",
+      nombrePersonnesConcernees: payload.nombre_personnes || 0,
     };
     const declarationData = {
-      denominationTraitement: payload.nom || payload.description || "",
+      denominationTraitement: payload.nom || payload.denomination || "",
       finaliteTraitement: payload.finalite || "",
       typeTraitement: payload.type_traitement || "",
       categoriesPersonnesConcernees: payload.categorie_personnes || "",
-      texteJuridique: payload.texte_juridique || "",
     };
     const formData = new FormData();
     formData.append("traitement", new Blob([JSON.stringify(traitementData)], { type: "application/json" }));
@@ -681,19 +905,23 @@ function UtilisateurMetierDashboard() {
       .then((res) => {
         setTraitements(prev => [res.data, ...prev]);
         setShowCreer(false);
+        if (ouvrirDonnees) {
+          setTraitementPourDonnees(res.data);
+          setShowAjouterDonnees(true);
+        }
         showToast("Traitement créé avec succès !");
       })
       .catch((err) => {
         console.error("POST /traitements/normale failed:", err.response?.status, err.response?.data, err.message);
         const nouveau = {
           idTraitement: Date.now(),
-          department: payload.secteur || payload.department || "",
-          description: payload.description || payload.nom || "",
-          texte: payload.finalite || payload.texte || "",
-          certificationSecurite: payload.certificationSecurite || "",
+          department: payload.responsable_departement || "",
+          description: payload.denomination || payload.nom || "",
+          texte: payload.finalite || "",
+          certificationSecurite: "",
           dureeConservation: payload.duree_conservation || 0,
           dateCreation: new Date().toISOString(),
-          dateFin: payload.dateFin || null,
+          dateFin: null,
           nombreDonnee: 0,
           sessionCollecteId: payload.sessionCollecteId || null,
           utilisateurMetierId: utilisateurMetierId || 1,
@@ -703,6 +931,10 @@ function UtilisateurMetierDashboard() {
         };
         setTraitements(prev => [nouveau, ...prev]);
         setShowCreer(false);
+        if (ouvrirDonnees) {
+          setTraitementPourDonnees(nouveau);
+          setShowAjouterDonnees(true);
+        }
         showToast("Traitement créé (hors ligne)", "error");
       });
   };
@@ -737,6 +969,44 @@ function UtilisateurMetierDashboard() {
         const msg = err.response?.data?.message || "Erreur lors de l'envoi au DPO";
         showToast(msg, "error");
       });
+  };
+
+  const handleAjouterDonnees = (payload, onComplete, isFormData = false) => {
+    if (isFormData) {
+      api.post("/donnees/import-excel", payload)
+        .then((res) => {
+          const r = res.data;
+          setTraitements(prev => prev.map(t =>
+            t.idTraitement === Number(payload.get("traitementId"))
+              ? { ...t, nombreDonnee: (t.nombreDonnee || 0) + r.lignesImportees }
+              : t
+          ));
+          setShowAjouterDonnees(false);
+          showToast(`${r.lignesImportees} donnée(s) importée(s) sur ${r.totalLignes} ligne(s) (${r.lignesEchouees} échec(s))`);
+        })
+        .catch((err) => {
+          const msg = err.response?.data?.message || "Erreur lors de l'import du fichier Excel";
+          showToast(msg, "error");
+        })
+        .finally(() => onComplete?.());
+    } else {
+      api.post("/donnees", payload)
+        .then((res) => {
+          setTraitements(prev => prev.map(t =>
+            t.idTraitement === payload.traitementId
+              ? { ...t, nombreDonnee: (t.nombreDonnee || 0) + 1 }
+              : t
+          ));
+          setShowAjouterDonnees(false);
+          showToast("Donnée ajoutée avec succès !");
+        })
+        .catch((err) => {
+          console.error("POST /donnees échoué:", { status: err.response?.status, data: err.response?.data, message: err.message });
+          const msg = err.response?.data?.message || "Erreur lors de l'ajout de la donnée";
+          showToast(msg, "error");
+        })
+        .finally(() => onComplete?.());
+    }
   };
 
   const handleLogout = () => {
@@ -1074,6 +1344,7 @@ function UtilisateurMetierDashboard() {
                         <td className="px-4 py-3">
                           <div className="flex gap-2">
                             <button onClick={() => setDetailTraitement(t)} className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-lg hover:bg-green-200">Voir</button>
+                            <button onClick={() => { setTraitementPourDonnees(t); setShowAjouterDonnees(true); }} className="text-xs bg-blue-600 text-white px-2 py-1 rounded-lg hover:bg-blue-700"><Icon name="upload" className="w-3.5 h-3.5 mr-1" />Données</button>
                             {!t.envoyeAuDpo && t.sessionCollecteId && (
                               <button onClick={() => handleEnvoyer(t.idTraitement)} className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-lg hover:bg-blue-200"><Icon name="send" className="w-3.5 h-3.5 mr-1" />DPO</button>
                             )}
@@ -1224,8 +1495,16 @@ function UtilisateurMetierDashboard() {
 
       {/* ── Modals ── */}
       {showCreer && <ModalCreerTraitement onClose={() => setShowCreer(false)} onSave={handleCreer} sessions={sessions} />}
-      {detailTraitement && <ModalDetailTraitement traitement={detailTraitement} onClose={() => setDetailTraitement(null)} onEnvoyer={handleEnvoyer} dpos={dposDisponibles} />}
+      {detailTraitement && <ModalDetailTraitement traitement={detailTraitement} onClose={() => setDetailTraitement(null)} onEnvoyer={handleEnvoyer} dpos={dposDisponibles} onAjouterDonnees={(t) => { setTraitementPourDonnees(t); setShowAjouterDonnees(true); }} />}
       {detailDemande && <ModalDemandeUsager demande={detailDemande} onClose={() => setDetailDemande(null)} onTraiter={handleTraiterDemande} />}
+      {showAjouterDonnees && traitementPourDonnees && (
+        <ModalAjouterDonnees
+          traitement={traitementPourDonnees}
+          onClose={() => { setShowAjouterDonnees(false); setTraitementPourDonnees(null); }}
+          onSave={handleAjouterDonnees}
+          showToast={showToast}
+        />
+      )}
 
       <Toast toast={toast} />
     </div>
