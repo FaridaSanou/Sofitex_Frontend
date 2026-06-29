@@ -37,6 +37,9 @@ const fonctionController = async (adresseEmail, navigate ) => {
 
     // alert("Détermination de la route en fonction du type...");
 
+  if (data.dpoId) localStorage.setItem("dpoId", data.dpoId);
+  if (data.utilisateurMetierId) localStorage.setItem("utilisateurMetierId", data.utilisateurMetierId);
+
   // Guard: données manquantes ou corrompues
   if (!data || !data.type) {
     // toast("Veuillez vous connecter");

@@ -1,0 +1,100 @@
+import { useState } from "react";
+import { BadgeStatut } from "../ui/BadgeStatut";
+import { formatDateTime } from "../../utils/date";
+
+export default function UMSessionsSection({ sessions, traitements, onDetailTraitement }) {
+  const [selectedSessionDetail, setSelectedSessionDetail] = useState(null);
+
+  const traitementsParSession = (sessionId) => traitements.filter(t => t.sessionCollecteId === Number(sessionId));
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-bold text-gray-800">Sessions de collecte ({sessions.length})</h2>
+      </div>
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-green-50 text-green-800">
+              <tr>
+                <th className="px-4 py-3 text-left font-semibold">Description</th>
+                <th className="px-4 py-3 text-left font-semibold">Type</th>
+                <th className="px-4 py-3 text-left font-semibold">Dates</th>
+                <th className="px-4 py-3 text-left font-semibold">Statut</th>
+                <th className="px-4 py-3 text-left font-semibold">DPO</th>
+                <th className="px-4 py-3 text-center font-semibold">Traitements</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {sessions.map(s => {
+                const nbTraitements = s.nombreTraitements ?? traitementsParSession(s.idSession).length;
+                return (
+                  <tr key={s.idSession} className="hover:bg-green-50 transition-colors">
+                    <td className="px-4 py-3 font-medium text-gray-800">{s.description || `Session #${s.idSession}`}</td>
+                    <td className="px-4 py-3">
+                      <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">{s.typeCollecte === "EN_LIGNE" ? "En ligne" : "Terrain"}</span>
+                    </td>
+                    <td className="px-4 py-3 text-xs text-gray-500">
+                      <p>Du {formatDateTime(s.dateDebut)}</p>
+                      <p>Au {formatDateTime(s.dateFin)}</p>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${s.statutSession === "EN_COURS" ? "bg-green-100 text-green-700" : s.statutSession === "TERMINEE" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+                        {s.statutSession === "EN_COURS" ? "En cours" : s.statutSession === "TERMINEE" ? "Terminée" : "Annulée"}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600">{s.dpoNomComplet || "—"}</td>
+                    <td className="px-4 py-3 text-center">
+                      <button onClick={() => setSelectedSessionDetail(selectedSessionDetail?.idSession === s.idSession ? null : s)}
+                        className="px-3 py-1 bg-green-100 text-green-700 rounded-lg text-xs font-medium hover:bg-green-200">
+                        {nbTraitements} traitement{nbTraitements !== 1 ? "s" : ""} {selectedSessionDetail?.idSession === s.idSession ? "▲" : "▼"}
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+              {sessions.length === 0 && (
+                <tr><td colSpan={6} className="py-12 text-center text-gray-400 text-sm">Aucune session de collecte</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {selectedSessionDetail && (
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="p-4 border-b border-gray-100 bg-green-50">
+            <h3 className="font-bold text-green-800">Traitements liés à la session : {selectedSessionDetail.description || `#${selectedSessionDetail.idSession}`}</h3>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-3 text-left font-semibold text-gray-500">Description</th>
+                  <th className="px-4 py-3 text-left font-semibold text-gray-500">Département</th>
+                  <th className="px-4 py-3 text-left font-semibold text-gray-500">Statut</th>
+                  <th className="px-4 py-3 text-center font-semibold text-gray-500">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {traitementsParSession(selectedSessionDetail.idSession).map(t => (
+                  <tr key={t.idTraitement} className="hover:bg-green-50 transition-colors">
+                    <td className="px-4 py-3 font-medium text-gray-800">{t.description}</td>
+                    <td className="px-4 py-3 text-gray-600">{t.department}</td>
+                    <td className="px-4 py-3"><BadgeStatut statut={t.statut} envoyeAuDpo={t.envoyeAuDpo} /></td>
+                    <td className="px-4 py-3 text-center">
+                      <button onClick={() => onDetailTraitement(t)} className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-lg hover:bg-green-200">Voir</button>
+                    </td>
+                  </tr>
+                ))}
+                {traitementsParSession(selectedSessionDetail.idSession).length === 0 && (
+                  <tr><td colSpan={4} className="py-8 text-center text-gray-400 text-sm">Aucun traitement lié à cette session</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

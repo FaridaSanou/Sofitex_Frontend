@@ -2,57 +2,14 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import logoImage from "../assets/image.png";
 import backgroundImage from "../assets/nature.png";
-
-// ─── Icônes SVG ───────────────────────────────────────────────────────────────
-const EyeIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-  </svg>
-);
-
-const EyeOffIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 4.411m0 0L21 21" />
-  </svg>
-);
-
-// ─── Utilitaire : force du mot de passe ──────────────────────────────────────
-function pwdStrength(p) {
-  if (!p) return 0;
-  let s = 0;
-  if (p.length >= 8) s++;
-  if (/[A-Z]/.test(p)) s++;
-  if (/[0-9]/.test(p)) s++;
-  if (/[^A-Za-z0-9]/.test(p)) s++;
-  return s;
-}
-const STRENGTH_LABEL = ["", "Faible", "Moyen", "Fort", "Très fort"];
-const STRENGTH_COLOR = ["", "bg-red-400", "bg-yellow-400", "bg-green-400", "bg-green-600"];
-const STRENGTH_TEXT = ["", "text-red-500", "text-yellow-500", "text-green-500", "text-green-700"];
-
-// ─── Types d'utilisateurs ─────────────────────────────────────────────────────
-const TYPES = [
-  { value: "DPO", label: "DPO", icon: "🔒", description: "Délégué à la Protection des Données" },
-  { value: "UTILISATEUR_METIER", label: "Utilisateur Métier", icon: "💼", description: "Utilisateur interne de l'organisation" },
-  { value: "DG", label: "DG", icon: "🏛️", description: "Directeur Général" },
-];
+import { Field, inputCls } from "../components/forms/Field";
+import { EyeIcon, EyeOffIcon } from "../components/auth/EyeIcon";
+import { PasswordStrength } from "../components/auth/PasswordStrength";
+import AccountTypeSelector, { TYPES } from "../components/auth/AccountTypeSelector";
+import CreateAccountSuccess from "../components/auth/CreateAccountSuccess";
 
 const MAIN_STEPS = ["Informations personnelles", "Type & Accès"];
 
-// ─── Champ réutilisable ───────────────────────────────────────────────────────
-const Field = ({ label, error, children }) => (
-  <div className="flex flex-col gap-1">
-    <label className="text-sm font-medium text-gray-700">{label} <span className="text-red-500">*</span></label>
-    {children}
-    {error && <span className="text-red-500 text-xs">{error.message}</span>}
-  </div>
-);
-
-const inputCls = (err) =>
-  `h-10 px-3 rounded-lg border text-sm outline-none bg-white/70 w-full ${err ? "border-red-300 bg-red-50" : "border-gray-300 focus:border-green-500"}`;
-
-// ─── Composant principal ─────────────────────────────────────────────────────
 export default function CreateAccount() {
   const [mainStep, setMainStep] = useState(0);
   const [subStep, setSubStep] = useState(0);
@@ -65,7 +22,6 @@ export default function CreateAccount() {
   const { register, handleSubmit, watch, trigger, formState: { errors } } = useForm({ mode: "onTouched" });
 
   const motdepasse = watch("motdepasse", "");
-  const score = pwdStrength(motdepasse);
 
   const handleNextSubStep = async () => {
     const valid = await trigger(["nom", "prenom", "email", "telephone"]);
@@ -100,48 +56,22 @@ export default function CreateAccount() {
       setDone(true);
     } catch (e) {
       setErrGlobal("Impossible de contacter le serveur.");
-      alert(e.message);
     } finally { setLoading(false); }
   };
 
-  // ── Succès ────────────────────────────────────────────────────────────────
-  if (done) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-4"
-        style={{ backgroundImage: `url(${backgroundImage})`, backgroundSize: "cover", backgroundPosition: "center", backgroundColor: "rgba(0,0,0,0.5)", backgroundBlendMode: "overlay" }}>
-        <div className="rounded-2xl shadow-2xl p-10 w-full max-w-lg text-center"
-          style={{ background: "linear-gradient(135deg, rgba(255,255,255,0.95), rgba(240,253,244,0.95))" }}>
-          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">✓</div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Compte créé avec succès !</h2>
-          <span className="inline-block bg-yellow-100 text-yellow-800 text-xs font-semibold px-3 py-1 rounded-full mb-4">EN_ATTENTE</span>
-          <p className="text-sm text-gray-500 mb-6">Votre demande a bien été enregistrée.<br />Un administrateur validera votre compte sous peu.</p>
-          <div className="flex gap-3">
-            <button onClick={() => { setDone(false); setMainStep(0); setSubStep(0); setTypeChoisi(""); }}
-              className="flex-1 border border-gray-300 text-gray-600 text-sm px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors">
-              ← Créer un autre compte
-            </button>
-            <a href="/"
-              className="flex-1 bg-green-700 text-white text-sm px-4 py-2 rounded-lg hover:bg-green-800 transition-colors text-center no-underline">
-              Se connecter →
-            </a>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const handleReset = () => { setDone(false); setMainStep(0); setSubStep(0); setTypeChoisi(""); };
+
+  if (done) return <CreateAccountSuccess onReset={handleReset} />;
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4"
       style={{ backgroundImage: `url(${backgroundImage})`, backgroundSize: "cover", backgroundPosition: "center", backgroundColor: "rgba(0,0,0,0.5)", backgroundBlendMode: "overlay" }}>
-
       <div className="rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden"
         style={{
           background: "linear-gradient(160deg, rgba(255,255,255,0.97) 0%, rgba(220,252,231,0.97) 100%)",
           boxShadow: "0 0 0 3px #15803d, 0 0 0 6px rgba(21,128,61,0.15), 0 24px 60px rgba(0,0,0,0.35)",
           border: "1px solid rgba(21,128,61,0.3)",
         }}>
-
-        {/* ── En-tête ── */}
         <div className="px-6 py-4 text-center"
           style={{ background: "linear-gradient(135deg, #15803d, #166534)" }}>
           <img src={logoImage} alt="Logo" className="w-10 h-10 object-contain mx-auto mb-1" />
@@ -149,7 +79,6 @@ export default function CreateAccount() {
           <p className="text-green-100 text-sm mt-1">Remplissez les informations pour accéder à la plateforme</p>
         </div>
 
-        {/* ── Barre principale ── */}
         <div className="flex border-b border-gray-200">
           {MAIN_STEPS.map((label, i) => (
             <div key={i} className={`flex-1 py-3 text-center text-sm font-medium transition-colors
@@ -166,17 +95,13 @@ export default function CreateAccount() {
         </div>
 
         <div className="p-6">
-
           {errGlobal && (
             <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3 mb-4">⚠️ {errGlobal}</div>
           )}
 
           <form onSubmit={handleSubmit(onSubmit)}>
-
-            {/* ════ PARTIE 1 : INFORMATIONS PERSONNELLES ════ */}
             {mainStep === 0 && (
               <>
-                {/* Sous-onglets */}
                 <div className="flex gap-2 mb-6">
                   <div className={`flex-1 text-center py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer
                     ${subStep === 0 ? "bg-green-50 text-green-700 border border-green-300" : "bg-gray-100 text-gray-400"}`}>
@@ -188,7 +113,6 @@ export default function CreateAccount() {
                   </div>
                 </div>
 
-                {/* ── Identité ── */}
                 {subStep === 0 && (
                   <>
                     <div className="grid grid-cols-2 gap-4 mb-4">
@@ -221,7 +145,6 @@ export default function CreateAccount() {
                   </>
                 )}
 
-                {/* ── Sécurité ── */}
                 {subStep === 1 && (
                   <>
                     <div className="grid grid-cols-2 gap-4 mb-4">
@@ -255,14 +178,7 @@ export default function CreateAccount() {
                       </Field>
                     </div>
 
-                    {motdepasse && (
-                      <div className="mb-4">
-                        <div className="h-1 bg-gray-200 rounded-full overflow-hidden">
-                          <div className={`h-full rounded-full transition-all ${STRENGTH_COLOR[score]}`} style={{ width: `${score * 25}%` }} />
-                        </div>
-                        <span className={`text-xs ${STRENGTH_TEXT[score]}`}>{STRENGTH_LABEL[score]}</span>
-                      </div>
-                    )}
+                    <PasswordStrength password={motdepasse} />
 
                     <div className="flex gap-3 mt-2">
                       <button type="button" onClick={() => setSubStep(0)}
@@ -279,31 +195,11 @@ export default function CreateAccount() {
               </>
             )}
 
-            {/* ════ PARTIE 2 : TYPE & ACCÈS ════ */}
             {mainStep === 1 && (
               <>
-                {/* Cartes de type */}
                 {!typeChoisi && (
                   <>
-                    <p className="text-sm font-medium text-gray-700 mb-4">
-                      Choisissez votre type de compte <span className="text-red-500">*</span>
-                    </p>
-                    <div className="grid grid-cols-3 gap-3 mb-6">
-                      {TYPES.map((t) => (
-                        <button key={t.value} type="button" onClick={() => setTypeChoisi(t.value)}
-                          className="flex flex-col items-center gap-2 p-4 rounded-xl transition-all text-center"
-                          style={{
-                            background: "linear-gradient(135deg, #15803d, #166534)",
-                            border: "2px solid #15803d",
-                            boxShadow: "0 0 0 3px rgba(21,128,61,0.12), 0 2px 8px rgba(21,128,61,0.1)",
-                            color: "white",
-                          }}>
-                          <span className="text-3xl">{t.icon}</span>
-                          <span className="text-sm font-semibold text-white">{t.label}</span>
-                          <span className="text-xs text-green-100">{t.description}</span>
-                        </button>
-                      ))}
-                    </div>
+                    <AccountTypeSelector typeChoisi={typeChoisi} setTypeChoisi={setTypeChoisi} />
                     <button type="button" onClick={() => setMainStep(0)}
                       className="w-full h-10 border border-gray-300 text-gray-600 rounded-lg text-sm hover:bg-gray-50 transition-colors">
                       ← Retour
@@ -311,10 +207,8 @@ export default function CreateAccount() {
                   </>
                 )}
 
-                {/* Champs spécifiques */}
                 {typeChoisi && (
                   <>
-                    {/* Badge type */}
                     <div className="flex items-center gap-3 mb-5 p-3 bg-green-50 border border-green-200 rounded-xl">
                       <span className="text-2xl">{TYPES.find(t => t.value === typeChoisi)?.icon}</span>
                       <div className="flex-1">
@@ -328,7 +222,6 @@ export default function CreateAccount() {
                       ⚠️ Votre compte sera en statut <strong>EN_ATTENTE</strong> jusqu'à validation.
                     </div>
 
-                    {/* ── DPO ── */}
                     {typeChoisi === "DPO" && (
                       <div className="grid grid-cols-2 gap-4 mb-4">
                         <Field label="Organisme" error={errors.organisme}>
@@ -342,7 +235,6 @@ export default function CreateAccount() {
                       </div>
                     )}
 
-                    {/* ── UTILISATEUR_METIER ── */}
                     {typeChoisi === "UTILISATEUR_METIER" && (
                       <>
                         <div className="grid grid-cols-2 gap-4 mb-4">
@@ -364,7 +256,6 @@ export default function CreateAccount() {
                       </>
                     )}
 
-                    {/* ── DG ── */}
                     {typeChoisi === "DG" && (
                       <>
                         <div className="grid grid-cols-2 gap-4 mb-4">
@@ -395,9 +286,7 @@ export default function CreateAccount() {
                           borderRadius: "10px",
                           color: "#15803d",
                           background: "transparent",
-                          fontSize: "14px",
-                          fontWeight: 500,
-                          cursor: "pointer",
+                          fontSize: "14px", fontWeight: 500, cursor: "pointer",
                         }}>
                         ← Retour aux informations
                       </button>
@@ -405,11 +294,8 @@ export default function CreateAccount() {
                         style={{
                           flex: 1, height: "40px",
                           background: "linear-gradient(135deg, #15803d, #166534)",
-                          border: "none",
-                          borderRadius: "10px",
-                          color: "white",
-                          fontSize: "14px",
-                          fontWeight: 500,
+                          border: "none", borderRadius: "10px",
+                          color: "white", fontSize: "14px", fontWeight: 500,
                           cursor: loading ? "not-allowed" : "pointer",
                           opacity: loading ? 0.6 : 1,
                         }}>
@@ -420,14 +306,12 @@ export default function CreateAccount() {
                 )}
               </>
             )}
-
           </form>
 
           <p className="text-center text-sm text-gray-500 mt-6">
             Déjà un compte ?{" "}
             <a href="/" className="text-green-700 font-medium hover:underline">Se connecter</a>
           </p>
-
         </div>
       </div>
     </div>
