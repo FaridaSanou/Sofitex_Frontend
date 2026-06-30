@@ -51,9 +51,6 @@ export default function DgSidebar({ sidebarOpen, activeSection, setActiveSection
             </button>
           )}
         </div>
-        <button onClick={() => setSidebarOpen(o => !o)} className="w-full flex items-center justify-center py-2 mt-2 rounded-lg text-green-400 hover:bg-green-800 text-sm">
-          {sidebarOpen ? "◀ Réduire" : "▶"}
-        </button>
       </div>
     </aside>
   );

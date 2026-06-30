@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Check, FileUp, Database, X, Upload } from "lucide-react";
+import { Plus, Check, FileUp } from "lucide-react";
 import api from "../../services/api";
 
 const DIRECTIONS = ["DSI", "DRH", "Direction Commerciale", "Direction Financière", "Direction Générale", "Direction Technique", "Direction Qualité", "Direction Logistique", "Direction Juridique", "Autre"];

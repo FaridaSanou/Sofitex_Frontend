@@ -7,7 +7,7 @@ export default function UMTraitementsSection({
   traitementsFiltres, recherche, onRechercheChange,
   traitementFilterMode, setTraitementFilterMode, selectedSessionId, setSelectedSessionId,
   sessions, onNew, expandedTraitementId, onToggleExpand,
-  traitementDonneesMap, traitementDonneesLoading, onDetail, onAjouterDonnees, onEnvoyer,
+  traitementDonneesMap, traitementDonneesLoading, onDetail, onDonnees, onEnvoyer,
 }) {
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
@@ -69,7 +69,7 @@ export default function UMTraitementsSection({
                   <td className="px-4 py-3">
                     <div className="flex gap-2">
                       <button onClick={(e) => { e.stopPropagation(); onDetail(t); }} className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-lg hover:bg-green-200">Voir</button>
-                      <button onClick={(e) => { e.stopPropagation(); onAjouterDonnees(t); }} className="text-xs bg-green-600 text-white px-2 py-1 rounded-lg hover:bg-green-700 flex items-center gap-1">
+                      <button onClick={(e) => { e.stopPropagation(); onDonnees(t); }} className="text-xs bg-green-600 text-white px-2 py-1 rounded-lg hover:bg-green-700 flex items-center gap-1">
                         <Icon name="upload" className="w-3.5 h-3.5" />Données
                       </button>
                       {!t.envoyeAuDpo && t.sessionCollecteId && (

@@ -3,9 +3,10 @@ import sofitexLogo from "../../assets/image.png";
 
 export default function AdminSidebar({ sidebarOpen, activeTab, setActiveTab, stats }) {
   const navItems = [
-    { id: "dashboard", label: "Tableau de bord", icon: "dashboard" },
-    { id: "demandes", label: "Demandes d'accès", icon: "clipboard", badge: stats.enAttente },
-    { id: "utilisateurs", label: "Utilisateurs", icon: "user" },
+    { id: "dashboard", label: "Tableau de bord", icon: "home" },
+    { id: "demandes", label: "Demandes d'accès", icon: "demande", badge: stats.enAttente },
+    { id: "utilisateurs", label: "Utilisateurs", icon: "users" },
+    { id: "historique", label: "Historique", icon: "history" },
   ];
   return (
     <aside className={`${sidebarOpen ? "w-64" : "w-16"} bg-green-800 text-white flex flex-col transition-all duration-300 flex-shrink-0`}>

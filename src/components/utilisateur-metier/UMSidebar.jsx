@@ -1,11 +1,11 @@
 import { Icon } from "../ui/Icon";
 import sofitexLogo from "../../assets/image.png";
 
-export default function UMSidebar({ activeSection, onNavigate, sidebarOpen, onToggle, onLogout, navItems }) {
+export default function UMSidebar({ activeSection, onNavigate, sidebarOpen, onLogout, navItems }) {
   return (
     <aside className={`${sidebarOpen ? "w-64" : "w-16"} bg-green-800 text-white flex flex-col transition-all duration-300 shadow-xl`}>
       <div className="flex items-center gap-3 px-4 py-5 border-b border-green-700">
-        <div className="w-9 h-9 bg-white rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
+        <div className="w-9 h-9 bg-white rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
           <img src={sofitexLogo} alt="Sofitex" className="w-full h-full object-contain" />
         </div>
         {sidebarOpen && (
@@ -46,9 +46,6 @@ export default function UMSidebar({ activeSection, onNavigate, sidebarOpen, onTo
             </button>
           )}
         </div>
-        <button onClick={onToggle} className="w-full flex items-center justify-center py-2 mt-2 rounded-lg text-green-300 hover:bg-green-700 text-sm">
-          {sidebarOpen ? "◀ Réduire" : "▶"}
-        </button>
       </div>
     </aside>
   );

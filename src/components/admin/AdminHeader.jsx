@@ -1,6 +1,7 @@
 import { Icon } from "../ui/Icon";
+import NotificationsPanel from "./NotificationsPanel";
 
-export default function AdminHeader({ activeTab, sidebarOpen, setSidebarOpen, stats, onRefresh }) {
+export default function AdminHeader({ activeTab, sidebarOpen, setSidebarOpen, onRefresh, onParametreClick, nouveautes, showNotifications, setShowNotifications, onVoirDemandes }) {
   const titles = {
     dashboard: "Tableau de bord",
     demandes: "Demandes d'accès",
@@ -23,10 +24,25 @@ export default function AdminHeader({ activeTab, sidebarOpen, setSidebarOpen, st
         <button onClick={onRefresh} title="Rafraîchir" className="p-2 text-gray-500 hover:text-green-700 hover:bg-green-50 rounded-lg transition">
           <Icon name="refresh" className="w-5 h-5" />
         </button>
-        <button className="relative p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg">
-          <Icon name="bell" className="w-5 h-5" />
-          {stats.enAttente > 0 && <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />}
+        <button onClick={onParametreClick} title="Paramètres" className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition">
+          <Icon name="settings" className="w-5 h-5" />
         </button>
+        <div className="relative">
+          <button onClick={() => setShowNotifications(!showNotifications)} className="relative p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition">
+            <Icon name="bell" className="w-5 h-5" />
+            {nouveautes > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center text-[10px]">
+                {nouveautes > 9 ? "9+" : nouveautes}
+              </span>
+            )}
+          </button>
+          {showNotifications && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setShowNotifications(false)} />
+              <NotificationsPanel onVoirDemandes={onVoirDemandes} onClose={() => setShowNotifications(false)} />
+            </>
+          )}
+        </div>
       </div>
     </header>
   );

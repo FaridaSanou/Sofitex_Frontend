@@ -3,7 +3,7 @@ import { typeBadge, statutBadge } from "../ui/BadgeStatut";
 import { formatDate } from "../../utils/date";
 import { SkeletonRow } from "../ui/SkeletonRow";
 
-export default function UtilisateursTable({ utilisateursFiltres, loading, handleSuspendre, handleReactiver, handleDesactiver }) {
+export default function UtilisateursTable({ utilisateursFiltres, loading, handleSupprimer, handleReactiver, handleDesactiver }) {
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
       <div className="overflow-x-auto">
@@ -38,10 +38,10 @@ export default function UtilisateursTable({ utilisateursFiltres, loading, handle
                       <div className="flex items-center justify-center gap-2">
                         {u.statutUtilisateur === "ACTIF" ? (
                           <>
-                            <button onClick={() => handleSuspendre(u.id)} className="p-1.5 bg-orange-100 text-orange-600 rounded-lg hover:bg-orange-200 transition" title="Suspendre">
-                              <Icon name="close" className="w-4 h-4" />
+                            <button onClick={() => handleSupprimer(u.id)} className="p-1.5 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition" title="Supprimer">
+                              <Icon name="trash" className="w-4 h-4" />
                             </button>
-                            <button onClick={() => handleDesactiver(u.id)} className="p-1.5 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition" title="Désactiver">
+                            <button onClick={() => handleDesactiver(u.id)} className="p-1.5 bg-orange-100 text-orange-600 rounded-lg hover:bg-orange-200 transition" title="Désactiver">
                               <Icon name="close" className="w-4 h-4" />
                             </button>
                           </>

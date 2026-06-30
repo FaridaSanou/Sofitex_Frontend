@@ -8,6 +8,7 @@ import CilDashboard from "./pages/CilDashboard"
 import DgDashboard from "./pages/DgDashboard"
 import UtilisateurMetierDashboard from "./pages/UtilisateurMetierDashboard"
 import Inactif from "./pages/page_inactif"
+import VerificationGuard from "./components/VerificationGuard"
 
 export default function App() {
   return (
@@ -16,12 +17,11 @@ export default function App() {
         <Route path="/" element={<Login />} />
         <Route path="/register" element={<CreateAccount />} />
         <Route path="/mot-de-passe-oublie" element={<ForgotPassword />} />
-        <Route path="/dashboard" element={<AdminDashboard />} />
-        <Route path="/dpo" element={<DpoDashboard />} />
-        {/* <Route path="/" element={<DpoDashboard />} /> */}
-        <Route path="/cil" element={<CilDashboard />} />
-        <Route path="/dg" element={<DgDashboard />} />
-        <Route path="/metier" element={<UtilisateurMetierDashboard />} />
+        <Route path="/dashboard" element={<VerificationGuard><AdminDashboard /></VerificationGuard>} />
+        <Route path="/dpo" element={<VerificationGuard><DpoDashboard /></VerificationGuard>} />
+        <Route path="/cil" element={<VerificationGuard><CilDashboard /></VerificationGuard>} />
+        <Route path="/dg" element={<VerificationGuard><DgDashboard /></VerificationGuard>} />
+        <Route path="/metier" element={<VerificationGuard><UtilisateurMetierDashboard /></VerificationGuard>} />
         <Route path="/compte-inactif" element={<Inactif />}/>
       </Routes>
     </BrowserRouter>

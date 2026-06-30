@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import api from "../services/api";
 import AdminSidebar from "../components/admin/AdminSidebar";
 import AdminHeader from "../components/admin/AdminHeader";
@@ -11,7 +11,10 @@ import UtilisateursSearch from "../components/admin/UtilisateursSearch";
 import UtilisateursTable from "../components/admin/UtilisateursTable";
 import RejetModal from "../components/admin/RejetModal";
 import DetailModal from "../components/admin/DetailModal";
+import HistoriqueSection from "../components/admin/HistoriqueSection";
+import ParametreSection from "../components/admin/ParametreSection";
 import Toast from "../components/ui/Toast";
+import { Icon } from "../components/ui/Icon";
 
 function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -25,6 +28,10 @@ function AdminDashboard() {
   const [detailModal, setDetailModal] = useState(null);
   const [toast, setToast] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [parametreModal, setParametreModal] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [nouveautes, setNouveautes] = useState(0);
+  const lastSeenCount = useRef(0);
 
   const showToast = (msg, type = "success") => {
     setToast({ msg, type });
@@ -81,13 +88,13 @@ function AdminDashboard() {
     }
   };
 
-  const handleSuspendre = async (id) => {
+  const handleSupprimer = async (id) => {
     try {
-      await api.put(`/admin/utilisateurs/${id}/statut`, { statut: "SUSPENDU" });
-      setUtilisateurs((prev) => prev.map((u) => u.id === id ? { ...u, statutUtilisateur: "SUSPENDU" } : u));
-      showToast("Compte suspendu", "error");
+      await api.delete(`/admin/utilisateurs/${id}`);
+      setUtilisateurs((prev) => prev.filter((u) => u.id !== id));
+      showToast("Compte supprimé", "error");
     } catch (err) {
-      showToast(err.response?.data?.message || "Erreur lors de la suspension", "error");
+      showToast(err.response?.data?.message || "Erreur lors de la suppression", "error");
     }
   };
 
@@ -111,6 +118,21 @@ function AdminDashboard() {
     }
   };
 
+  const demandesEnAttente = demandes.filter((d) => d.statutDemandeAcces === "EN_ATTENTE");
+
+  useEffect(() => {
+    if (demandesEnAttente.length > lastSeenCount.current) {
+      setNouveautes((prev) => prev + (demandesEnAttente.length - lastSeenCount.current));
+    }
+    lastSeenCount.current = demandesEnAttente.length;
+  }, [demandesEnAttente.length]);
+
+  const handleVoirDemandes = () => {
+    setActiveTab("demandes");
+    setNouveautes(0);
+    setShowNotifications(false);
+  };
+
   const handleRefresh = () => { fetchDemandes(); fetchUtilisateurs(); };
 
   const demandesFiltered = demandes.filter((d) => filterStatut === "TOUS" ? true : d.statutDemandeAcces === filterStatut);
@@ -128,7 +150,7 @@ function AdminDashboard() {
     <div className="flex h-screen bg-gray-50 font-sans overflow-hidden">
       <AdminSidebar sidebarOpen={sidebarOpen} activeTab={activeTab} setActiveTab={setActiveTab} stats={stats} />
       <div className="flex-1 flex flex-col overflow-hidden">
-        <AdminHeader activeTab={activeTab} sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} stats={stats} onRefresh={handleRefresh} />
+        <AdminHeader activeTab={activeTab} sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} onRefresh={handleRefresh} onParametreClick={() => setParametreModal(true)} nouveautes={nouveautes} showNotifications={showNotifications} setShowNotifications={setShowNotifications} onVoirDemandes={handleVoirDemandes} />
         <main className="flex-1 overflow-y-auto p-6">
           {activeTab === "dashboard" && (
             <div className="space-y-6">
@@ -146,13 +168,27 @@ function AdminDashboard() {
           {activeTab === "utilisateurs" && (
             <div className="space-y-4">
               <UtilisateursSearch searchUser={searchUser} setSearchUser={setSearchUser} />
-              <UtilisateursTable utilisateursFiltres={utilisateursFiltres} loading={loadingUsers} handleSuspendre={handleSuspendre} handleReactiver={handleReactiver} handleDesactiver={handleDesactiver} />
+              <UtilisateursTable utilisateursFiltres={utilisateursFiltres} loading={loadingUsers} handleSupprimer={handleSupprimer} handleReactiver={handleReactiver} handleDesactiver={handleDesactiver} />
             </div>
           )}
+          {activeTab === "historique" && <HistoriqueSection />}
         </main>
       </div>
       {rejetModal && <RejetModal demande={rejetModal} onConfirm={(motif) => handleRejeter(rejetModal.idDemande, motif)} onClose={() => setRejetModal(null)} />}
       {detailModal && <DetailModal demande={detailModal} onClose={() => setDetailModal(null)} />}
+      {parametreModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setParametreModal(false)}>
+          <div className="bg-white rounded-2xl shadow-xl max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto p-6" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-gray-800">Paramètres</h2>
+              <button onClick={() => setParametreModal(false)} className="p-1 text-gray-400 hover:text-gray-600">
+                <Icon name="close" className="w-5 h-5" />
+              </button>
+            </div>
+            <ParametreSection />
+          </div>
+        </div>
+      )}
       <Toast toast={toast} />
     </div>
   );

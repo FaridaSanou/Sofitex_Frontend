@@ -38,6 +38,7 @@ export default function Login() {
       localStorage.setItem("token", data.token);
       localStorage.setItem("role", data.role);
       localStorage.setItem("email", data.email);
+      if (data.id) localStorage.setItem("userId", String(data.id));
       if (data.role === "ROLE_DPO" && data.id) {
         localStorage.setItem("dpoId", String(data.id));
       }

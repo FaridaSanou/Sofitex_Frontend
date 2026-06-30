@@ -1,8 +1,5 @@
 import { useState, useEffect } from "react";
-import { Icon } from "../components/ui/Icon";
-import { BadgeStatut } from "../components/ui/BadgeStatut";
-import { formatDate } from "../utils/date";
-import { Toast } from "../components/ui/Toast";
+import Toast from "../components/ui/Toast";
 import api from "../services/api";
 import UMSidebar from "../components/utilisateur-metier/UMSidebar";
 import UMHeader from "../components/utilisateur-metier/UMHeader";
@@ -15,6 +12,7 @@ import UMHistoriqueSection from "../components/utilisateur-metier/UMHistoriqueSe
 import ModalCreerTraitement from "../components/utilisateur-metier/ModalCreerTraitement";
 import ModalDetailTraitement from "../components/utilisateur-metier/ModalDetailTraitement";
 import ModalAjouterDonnees from "../components/utilisateur-metier/ModalAjouterDonnees";
+import ModalDonneesTraitement from "../components/utilisateur-metier/ModalDonneesTraitement";
 import ModalDemandeUsager from "../components/utilisateur-metier/ModalDemandeUsager";
 
 const mockDemandes = [
@@ -31,6 +29,7 @@ function UtilisateurMetierDashboard() {
   const [sessions, setSessions] = useState([]);
   const [showCreer, setShowCreer] = useState(false);
   const [showAjouterDonnees, setShowAjouterDonnees] = useState(false);
+  const [showDonneesModal, setShowDonneesModal] = useState(false);
   const [traitementPourDonnees, setTraitementPourDonnees] = useState(null);
   const [detailTraitement, setDetailTraitement] = useState(null);
   const [detailDemande, setDetailDemande] = useState(null);
@@ -228,23 +227,24 @@ function UtilisateurMetierDashboard() {
 
   return (
     <div className="flex h-screen bg-gray-100 font-sans">
-      <UMSidebar activeSection={activeSection} onNavigate={handleNavigate} sidebarOpen={sidebarOpen} onToggle={() => setSidebarOpen(o => !o)} onLogout={handleLogout} navItems={navItems} />
+      <UMSidebar activeSection={activeSection} onNavigate={handleNavigate} sidebarOpen={sidebarOpen} onLogout={handleLogout} navItems={navItems} />
       <div className="flex-1 flex flex-col overflow-hidden">
         <UMHeader activeSection={activeSection} sidebarOpen={sidebarOpen} onToggleSidebar={() => setSidebarOpen(o => !o)} newSessionCount={newSessionCount} onNewSessionClick={() => { setNewSessionCount(0); setActiveSection("sessions"); }} demandesEnAttente={demandesEnAttente} onDemandesClick={() => setActiveSection("demandes")} />
         <main className="flex-1 overflow-y-auto p-6">
           {activeSection === "dashboard" && <UMDashboard stats={stats} traitements={traitements} onNewTraitement={() => setShowCreer(true)} onDetailTraitement={setDetailTraitement} />}
           {activeSection === "sessions" && <UMSessionsSection sessions={sessions} traitements={traitements} onDetailTraitement={setDetailTraitement} />}
           {activeSection === "traitements" && (
-            <UMTraitementsSection traitementsFiltres={traitementsFiltres} recherche={recherche} onRechercheChange={setRecherche} traitementFilterMode={traitementFilterMode} setTraitementFilterMode={setTraitementFilterMode} selectedSessionId={selectedSessionId} setSelectedSessionId={setSelectedSessionId} sessions={sessions} onNew={() => setShowCreer(true)} expandedTraitementId={expandedTraitementId} onToggleExpand={chargerDonneesTraitement} traitementDonneesMap={traitementDonneesMap} traitementDonneesLoading={traitementDonneesLoading} onDetail={setDetailTraitement} onAjouterDonnees={(t) => { setTraitementPourDonnees(t); setShowAjouterDonnees(true); }} onEnvoyer={handleEnvoyer} />
+            <UMTraitementsSection traitementsFiltres={traitementsFiltres} recherche={recherche} onRechercheChange={setRecherche} traitementFilterMode={traitementFilterMode} setTraitementFilterMode={setTraitementFilterMode} selectedSessionId={selectedSessionId} setSelectedSessionId={setSelectedSessionId} sessions={sessions} onNew={() => setShowCreer(true)} expandedTraitementId={expandedTraitementId} onToggleExpand={chargerDonneesTraitement} traitementDonneesMap={traitementDonneesMap} traitementDonneesLoading={traitementDonneesLoading} onDetail={setDetailTraitement} onDonnees={(t) => { setTraitementPourDonnees(t); setShowDonneesModal(true); }} onEnvoyer={handleEnvoyer} />
           )}
           {activeSection === "demandes" && <UMDemandesSection demandes={demandes} demandesEnAttente={demandesEnAttente} onTraiter={setDetailDemande} />}
-          {activeSection === "entrepot" && <UMEntrepotSection entrepotData={entrepotData} entrepotRecherche={entrepotRecherche} onRechercheChange={setEntrepotRecherche} />}
+          {activeSection === "entrepot" && <UMEntrepotSection entrepotData={entrepotData} entrepotRecherche={entrepotRecherche} onRechercheChange={setEntrepotRecherche} traitements={traitements} onAjouterDonnees={(t) => { setTraitementPourDonnees(t); setShowAjouterDonnees(true); }} />}
           {activeSection === "historique" && <UMHistoriqueSection traitementsEnvoyesDpo={traitements.filter(t => t.envoyeAuDpo === true)} demandesTraitees={demandes.filter(d => d.statut === "TRAITE" || d.statutDemande === "TRAITE")} sessionsTerminees={sessions.filter(s => s.statutSession === "TERMINEE")} />}
         </main>
       </div>
       {showCreer && <ModalCreerTraitement onClose={() => setShowCreer(false)} onSave={handleCreer} sessions={sessions} onSaveManuel={handleSaveManuel} onSaveExcel={handleSaveExcel} />}
       {detailTraitement && <ModalDetailTraitement traitement={detailTraitement} onClose={() => setDetailTraitement(null)} onEnvoyer={handleEnvoyer} dpos={dposDisponibles} onAjouterDonnees={(t) => { setTraitementPourDonnees(t); setShowAjouterDonnees(true); }} />}
       {detailDemande && <ModalDemandeUsager demande={detailDemande} onClose={() => setDetailDemande(null)} onTraiter={handleTraiterDemande} />}
+      {showDonneesModal && traitementPourDonnees && <ModalDonneesTraitement traitement={traitementPourDonnees} onClose={() => { setShowDonneesModal(false); setTraitementPourDonnees(null); }} onAjouterDonnees={(t) => { setShowDonneesModal(false); setTraitementPourDonnees(t); setShowAjouterDonnees(true); }} />}
       {showAjouterDonnees && traitementPourDonnees && <ModalAjouterDonnees traitement={traitementPourDonnees} onClose={() => { setShowAjouterDonnees(false); setTraitementPourDonnees(null); }} onSaveManuel={handleSaveManuel} onSaveExcel={handleSaveExcel} />}
       <Toast toast={toast} />
     </div>

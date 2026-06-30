@@ -40,14 +40,24 @@ export default function DpoDashboard() {
     setTimeout(() => setToast(null), 3000);
   };
 
+  const fetchDeclarations = (dpoId) => {
+    if (dpoId) {
+      api.get(`/declarations/mes-declarations?dpoId=${dpoId}`)
+        .then(res => { if (res.data) setDeclarations(res.data); })
+        .catch(() => setDeclarations([]));
+    }
+  };
+
   useEffect(() => {
     api.get("/sessions").then((res) => setSessions(res.data)).catch(() => {});
+    const storedId = localStorage.getItem("dpoId");
+    if (storedId) fetchDeclarations(storedId);
   }, []);
 
   useEffect(() => {
-    const dpoId = localStorage.getItem("dpoId");
-    if (dpoId) {
-      api.get(`/traitements/dpo/${dpoId}`)
+    const storedId = localStorage.getItem("dpoId");
+    if (storedId) {
+      api.get(`/traitements/dpo/${storedId}`)
         .then(res => { if (res.data) setAllTraitements(res.data); })
         .catch(() => {});
     } else {
@@ -58,6 +68,7 @@ export default function DpoDashboard() {
             const id = res.data.dpoId;
             if (id) {
               localStorage.setItem("dpoId", String(id));
+              fetchDeclarations(id);
               return api.get(`/traitements/dpo/${id}`);
             }
             return api.get("/traitements");
