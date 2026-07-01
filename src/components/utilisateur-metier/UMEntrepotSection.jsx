@@ -1,24 +1,62 @@
 import { useState } from "react";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, Upload, FileSpreadsheet } from "lucide-react";
 import { formatDate } from "../../utils/date";
+import api from "../../services/api";
 import ModalAjouterDonnees from "./ModalAjouterDonnees";
 
 export default function UMEntrepotSection({ entrepotData, entrepotRecherche, onRechercheChange, traitements, onAjouterDonnees }) {
-  const [showAjout, setShowAjout] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [etape, setEtape] = useState("menu"); // "menu" | "manuel" | "excel"
   const [selectedTraitement, setSelectedTraitement] = useState("");
+  const [excelFile, setExcelFile] = useState(null);
+  const [importing, setImporting] = useState(false);
 
   const defaultId = traitements.length === 1 ? String(traitements[0].idTraitement) : "";
   const resolvedId = selectedTraitement || defaultId;
+
   const filtered = entrepotData.filter(d => !entrepotRecherche
     || d.personneNomComplet?.toLowerCase().includes(entrepotRecherche.toLowerCase())
     || d.typeDonneeNom?.toLowerCase().includes(entrepotRecherche.toLowerCase())
     || d.valeur?.toLowerCase().includes(entrepotRecherche.toLowerCase()));
 
+  const handleImportExcel = async () => {
+    if (!excelFile) return;
+    setImporting(true);
+    try {
+      const formData = new FormData();
+      formData.append("fichier", excelFile);
+      await api.post("/entrepot/import-excel", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      setShowModal(false);
+      setExcelFile(null);
+      setEtape("menu");
+      window.location.reload();
+    } catch {
+      alert("Erreur lors de l'import Excel.");
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const openManuel = () => {
+    if (traitements.length === 0) return;
+    if (resolvedId) {
+      const t = traitements.find(t => t.idTraitement === Number(resolvedId));
+      if (t) {
+        setShowModal(false);
+        setEtape("menu");
+        setSelectedTraitement("");
+        onAjouterDonnees(t);
+      }
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold text-gray-800">Entrepôt de données</h2>
-        <button onClick={() => setShowAjout(true)} className="flex items-center gap-2 px-4 py-2 bg-green-700 text-white rounded-xl text-sm font-semibold hover:bg-green-800 transition">
+        <button onClick={() => { setShowModal(true); setEtape("menu"); }} className="flex items-center gap-2 px-4 py-2 bg-green-700 text-white rounded-xl text-sm font-semibold hover:bg-green-800 transition">
           <Plus className="w-4 h-4" /> Ajouter des données
         </button>
       </div>
@@ -58,30 +96,91 @@ export default function UMEntrepotSection({ entrepotData, entrepotRecherche, onR
         </div>
       </div>
 
-      {showAjout && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={() => setShowAjout(false)}>
+      {showModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={() => { setShowModal(false); setEtape("menu"); setExcelFile(null); }}>
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
-            <h3 className="text-lg font-bold text-gray-800 mb-4">Ajouter des données</h3>
-            {traitements.length === 0 ? (
-              <p className="text-sm text-gray-500 text-center py-4">Créez d'abord un traitement.</p>
-            ) : (
+
+            {etape === "menu" && (
               <>
-                {traitements.length > 1 && (
-                  <div className="mb-4">
-                    <label className="block text-sm font-semibold text-gray-700 mb-1">Traitement destinataire</label>
-                    <select value={resolvedId} onChange={e => setSelectedTraitement(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
-                      <option value="">-- Sélectionner --</option>
-                      {traitements.map(t => (<option key={t.idTraitement} value={t.idTraitement}>{t.description || t.nom || `#${t.idTraitement}`}</option>))}
-                    </select>
-                  </div>
-                )}
+                <h3 className="text-lg font-bold text-gray-800 mb-4">Ajouter des données</h3>
+                <p className="text-sm text-gray-500 mb-6">Choisissez une méthode d'ajout :</p>
                 <div className="space-y-3">
-                  <button onClick={() => { if (resolvedId) { const t = traitements.find(t => t.idTraitement === Number(resolvedId)); if (t) { setShowAjout(false); onAjouterDonnees(t); } } }} disabled={!resolvedId} className="w-full py-3 bg-[#F0FDF4] border border-green-500 rounded-xl text-green-800 font-semibold text-sm hover:bg-green-100 disabled:opacity-40">Saisie manuelle</button>
-                  <button onClick={() => { if (resolvedId) { const t = traitements.find(t => t.idTraitement === Number(resolvedId)); if (t) { setShowAjout(false); onAjouterDonnees(t); } } }} disabled={!resolvedId} className="w-full py-3 bg-[#F0FDF4] border border-green-500 rounded-xl text-green-800 font-semibold text-sm hover:bg-green-100 disabled:opacity-40">Import Excel</button>
+                  <button onClick={() => {
+                    if (traitements.length === 0) return;
+                    if (traitements.length === 1) {
+                      const t = traitements[0];
+                      setShowModal(false);
+                      setEtape("menu");
+                      onAjouterDonnees(t);
+                    } else {
+                      setEtape("manuel");
+                    }
+                  }} disabled={traitements.length === 0} className="w-full flex items-center gap-3 p-4 bg-[#F0FDF4] border border-green-500 rounded-xl text-green-800 font-semibold text-sm hover:bg-green-100 disabled:opacity-40 disabled:cursor-not-allowed">
+                    <Upload className="w-5 h-5 text-green-700" />
+                    <div className="text-left">
+                      <p>Saisie manuelle</p>
+                      <p className="text-xs text-gray-500 font-normal">Ajouter des données une par une</p>
+                    </div>
+                  </button>
+                  <button onClick={() => setEtape("excel")} className="w-full flex items-center gap-3 p-4 bg-[#F0FDF4] border border-green-500 rounded-xl text-green-800 font-semibold text-sm hover:bg-green-100">
+                    <FileSpreadsheet className="w-5 h-5 text-green-700" />
+                    <div className="text-left">
+                      <p>Import Excel</p>
+                      <p className="text-xs text-gray-500 font-normal">Importer un fichier .xlsx</p>
+                    </div>
+                  </button>
+                </div>
+                <button onClick={() => { setShowModal(false); setEtape("menu"); }} className="w-full mt-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50">Fermer</button>
+              </>
+            )}
+
+            {etape === "manuel" && (
+              <>
+                <h3 className="text-lg font-bold text-gray-800 mb-4">Saisie manuelle</h3>
+                <p className="text-sm text-gray-500 mb-4">Sélectionnez le traitement destinataire :</p>
+                <select value={resolvedId} onChange={e => setSelectedTraitement(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-4">
+                  <option value="">-- Sélectionner un traitement --</option>
+                  {traitements.map(t => (<option key={t.idTraitement} value={t.idTraitement}>{t.description || t.nom || `#${t.idTraitement}`}</option>))}
+                </select>
+                <div className="flex gap-3">
+                  <button onClick={() => setEtape("menu")} className="flex-1 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50">Retour</button>
+                  <button onClick={openManuel} disabled={!resolvedId} className="flex-1 py-2 bg-green-700 text-white rounded-lg text-sm font-semibold hover:bg-green-800 disabled:opacity-40">Confirmer</button>
                 </div>
               </>
             )}
-            <button onClick={() => setShowAjout(false)} className="w-full mt-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50">Fermer</button>
+
+            {etape === "excel" && (
+              <>
+                <h3 className="text-lg font-bold text-gray-800 mb-4">Import Excel</h3>
+                <p className="text-sm text-gray-500 mb-2">Les données seront importées directement dans l'entrepôt.</p>
+                <details className="mb-4 text-xs text-gray-500 bg-gray-50 rounded-lg p-3">
+                  <summary className="cursor-pointer font-medium text-gray-600">Format attendu (.xlsx)</summary>
+                  <div className="mt-2 space-y-2">
+                    <p><strong>Format A — Colonnes prédéfinies :</strong><br />
+                    <code>nom</code>* · <code>prenom</code>* · <code>email</code> · <code>telephone</code> · <code>date_naissance</code> · <code>numero_cnib</code> · <code>profession</code></p>
+                    <p><strong>Format B — Type/Valeur personnalisés :</strong><br />
+                    <code>nom</code>* · <code>prenom</code>* · <code>email</code> · <code>telephone</code> · <code>type_donnee</code>* · <code>valeur</code>*</p>
+                    <p className="text-gray-400">* : obligatoire · La 1ʳᵉ ligne doit contenir les en-têtes</p>
+                  </div>
+                </details>
+                <label className="block border-2 border-dashed border-gray-300 rounded-xl p-6 text-center cursor-pointer hover:border-green-500 mb-4">
+                  <FileSpreadsheet className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                  {excelFile ? (
+                    <p className="text-sm font-medium text-green-700">{excelFile.name}</p>
+                  ) : (
+                    <p className="text-sm text-gray-500">Cliquez pour sélectionner un fichier .xlsx</p>
+                  )}
+                  <input type="file" accept=".xlsx" className="hidden" onChange={e => setExcelFile(e.target.files[0])} />
+                </label>
+                <div className="flex gap-3">
+                  <button onClick={() => { setEtape("menu"); setExcelFile(null); }} className="flex-1 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50">Retour</button>
+                  <button onClick={handleImportExcel} disabled={!excelFile || importing} className="flex-1 py-2 bg-green-700 text-white rounded-lg text-sm font-semibold hover:bg-green-800 disabled:opacity-40">
+                    {importing ? "Importation..." : "Importer"}
+                  </button>
+                </div>
+              </>
+            )}
+
           </div>
         </div>
       )}

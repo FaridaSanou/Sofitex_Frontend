@@ -187,6 +187,16 @@ export default function ModalAjouterDonnees({ traitement, onClose, onSaveManuel,
             </div>
             <div className="bg-[#F0FDF4] border border-green-200 rounded-2xl p-4">
               <h3 className="text-gray-700 font-semibold mb-3 text-base">Import depuis Excel</h3>
+              <details className="mb-3 text-xs text-gray-500 bg-white rounded-lg p-2 border border-green-100">
+                <summary className="cursor-pointer font-medium text-gray-600">Format attendu (.xlsx)</summary>
+                <div className="mt-2 space-y-1.5">
+                  <p><strong>Format A — Colonnes prédéfinies :</strong><br />
+                  <code>nom</code>* · <code>prenom</code>* · <code>email</code> · <code>telephone</code> · <code>date_naissance</code> · <code>numero_cnib</code> · <code>profession</code></p>
+                  <p><strong>Format B — Type/Valeur personnalisés :</strong><br />
+                  <code>nom</code>* · <code>prenom</code>* · <code>email</code> · <code>telephone</code> · <code>type_donnee</code>* · <code>valeur</code>*</p>
+                  <p className="text-gray-400">* : obligatoire · La 1ʳᵉ ligne doit contenir les en-têtes</p>
+                </div>
+              </details>
               <div className="flex items-center gap-4">
                 <label className="inline-flex items-center px-4 bg-green-600 text-white rounded-xl cursor-pointer hover:bg-green-700 transition-colors font-medium text-sm" style={{ height: "38px" }}>
                   <FileUp className="w-4 h-4 mr-2" /> Choisir un fichier

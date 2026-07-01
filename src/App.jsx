@@ -7,6 +7,7 @@ import DpoDashboard from "./pages/DpoDashboard"
 import CilDashboard from "./pages/CilDashboard"
 import DgDashboard from "./pages/DgDashboard"
 import UtilisateurMetierDashboard from "./pages/UtilisateurMetierDashboard"
+import PageDonneesTraitement from "./pages/PageDonneesTraitement"
 import Inactif from "./pages/page_inactif"
 import VerificationGuard from "./components/VerificationGuard"
 
@@ -22,6 +23,7 @@ export default function App() {
         <Route path="/cil" element={<VerificationGuard><CilDashboard /></VerificationGuard>} />
         <Route path="/dg" element={<VerificationGuard><DgDashboard /></VerificationGuard>} />
         <Route path="/metier" element={<VerificationGuard><UtilisateurMetierDashboard /></VerificationGuard>} />
+        <Route path="/traitements/:id/donnees" element={<VerificationGuard><PageDonneesTraitement /></VerificationGuard>} />
         <Route path="/compte-inactif" element={<Inactif />}/>
       </Routes>
     </BrowserRouter>

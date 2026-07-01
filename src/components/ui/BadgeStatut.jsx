@@ -1,6 +1,6 @@
 export function BadgeStatut({ statut, envoyeAuDpo }) {
   if (envoyeAuDpo) {
-    return <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700">Envoyé DPO</span>;
+    return <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700 whitespace-nowrap">Envoyé DPO</span>;
   }
   const map = {
     VALIDE: { label: "Validé", cls: "bg-green-100 text-green-700" },

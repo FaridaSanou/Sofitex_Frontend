@@ -6,10 +6,11 @@ const DIRECTIONS = ["DSI", "DRH", "Direction Commerciale", "Direction Financièr
 const ORIGINES = ["Directement auprès des personnes (formulaires en ligne, papier)", "Via des objets connectés ou capteurs", "Importation de fichiers externes ou bases de données existantes"];
 const inp = "w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-600";
 
-export default function ModalCreerTraitement({ onClose, onSave, sessions, onSaveManuel, onSaveExcel }) {
+export default function ModalCreerTraitement({ onClose, onSave, sessions, onSaveManuel, onSaveExcel, initialData }) {
   const [etape, setEtape] = useState(1);
   const creePar = localStorage.getItem("nom") || localStorage.getItem("email") || "Utilisateur inconnu";
   const userEmail = localStorage.getItem("email") || "";
+  const isEdit = !!initialData;
 
   const [fichierExcel, setFichierExcel] = useState(null);
   const [traitementCree, setTraitementCree] = useState(null);
@@ -30,11 +31,25 @@ export default function ModalCreerTraitement({ onClose, onSave, sessions, onSave
   const [nouveauTelephone, setNouveauTelephone] = useState("");
   const [loadingData, setLoadingData] = useState(false);
 
+  const [form, setForm] = useState({
+    nom: initialData?.description || initialData?.nom || "", finalite: initialData?.texte || "", denomination: "",
+    date_mise_en_oeuvre: initialData?.dateMiseEnOeuvre || "",
+    type_traitement: "", duree_conservation: initialData?.dureeConservation ? String(initialData.dureeConservation) : "",
+    nombre_personnes: initialData?.nombrePersonnesConcernees ? String(initialData.nombrePersonnesConcernees) : "",
+    categorie_personnes: initialData?.categoriesDonnees || "", origine_donnees: initialData?.origineDonnees || "",
+    lieu_stockage: initialData?.lieuStockage || "",
+    sessionCollecteId: initialData?.sessionCollecteId ? String(initialData.sessionCollecteId) : "",
+    responsable_nom: initialData?.nomPrenomResponsable || "", responsable_departement: initialData?.department || "",
+    responsable_fonction: initialData?.fonctionResponsable || "", responsable_email: initialData?.contactConfidentialite || "",
+  });
+
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
   useEffect(() => {
-    if (etape === 4) {
+    if (etape === 4 && !initialData) {
       api.get("/types-donnee").then(res => setTypesDonnee(res.data)).catch(() => setTypesDonnee([]));
     }
-  }, [etape]);
+  }, [etape, initialData]);
 
   const handleRechercherPersonne = () => {
     if (!rechercheNom.trim()) return;
@@ -62,16 +77,6 @@ export default function ModalCreerTraitement({ onClose, onSave, sessions, onSave
     onSaveManuel({ valeur: valeur.trim(), typeDonneeId: Number(typeDonneeId), traitementId: traitementCree.idTraitement, personneId: personneSelectionnee.id, dateCollecte: new Date().toISOString() }, () => setLoadingData(false));
   };
 
-  const [form, setForm] = useState({
-    nom: "", finalite: "", denomination: "", date_mise_en_oeuvre: "",
-    type_traitement: "", duree_conservation: "", nombre_personnes: "",
-    categorie_personnes: "", origine_donnees: "", lieu_stockage: "",
-    sessionCollecteId: "", responsable_nom: "", responsable_departement: "",
-    responsable_fonction: "", responsable_email: "",
-  });
-
-  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
-
   const etape1Ok = form.nom && form.finalite && form.type_traitement;
   const etape2Ok = form.duree_conservation && form.categorie_personnes;
   const etape3Ok = form.responsable_nom && form.responsable_email;
@@ -97,7 +102,7 @@ export default function ModalCreerTraitement({ onClose, onSave, sessions, onSave
     setFichierExcel(file);
   };
 
-  const steps = ["Traitement", "Détails & Conformité", "Responsable", "Données"];
+  const steps = isEdit ? ["Traitement", "Détails & Conformité", "Responsable"] : ["Traitement", "Détails & Conformité", "Responsable", "Données"];
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
@@ -209,6 +214,16 @@ export default function ModalCreerTraitement({ onClose, onSave, sessions, onSave
                   </div>
                   <div className="bg-[#F0FDF4] border border-green-200 rounded-2xl p-4">
                     <h3 className="text-gray-700 font-semibold mb-3 text-base">Import depuis Excel</h3>
+                    <details className="mb-3 text-xs text-gray-500 bg-white rounded-lg p-2 border border-green-100">
+                      <summary className="cursor-pointer font-medium text-gray-600">Format attendu (.xlsx)</summary>
+                      <div className="mt-2 space-y-1.5">
+                        <p><strong>Format A — Colonnes prédéfinies :</strong><br />
+                        <code>nom</code>* · <code>prenom</code>* · <code>email</code> · <code>telephone</code> · <code>date_naissance</code> · <code>numero_cnib</code> · <code>profession</code></p>
+                        <p><strong>Format B — Type/Valeur personnalisés :</strong><br />
+                        <code>nom</code>* · <code>prenom</code>* · <code>email</code> · <code>telephone</code> · <code>type_donnee</code>* · <code>valeur</code>*</p>
+                        <p className="text-gray-400">* : obligatoire · La 1ʳᵉ ligne doit contenir les en-têtes</p>
+                      </div>
+                    </details>
                     <div className="flex items-center gap-4">
                       <label className="inline-flex items-center px-4 bg-green-600 text-white rounded-xl cursor-pointer hover:bg-green-700 transition-colors font-medium text-sm" style={{ height: "38px" }}>
                         <FileUp className="w-4 h-4 mr-2" /> Choisir un fichier
@@ -296,9 +311,14 @@ export default function ModalCreerTraitement({ onClose, onSave, sessions, onSave
               <span className="text-sm text-[#1e293b]">{userEmail}</span>
             </div>
 
-            {etape < 4 ? (
+            {etape < steps.length ? (
               <button onClick={() => setEtape(e => e + 1)} disabled={!canNext}
                 className="px-6 py-2.5 rounded-lg bg-green-600 text-white text-sm font-bold hover:bg-green-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm">Suivant →</button>
+            ) : isEdit ? (
+              <button onClick={() => onSave(buildPayload(), () => {}, "direct")}
+                className="px-6 py-2.5 rounded-lg bg-amber-500 text-white text-sm font-bold hover:bg-amber-600 transition-all shadow-sm flex items-center gap-2">
+                Enregistrer les modifications
+              </button>
             ) : traitementCree ? (
               <button onClick={onClose} className="px-6 py-2.5 rounded-lg bg-gray-100 text-gray-700 text-sm font-bold hover:bg-gray-200 transition-all shadow-sm">Terminer</button>
             ) : (

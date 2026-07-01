@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import Toast from "../components/ui/Toast";
 import api from "../services/api";
 import UMSidebar from "../components/utilisateur-metier/UMSidebar";
@@ -12,7 +13,6 @@ import UMHistoriqueSection from "../components/utilisateur-metier/UMHistoriqueSe
 import ModalCreerTraitement from "../components/utilisateur-metier/ModalCreerTraitement";
 import ModalDetailTraitement from "../components/utilisateur-metier/ModalDetailTraitement";
 import ModalAjouterDonnees from "../components/utilisateur-metier/ModalAjouterDonnees";
-import ModalDonneesTraitement from "../components/utilisateur-metier/ModalDonneesTraitement";
 import ModalDemandeUsager from "../components/utilisateur-metier/ModalDemandeUsager";
 
 const mockDemandes = [
@@ -22,14 +22,15 @@ const mockDemandes = [
 ];
 
 function UtilisateurMetierDashboard() {
+  const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [traitements, setTraitements] = useState([]);
   const [demandes, setDemandes] = useState(mockDemandes);
   const [sessions, setSessions] = useState([]);
   const [showCreer, setShowCreer] = useState(false);
+  const [traitementEnEdition, setTraitementEnEdition] = useState(null);
   const [showAjouterDonnees, setShowAjouterDonnees] = useState(false);
-  const [showDonneesModal, setShowDonneesModal] = useState(false);
   const [traitementPourDonnees, setTraitementPourDonnees] = useState(null);
   const [detailTraitement, setDetailTraitement] = useState(null);
   const [detailDemande, setDetailDemande] = useState(null);
@@ -67,7 +68,7 @@ function UtilisateurMetierDashboard() {
         }).then(res => { if (res) setTraitements(res.data); }).catch(err => console.error(err));
       }
     }
-    api.get("/donnees").then(res => setEntrepotData(res.data)).catch(() => {});
+    api.get("/entrepot").then(res => setEntrepotData(res.data)).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -81,7 +82,7 @@ function UtilisateurMetierDashboard() {
     return () => clearInterval(interval);
   }, [previousSessionCount]);
 
-  const handleCreer = (payload, callback, mode = "direct") => {
+  const handleCreer = (payload, callback, mode = "direct", editId) => {
     const traitementData = {
       nom: payload.nom || payload.denomination || "",
       department: payload.responsable_departement || "",
@@ -108,6 +109,15 @@ function UtilisateurMetierDashboard() {
       typeTraitement: payload.type_traitement || "",
       categoriesPersonnesConcernees: payload.categorie_personnes || "",
     };
+    if (editId) {
+      api.put(`/traitements/${editId}`, traitementData).then(res => {
+        const t = res.data;
+        setTraitements(prev => prev.map(tr => tr.idTraitement === editId ? { ...tr, ...t } : tr));
+        setShowCreer(false); setTraitementEnEdition(null);
+        showToast("Traitement modifié avec succès !"); callback?.(t);
+      }).catch(err => showToast(`Erreur : ${err.response?.data?.message || "Échec de la modification"}`, "error"));
+      return;
+    }
     const fd = new FormData();
     fd.append("traitement", new Blob([JSON.stringify(traitementData)], { type: "application/json" }));
     fd.append("declaration", new Blob([JSON.stringify(declarationData)], { type: "application/json" }));
@@ -148,10 +158,13 @@ function UtilisateurMetierDashboard() {
     }).catch(err => showToast(err.response?.data?.message || "Erreur lors de l'envoi au DPO", "error"));
   };
 
+  const refreshEntrepot = () => api.get("/entrepot").then(res => setEntrepotData(res.data)).catch(() => {});
+
   const handleSaveManuel = (payload, onComplete) => {
     api.post("/donnees", payload).then(() => {
       setTraitements(prev => prev.map(t => t.idTraitement === payload.traitementId ? { ...t, nombreDonnee: (t.nombreDonnee || 0) + 1 } : t));
       setShowAjouterDonnees(false); setTraitementPourDonnees(null);
+      refreshEntrepot();
       showToast("Donnée ajoutée avec succès !");
     }).catch(err => {
       const status = err.response?.status; const msg = err.response?.data?.message || "Erreur lors de l'ajout de la donnée";
@@ -176,6 +189,15 @@ function UtilisateurMetierDashboard() {
       const status = err.response?.status; const msg = err.response?.data?.message || "Erreur lors de l'import";
       showToast(status === 403 ? "Accès refusé (403) — vérifiez que vous êtes bien connecté." : status === 400 ? "Fichier invalide ou format incorrect (400)." : `Erreur ${status || ""} : ${msg}`, "error");
     }).finally(() => onComplete?.());
+  };
+
+  const handleSupprimerTraitement = (id) => {
+    api.delete(`/traitements/${id}`)
+      .then(() => {
+        setTraitements(prev => prev.filter(t => t.idTraitement !== id));
+        showToast("Traitement supprimé.");
+      })
+      .catch(err => showToast(`Erreur : ${err.response?.data?.message || "Échec de la suppression"}`, "error"));
   };
 
   const handleTraiterDemande = (id, reponse) => {
@@ -234,17 +256,35 @@ function UtilisateurMetierDashboard() {
           {activeSection === "dashboard" && <UMDashboard stats={stats} traitements={traitements} onNewTraitement={() => setShowCreer(true)} onDetailTraitement={setDetailTraitement} />}
           {activeSection === "sessions" && <UMSessionsSection sessions={sessions} traitements={traitements} onDetailTraitement={setDetailTraitement} />}
           {activeSection === "traitements" && (
-            <UMTraitementsSection traitementsFiltres={traitementsFiltres} recherche={recherche} onRechercheChange={setRecherche} traitementFilterMode={traitementFilterMode} setTraitementFilterMode={setTraitementFilterMode} selectedSessionId={selectedSessionId} setSelectedSessionId={setSelectedSessionId} sessions={sessions} onNew={() => setShowCreer(true)} expandedTraitementId={expandedTraitementId} onToggleExpand={chargerDonneesTraitement} traitementDonneesMap={traitementDonneesMap} traitementDonneesLoading={traitementDonneesLoading} onDetail={setDetailTraitement} onDonnees={(t) => { setTraitementPourDonnees(t); setShowDonneesModal(true); }} onEnvoyer={handleEnvoyer} />
+            <UMTraitementsSection traitementsFiltres={traitementsFiltres} recherche={recherche} onRechercheChange={setRecherche} traitementFilterMode={traitementFilterMode} setTraitementFilterMode={setTraitementFilterMode} selectedSessionId={selectedSessionId} setSelectedSessionId={setSelectedSessionId} sessions={sessions} onNew={() => setShowCreer(true)} expandedTraitementId={expandedTraitementId} onToggleExpand={chargerDonneesTraitement} traitementDonneesMap={traitementDonneesMap} traitementDonneesLoading={traitementDonneesLoading} onDetail={setDetailTraitement} onDonnees={(t) => { navigate(`/traitements/${t.idTraitement}/donnees`, { state: { traitement: t } }); }} onEnvoyer={handleEnvoyer} />
           )}
           {activeSection === "demandes" && <UMDemandesSection demandes={demandes} demandesEnAttente={demandesEnAttente} onTraiter={setDetailDemande} />}
           {activeSection === "entrepot" && <UMEntrepotSection entrepotData={entrepotData} entrepotRecherche={entrepotRecherche} onRechercheChange={setEntrepotRecherche} traitements={traitements} onAjouterDonnees={(t) => { setTraitementPourDonnees(t); setShowAjouterDonnees(true); }} />}
           {activeSection === "historique" && <UMHistoriqueSection traitementsEnvoyesDpo={traitements.filter(t => t.envoyeAuDpo === true)} demandesTraitees={demandes.filter(d => d.statut === "TRAITE" || d.statutDemande === "TRAITE")} sessionsTerminees={sessions.filter(s => s.statutSession === "TERMINEE")} />}
         </main>
       </div>
-      {showCreer && <ModalCreerTraitement onClose={() => setShowCreer(false)} onSave={handleCreer} sessions={sessions} onSaveManuel={handleSaveManuel} onSaveExcel={handleSaveExcel} />}
-      {detailTraitement && <ModalDetailTraitement traitement={detailTraitement} onClose={() => setDetailTraitement(null)} onEnvoyer={handleEnvoyer} dpos={dposDisponibles} onAjouterDonnees={(t) => { setTraitementPourDonnees(t); setShowAjouterDonnees(true); }} />}
+      {showCreer && (
+        <ModalCreerTraitement
+          onClose={() => { setShowCreer(false); setTraitementEnEdition(null); }}
+          onSave={(payload, cb, mode) => handleCreer(payload, cb, mode, traitementEnEdition?.idTraitement)}
+          sessions={sessions}
+          onSaveManuel={handleSaveManuel}
+          onSaveExcel={handleSaveExcel}
+          initialData={traitementEnEdition}
+        />
+      )}
+      {detailTraitement && (
+        <ModalDetailTraitement
+          traitement={detailTraitement}
+          onClose={() => setDetailTraitement(null)}
+          onEnvoyer={handleEnvoyer}
+          dpos={dposDisponibles}
+          onAjouterDonnees={(t) => { setTraitementPourDonnees(t); setShowAjouterDonnees(true); }}
+          onModifier={(t) => { setDetailTraitement(null); setTraitementEnEdition(t); setShowCreer(true); }}
+          onSupprimer={handleSupprimerTraitement}
+        />
+      )}
       {detailDemande && <ModalDemandeUsager demande={detailDemande} onClose={() => setDetailDemande(null)} onTraiter={handleTraiterDemande} />}
-      {showDonneesModal && traitementPourDonnees && <ModalDonneesTraitement traitement={traitementPourDonnees} onClose={() => { setShowDonneesModal(false); setTraitementPourDonnees(null); }} onAjouterDonnees={(t) => { setShowDonneesModal(false); setTraitementPourDonnees(t); setShowAjouterDonnees(true); }} />}
       {showAjouterDonnees && traitementPourDonnees && <ModalAjouterDonnees traitement={traitementPourDonnees} onClose={() => { setShowAjouterDonnees(false); setTraitementPourDonnees(null); }} onSaveManuel={handleSaveManuel} onSaveExcel={handleSaveExcel} />}
       <Toast toast={toast} />
     </div>
