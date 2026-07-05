@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import DashboardLayout from "../layouts/DashboardLayout";
 import api from "../services/api";
 import { toLocalDateTime } from "../utils/date";
@@ -11,11 +11,27 @@ import ModalDetailTraitement from "../components/dpo/ModalDetailTraitement";
 import ModalDetailDeclaration from "../components/dpo/ModalDetailDeclaration";
 import ModalCreerDeclaration from "../components/dpo/ModalCreerDeclaration";
 
-const mockDemandes = [
-  { id: 1, usager: "Traoré Fatima", usagerNom: "Traoré Fatima", type: "MODIFICATION", typeDemande: "MODIFICATION", traitement: "Gestion des salaires", traitementNom: "Gestion des salaires", date: "2026-05-20T10:00:00", dateDemande: "2026-05-20T10:00:00", statut: "EN_ATTENTE", statutDemande: "EN_ATTENTE", detail: "Demande de correction de l'adresse mail enregistrée.", descriptionDemande: "Demande de correction de l'adresse mail enregistrée.", utilisateurMetierNom: "Ouedraogo Amadou" },
-  { id: 2, usager: "Kaboré Issouf", usagerNom: "Kaboré Issouf", type: "SUPPRESSION", typeDemande: "SUPPRESSION", traitement: "Gestion des accès réseau", traitementNom: "Gestion des accès réseau", date: "2026-05-21T08:30:00", dateDemande: "2026-05-21T08:30:00", statut: "EN_ATTENTE", statutDemande: "EN_ATTENTE", detail: "Demande de suppression des données suite à fin de contrat.", descriptionDemande: "Demande de suppression des données suite à fin de contrat.", utilisateurMetierNom: "Ouedraogo Amadou" },
-  { id: 3, usager: "Sawadogo Paul", usagerNom: "Sawadogo Paul", type: "MODIFICATION", typeDemande: "MODIFICATION", traitement: "Gestion des salaires", traitementNom: "Gestion des salaires", date: "2026-05-18T16:00:00", dateDemande: "2026-05-18T16:00:00", statut: "TRAITE", statutDemande: "TRAITE", detail: "Correction du numéro de téléphone.", descriptionDemande: "Correction du numéro de téléphone.", utilisateurMetierNom: "Ouedraogo Amadou" },
-];
+// Traduit une DemandeResponse (backend) vers le format attendu par l'UI.
+// AUCUNE DONNEE MOCKEE ICI : tout vient de GET /api/demandes (vision globale DPO).
+const mapDemande = (d) => ({
+  id: d.idDemande,
+  idDemande: d.idDemande,
+  usagerNom: d.usagerNomComplet || "—",
+  type: d.typeDemande,
+  typeDemande: d.typeDemande,
+  descriptionDemande: d.descriptionDemande,
+  detail: d.descriptionDemande,
+  dateDemande: d.dateDemande,
+  date: d.dateDemande,
+  statut: d.statutDemande,
+  statutDemande: d.statutDemande,
+  utilisateurMetierNom: d.utilisateurMetierNomComplet || "—",
+  utilisateurMetierNomComplet: d.utilisateurMetierNomComplet,
+  donneeValeur: d.donneeValeur,
+  motifRejet: d.motifRejet,
+  reponse: d.reponse,
+  dateTraitement: d.dateTraitement,
+});
 
 export default function DpoDashboard() {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -27,8 +43,7 @@ export default function DpoDashboard() {
   const [form, setForm] = useState({ nomSession: "", dateDebut: "", dateFin: "", typeCollecte: "EN_LIGNE", lieu: "", description: "" });
   const [toast, setToast] = useState(null);
   const [declarations, setDeclarations] = useState([]);
-  const [demandes] = useState(mockDemandes);
-  const [notificationsCount] = useState(mockDemandes.filter(d => d.statut === "EN_ATTENTE").length);
+  const [demandes, setDemandes] = useState([]);
   const [showCreerDeclaration, setShowCreerDeclaration] = useState(false);
   const [detailTraitement, setDetailTraitement] = useState(null);
   const [detailDeclaration, setDetailDeclaration] = useState(null);
@@ -47,6 +62,20 @@ export default function DpoDashboard() {
         .catch(() => setDeclarations([]));
     }
   };
+
+  // --- Demandes : vision globale DPO, source unique de vérité = l'API ---
+  const fetchDemandes = useCallback(() => {
+    api.get("/demandes")
+      .then(res => setDemandes(res.data.map(mapDemande)))
+      .catch(err => console.error("Erreur chargement demandes:", err));
+  }, []);
+
+  useEffect(() => { fetchDemandes(); }, [fetchDemandes]);
+
+  useEffect(() => {
+    const interval = setInterval(fetchDemandes, 30000);
+    return () => clearInterval(interval);
+  }, [fetchDemandes]);
 
   useEffect(() => {
     api.get("/sessions").then((res) => setSessions(res.data)).catch(() => {});
@@ -148,23 +177,11 @@ export default function DpoDashboard() {
       SYSTEME_VIDEO_SURVEILLANCE: "/declarations/video-surveillance",
     };
 
-    const addLocal = () => {
-      setDeclarations((prev) => [...prev, {
-        idDeclaration: Date.now(), typeDeclaration, traitementDescription: formData.denominationTraitement || "Nouvelle déclaration",
-        denominationTraitement: formData.denominationTraitement, dateSoumission, statut: "BROUILLON",
-        secteur: formData.secteur, responsableDeclaration: formData.nomPrenomResponsable,
-        dureeConservation: formData.dureeConservation, lieuStockage: formData.lieuStockage,
-      }]);
-      showToast("✅ Déclaration créée !");
-    };
-
     const endpoint = endpointMap[typeDeclaration];
     if (endpoint) {
       api.post(endpoint, payload)
         .then((res) => { setDeclarations((prev) => [res.data, ...prev]); showToast("✅ Déclaration soumise avec succès !"); })
-        .catch(() => addLocal());
-    } else {
-      addLocal();
+        .catch(err => showToast(`Erreur lors de la création : ${err.response?.data?.message || "réessayez."}`, "error"));
     }
   };
 
@@ -178,18 +195,20 @@ export default function DpoDashboard() {
     }
   };
 
+  const demandesEnAttente = demandes.filter(d => d.statut === "EN_COURS").length;
+
   const stats = {
     sessionsTotal: sessions.length,
     enCours: sessions.filter((s) => s.statutSession === "EN_COURS").length,
     terminees: sessions.filter((s) => s.statutSession === "TERMINEE").length,
     traitementsTotal: allTraitements.length,
-    demandesEnAttente: demandes.filter(d => d.statut === "EN_ATTENTE" || d.statutDemande === "EN_ATTENTE").length,
+    demandesEnAttente,
   };
 
   const traitementsToShow = traitementFilterMode === "tous" ? allTraitements : traitements;
 
   return (
-    <DashboardLayout activeTab={activeTab} setActiveTab={setActiveTab} notificationsCount={notificationsCount} onBellClick={() => setActiveTab("demandes")}>
+    <DashboardLayout activeTab={activeTab} setActiveTab={setActiveTab} notificationsCount={demandesEnAttente} onBellClick={() => setActiveTab("demandes")}>
 
       {activeTab === "dashboard" && (
         <div className="space-y-6">

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import Toast from "../components/ui/Toast";
 import api from "../services/api";
@@ -15,18 +15,38 @@ import ModalDetailTraitement from "../components/utilisateur-metier/ModalDetailT
 import ModalAjouterDonnees from "../components/utilisateur-metier/ModalAjouterDonnees";
 import ModalDemandeUsager from "../components/utilisateur-metier/ModalDemandeUsager";
 
-const mockDemandes = [
-  { id: 1, usager: "Traoré Fatima", usagerNom: "Traoré Fatima", type: "MODIFICATION", typeDemande: "MODIFICATION", traitement: "Gestion des salaires", traitementNom: "Gestion des salaires", date: "2026-05-20T10:00:00", dateDemande: "2026-05-20T10:00:00", statut: "EN_ATTENTE", statutDemande: "EN_ATTENTE", detail: "Demande de correction de l'adresse mail enregistrée.", descriptionDemande: "Demande de correction de l'adresse mail enregistrée." },
-  { id: 2, usager: "Kaboré Issouf", usagerNom: "Kaboré Issouf", type: "SUPPRESSION", typeDemande: "SUPPRESSION", traitement: "Gestion des accès réseau", traitementNom: "Gestion des accès réseau", date: "2026-05-21T08:30:00", dateDemande: "2026-05-21T08:30:00", statut: "EN_ATTENTE", statutDemande: "EN_ATTENTE", detail: "Demande de suppression des données suite à fin de contrat.", descriptionDemande: "Demande de suppression des données suite à fin de contrat." },
-  { id: 3, usager: "Sawadogo Paul", usagerNom: "Sawadogo Paul", type: "MODIFICATION", typeDemande: "MODIFICATION", traitement: "Gestion des salaires", traitementNom: "Gestion des salaires", date: "2026-05-18T16:00:00", dateDemande: "2026-05-18T16:00:00", statut: "TRAITE", statutDemande: "TRAITE", detail: "Correction du numéro de téléphone.", descriptionDemande: "Correction du numéro de téléphone." },
-];
+// Traduit une DemandeResponse (backend) vers le format attendu par l'UI.
+// AUCUNE DONNEE MOCKEE ICI : tout vient de l'API.
+const mapDemande = (d) => ({
+  id: d.idDemande,
+  idDemande: d.idDemande,
+  usager: d.usagerNomComplet,
+  usagerNom: d.usagerNomComplet,
+  type: d.typeDemande,
+  typeDemande: d.typeDemande,
+  traitement: d.donneeValeur || "—",
+  traitementNom: d.donneeValeur || "—",
+  date: d.dateDemande,
+  dateDemande: d.dateDemande,
+  statut: d.statutDemande,
+  statutDemande: d.statutDemande,
+  detail: d.descriptionDemande,
+  descriptionDemande: d.descriptionDemande,
+  nouvelleValeur: d.nouvelleValeur,
+  donneeValeur: d.donneeValeur,
+  reponse: d.reponse,
+  motifRejet: d.motifRejet,
+  dateTraitement: d.dateTraitement,
+  utilisateurMetierNom: d.utilisateurMetierNomComplet || "—",
+  utilisateurMetierNomComplet: d.utilisateurMetierNomComplet,
+});
 
 function UtilisateurMetierDashboard() {
   const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [traitements, setTraitements] = useState([]);
-  const [demandes, setDemandes] = useState(mockDemandes);
+  const [demandes, setDemandes] = useState([]);
   const [sessions, setSessions] = useState([]);
   const [showCreer, setShowCreer] = useState(false);
   const [traitementEnEdition, setTraitementEnEdition] = useState(null);
@@ -52,10 +72,14 @@ function UtilisateurMetierDashboard() {
     setTimeout(() => setToast(null), 4000);
   };
 
+  // Résolution de l'utilisateurMetierId : localStorage direct, sinon retombe
+  // sur userId (même id, héritage JOINED côté backend), sinon /verification/fonction.
   useEffect(() => {
-    api.get("/sessions").then(res => { setSessions(res.data); setPreviousSessionCount(res.data.length); }).catch(() => {});
-    const storedId = localStorage.getItem("utilisateurMetierId");
+    api.get("/sessions").then(res => { setSessions(res.data); setPreviousSessionCount(res.data.length); }).catch(() => { });
+
+    const storedId = localStorage.getItem("utilisateurMetierId") || localStorage.getItem("userId");
     if (storedId) {
+      localStorage.setItem("utilisateurMetierId", String(storedId));
       setUtilisateurMetierId(Number(storedId));
       api.get(`/traitements/utilisateur-metier/${storedId}`).then(res => setTraitements(res.data)).catch(err => console.error(err));
     } else {
@@ -68,8 +92,23 @@ function UtilisateurMetierDashboard() {
         }).then(res => { if (res) setTraitements(res.data); }).catch(err => console.error(err));
       }
     }
-    api.get("/entrepot").then(res => setEntrepotData(res.data)).catch(() => {});
+    api.get("/entrepot").then(res => setEntrepotData(res.data)).catch(() => { });
   }, []);
+
+  // --- Demandes usagers : source unique de vérité = l'API ---
+  const fetchDemandes = useCallback(() => {
+    if (!utilisateurMetierId) return;
+    api.get("/demandes/par-um", { params: { umId: utilisateurMetierId } })
+      .then(res => setDemandes(res.data.map(mapDemande)))
+      .catch(err => console.error("Erreur chargement demandes:", err));
+  }, [utilisateurMetierId]);
+
+  useEffect(() => { fetchDemandes(); }, [fetchDemandes]);
+
+  useEffect(() => {
+    const interval = setInterval(fetchDemandes, 30000);
+    return () => clearInterval(interval);
+  }, [fetchDemandes]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -77,7 +116,7 @@ function UtilisateurMetierDashboard() {
         setSessions(res.data);
         if (res.data.length > previousSessionCount) setNewSessionCount(prev => prev + (res.data.length - previousSessionCount));
         setPreviousSessionCount(res.data.length);
-      }).catch(() => {});
+      }).catch(() => { });
     }, 30000);
     return () => clearInterval(interval);
   }, [previousSessionCount]);
@@ -109,6 +148,12 @@ function UtilisateurMetierDashboard() {
       typeTraitement: payload.type_traitement || "",
       categoriesPersonnesConcernees: payload.categorie_personnes || "",
     };
+
+    if (!traitementData.utilisateurMetierId) {
+      showToast("Impossible d'identifier l'utilisateur métier connecté. Reconnectez-vous puis réessayez.", "error");
+      return;
+    }
+
     if (editId) {
       api.put(`/traitements/${editId}`, traitementData).then(res => {
         const t = res.data;
@@ -118,6 +163,7 @@ function UtilisateurMetierDashboard() {
       }).catch(err => showToast(`Erreur : ${err.response?.data?.message || "Échec de la modification"}`, "error"));
       return;
     }
+
     const fd = new FormData();
     fd.append("traitement", new Blob([JSON.stringify(traitementData)], { type: "application/json" }));
     fd.append("declaration", new Blob([JSON.stringify(declarationData)], { type: "application/json" }));
@@ -127,19 +173,7 @@ function UtilisateurMetierDashboard() {
       if (mode === "manuel") { setTraitementPourDonnees(t); setShowAjouterDonnees(true); }
       showToast("Traitement créé avec succès !"); callback?.(t);
     }).catch(err => {
-      const nouveau = {
-        idTraitement: Date.now(), department: payload.responsable_departement || "",
-        description: payload.denomination || payload.nom || "", texte: payload.finalite || "",
-        certificationSecurite: "", dureeConservation: payload.duree_conservation || 0,
-        dateCreation: new Date().toISOString(), dateFin: null, nombreDonnee: 0,
-        sessionCollecteId: payload.sessionCollecteId || null,
-        utilisateurMetierId: utilisateurMetierId || 1,
-        utilisateurMetierNom: localStorage.getItem("email") || "Utilisateur Métier",
-        statut: "EN_COURS", envoyeAuDpo: false,
-      };
-      setTraitements(prev => [nouveau, ...prev]); setShowCreer(false);
-      if (mode === "manuel") { setTraitementPourDonnees(nouveau); setShowAjouterDonnees(true); }
-      showToast("Traitement créé en mode hors-ligne", "error"); callback?.(nouveau);
+      showToast(`Erreur lors de la création du traitement : ${err.response?.data?.message || "réessayez."}`, "error");
     });
   };
 
@@ -158,7 +192,7 @@ function UtilisateurMetierDashboard() {
     }).catch(err => showToast(err.response?.data?.message || "Erreur lors de l'envoi au DPO", "error"));
   };
 
-  const refreshEntrepot = () => api.get("/entrepot").then(res => setEntrepotData(res.data)).catch(() => {});
+  const refreshEntrepot = () => api.get("/entrepot").then(res => setEntrepotData(res.data)).catch(() => { });
 
   const handleSaveManuel = (payload, onComplete) => {
     api.post("/donnees", payload).then(() => {
@@ -200,13 +234,35 @@ function UtilisateurMetierDashboard() {
       .catch(err => showToast(`Erreur : ${err.response?.data?.message || "Échec de la suppression"}`, "error"));
   };
 
-  const handleTraiterDemande = (id, reponse) => {
-    setDemandes(prev => prev.map(d => d.id === id ? { ...d, statut: "TRAITE" } : d));
-    showToast("Demande traitée !");
+  // --- Traitement réel des demandes usagers (accepter / rejeter) ---
+  const handleAccepterDemande = (id) => {
+    api.put(`/demandes/${id}/accepter`).then(res => {
+      setDemandes(prev => prev.map(d => d.id === id ? mapDemande(res.data) : d));
+      setDetailDemande(null);
+      // La donnée a été réellement modifiée/supprimée en base : on invalide
+      // le cache local pour forcer un rechargement frais au prochain affichage.
+      setTraitementDonneesMap({});
+      setExpandedTraitementId(null);
+      refreshEntrepot();
+      showToast("Demande acceptée — la donnée a été mise à jour.");
+    }).catch(err => {
+      showToast(err.response?.data?.message || "Erreur lors de l'acceptation", "error");
+    });
+  };
+
+  const handleRejeterDemande = (id, motifRejet) => {
+    api.put(`/demandes/${id}/rejeter`, { motifRejet }).then(res => {
+      setDemandes(prev => prev.map(d => d.id === id ? mapDemande(res.data) : d));
+      setDetailDemande(null);
+      showToast("Demande rejetée.");
+    }).catch(err => {
+      showToast(err.response?.data?.message || "Erreur lors du rejet", "error");
+    });
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("token"); localStorage.removeItem("role"); localStorage.removeItem("email"); localStorage.removeItem("dpoId");
+    localStorage.removeItem("token"); localStorage.removeItem("role"); localStorage.removeItem("email");
+    localStorage.removeItem("userId"); localStorage.removeItem("userNom"); localStorage.removeItem("utilisateurMetierId");
     window.location.href = "/";
   };
 
@@ -222,7 +278,7 @@ function UtilisateurMetierDashboard() {
     }
   };
 
-  const demandesEnAttente = demandes.filter(d => d.statut === "EN_ATTENTE" || d.statutDemande === "EN_ATTENTE").length;
+  const demandesEnAttente = demandes.filter(d => d.statut === "EN_COURS").length;
   const traitementsFiltres = traitements.filter(t => {
     if (recherche && !t.description?.toLowerCase().includes(recherche.toLowerCase()) && !t.department?.toLowerCase().includes(recherche.toLowerCase())) return false;
     if (traitementFilterMode === "parSession" && selectedSessionId) return t.sessionCollecteId === Number(selectedSessionId);
@@ -249,7 +305,7 @@ function UtilisateurMetierDashboard() {
 
   return (
     <div className="flex h-screen bg-gray-100 font-sans">
-      <UMSidebar activeSection={activeSection} onNavigate={handleNavigate} sidebarOpen={sidebarOpen} onLogout={handleLogout} navItems={navItems} />
+      <UMSidebar activeSection={activeSection} onNavigate={handleNavigate} sidebarOpen={sidebarOpen} onToggle={() => setSidebarOpen(o => !o)} onLogout={handleLogout} navItems={navItems} />
       <div className="flex-1 flex flex-col overflow-hidden">
         <UMHeader activeSection={activeSection} sidebarOpen={sidebarOpen} onToggleSidebar={() => setSidebarOpen(o => !o)} newSessionCount={newSessionCount} onNewSessionClick={() => { setNewSessionCount(0); setActiveSection("sessions"); }} demandesEnAttente={demandesEnAttente} onDemandesClick={() => setActiveSection("demandes")} />
         <main className="flex-1 overflow-y-auto p-6">
@@ -260,7 +316,7 @@ function UtilisateurMetierDashboard() {
           )}
           {activeSection === "demandes" && <UMDemandesSection demandes={demandes} demandesEnAttente={demandesEnAttente} onTraiter={setDetailDemande} />}
           {activeSection === "entrepot" && <UMEntrepotSection entrepotData={entrepotData} entrepotRecherche={entrepotRecherche} onRechercheChange={setEntrepotRecherche} traitements={traitements} onAjouterDonnees={(t) => { setTraitementPourDonnees(t); setShowAjouterDonnees(true); }} />}
-          {activeSection === "historique" && <UMHistoriqueSection traitementsEnvoyesDpo={traitements.filter(t => t.envoyeAuDpo === true)} demandesTraitees={demandes.filter(d => d.statut === "TRAITE" || d.statutDemande === "TRAITE")} sessionsTerminees={sessions.filter(s => s.statutSession === "TERMINEE")} />}
+          {activeSection === "historique" && <UMHistoriqueSection traitementsEnvoyesDpo={traitements.filter(t => t.envoyeAuDpo === true)} demandesTraitees={demandes.filter(d => d.statut === "ACCEPTEE" || d.statut === "REJETEE")} sessionsTerminees={sessions.filter(s => s.statutSession === "TERMINEE")} />}
         </main>
       </div>
       {showCreer && (
@@ -284,7 +340,14 @@ function UtilisateurMetierDashboard() {
           onSupprimer={handleSupprimerTraitement}
         />
       )}
-      {detailDemande && <ModalDemandeUsager demande={detailDemande} onClose={() => setDetailDemande(null)} onTraiter={handleTraiterDemande} />}
+      {detailDemande && (
+        <ModalDemandeUsager
+          demande={detailDemande}
+          onClose={() => setDetailDemande(null)}
+          onAccepter={handleAccepterDemande}
+          onRejeter={handleRejeterDemande}
+        />
+      )}
       {showAjouterDonnees && traitementPourDonnees && <ModalAjouterDonnees traitement={traitementPourDonnees} onClose={() => { setShowAjouterDonnees(false); setTraitementPourDonnees(null); }} onSaveManuel={handleSaveManuel} onSaveExcel={handleSaveExcel} />}
       <Toast toast={toast} />
     </div>
