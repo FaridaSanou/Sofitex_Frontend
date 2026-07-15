@@ -6,8 +6,8 @@ import { formatDate } from "../../utils/date";
 const TYPE_LABELS = {
   NORMALE: "Normale",
   AUTORISATION: "Autorisation",
-  COLLECTE_SITE_INTERNET: "Collecte site",
-  SYSTEME_VIDEO_SURVEILLANCE: "Vidéosurveillance",
+  COLLECTE_SITE: "Collecte site",
+  VIDEO_SURVEILLANCE: "Vidéosurveillance",
 };
 
 export default function ModalDecision({ declaration, onClose, onValider, onRejeter }) {
@@ -30,8 +30,8 @@ export default function ModalDecision({ declaration, onClose, onValider, onRejet
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl">
-        <div className="bg-green-900 text-white px-6 py-4 rounded-t-2xl flex justify-between items-center">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[85vh] flex flex-col">
+        <div className="bg-green-900 text-white px-6 py-4 rounded-t-2xl flex justify-between items-center flex-shrink-0">
           <div>
             <h3 className="font-bold text-lg">Décision sur la déclaration</h3>
             <p className="text-green-300 text-xs">#{declaration.idDeclaration} — {declaration.traitementDescription || declaration.typeDeclaration}</p>
@@ -41,7 +41,7 @@ export default function ModalDecision({ declaration, onClose, onValider, onRejet
           </button>
         </div>
 
-        <div className="p-6 space-y-4 text-sm">
+        <div className="p-6 space-y-4 text-sm overflow-y-auto flex-1">
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-gray-50 rounded-xl p-3">
               <p className="text-xs text-gray-400 font-semibold mb-0.5">Type</p>
@@ -83,12 +83,12 @@ export default function ModalDecision({ declaration, onClose, onValider, onRejet
                 <p className="text-sm font-semibold text-gray-700 mb-3">Votre décision <span className="text-red-500">*</span></p>
                 <div className="flex gap-3">
                   <button onClick={() => setAction("VALIDE")}
-                    className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 text-sm font-semibold transition-all ${action === "VALIDE" ? "border-green-600 bg-green-50 text-green-700" : "border-gray-200 text-gray-500 hover:border-green-300"}`}>
-                    <Icon name="check" className="w-4 h-4" /> Valider
+                    className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all shadow-sm ${action === "VALIDE" ? "bg-green-700 text-white shadow-md ring-2 ring-green-300" : "bg-green-50 text-green-700 hover:bg-green-100 active:bg-green-200"}`}>
+                    <Icon name="check" className="w-5 h-5" /> Valider
                   </button>
                   <button onClick={() => setAction("REJETE")}
-                    className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 text-sm font-semibold transition-all ${action === "REJETE" ? "border-red-500 bg-red-50 text-red-600" : "border-gray-200 text-gray-500 hover:border-red-300"}`}>
-                    <Icon name="close" className="w-4 h-4" /> Rejeter
+                    className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all shadow-sm ${action === "REJETE" ? "bg-red-600 text-white shadow-md ring-2 ring-red-300" : "bg-red-50 text-red-600 hover:bg-red-100 active:bg-red-200"}`}>
+                    <Icon name="close" className="w-5 h-5" /> Rejeter
                   </button>
                 </div>
               </div>

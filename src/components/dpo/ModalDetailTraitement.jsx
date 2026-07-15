@@ -1,5 +1,6 @@
 import { formatDate } from "../../utils/date";
 import { BadgeStatut } from "../ui/BadgeStatut";
+import { telechargerTraitementPdf } from "../../utils/pdf";
 
 export default function ModalDetailTraitement({ traitement, onClose }) {
   if (!traitement) return null;
@@ -24,7 +25,10 @@ export default function ModalDetailTraitement({ traitement, onClose }) {
             <div className="bg-green-50 rounded-lg p-3"><p className="text-xs text-green-600 font-semibold">Nb données</p><p>{traitement.nombreDonnee ?? 0}</p></div>
             <div className="bg-green-50 rounded-lg p-3"><p className="text-xs text-green-600 font-semibold">Session</p><p>#{traitement.sessionCollecteId || "Sans session"}</p></div>
           </div>
-          <button onClick={onClose} className="w-full mt-2 px-4 py-2 rounded-lg border border-gray-300 text-gray-600 text-sm hover:bg-gray-50">Fermer</button>
+          <div className="flex gap-2">
+            <button onClick={() => telechargerTraitementPdf(traitement)} className="flex-1 px-4 py-2 rounded-lg bg-green-700 text-white text-sm font-medium hover:bg-green-800">Télécharger PDF</button>
+            <button onClick={onClose} className="flex-1 px-4 py-2 rounded-lg border border-gray-300 text-gray-600 text-sm hover:bg-gray-50">Fermer</button>
+          </div>
         </div>
       </div>
     </div>

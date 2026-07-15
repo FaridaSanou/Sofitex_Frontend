@@ -1,5 +1,6 @@
 import { useState } from "react";
 import sofitexLogo from "../assets/image.png";
+import NotificationBell from "../components/ui/NotificationBell";
 
 const Icon = ({ name, className = "w-5 h-5" }) => {
   const icons = {
@@ -42,6 +43,7 @@ const ROLE_CONFIG = {
       { id: "traitements", label: "Traitements", icon: "traitements" },
       { id: "declarations", label: "Déclarations", icon: "declarations" },
       { id: "demandes", label: "Demandes usagers", icon: "demande" },
+      { id: "historique", label: "Historique", icon: "donnees" },
     ],
   },
   ROLE_CIL: {
@@ -76,7 +78,7 @@ const ROLE_CONFIG = {
   },
 };
 
-export default function DashboardLayout({ children, activeTab, setActiveTab, badge, notificationsCount = 0, onBellClick }) {
+export default function DashboardLayout({ children, activeTab, setActiveTab, badge, notificationsCount = 0, onBellClick, utilisateurId }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const role = localStorage.getItem("role") || "ROLE_ADMINISTRATEUR";
   const config = ROLE_CONFIG[role] || ROLE_CONFIG.ROLE_ADMINISTRATEUR;
@@ -161,14 +163,18 @@ export default function DashboardLayout({ children, activeTab, setActiveTab, bad
               </p>
             </div>
           </div>
-          <button onClick={onBellClick} className="relative p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg">
-            <Icon name="bell" className="w-5 h-5" />
-            {notificationsCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center">
-                {notificationsCount > 9 ? '9+' : notificationsCount}
-              </span>
-            )}
-          </button>
+          {utilisateurId ? (
+            <NotificationBell utilisateurId={utilisateurId} onNavigate={() => onBellClick?.()} />
+          ) : (
+            <button onClick={onBellClick} className="relative p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg">
+              <Icon name="bell" className="w-5 h-5" />
+              {notificationsCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                  {notificationsCount > 9 ? '9+' : notificationsCount}
+                </span>
+              )}
+            </button>
+          )}
         </header>
 
         <main className="flex-1 overflow-y-auto p-6">

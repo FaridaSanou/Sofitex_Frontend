@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Icon } from "../ui/Icon";
 import { BadgeStatut } from "../ui/BadgeStatut";
 import { formatDate } from "../../utils/date";
+import { telechargerTraitementPdf } from "../../utils/pdf";
 
 export default function ModalDetailTraitement({ traitement, onClose, onEnvoyer, dpos, onAjouterDonnees, onModifier, onSupprimer }) {
   const [dpoSelection, setDpoSelection] = useState("");
@@ -53,6 +54,7 @@ export default function ModalDetailTraitement({ traitement, onClose, onEnvoyer, 
               className="px-4 py-2 rounded-lg border border-red-400 text-red-600 text-sm font-semibold hover:bg-red-50">
               Supprimer
             </button>
+            <button onClick={() => telechargerTraitementPdf(traitement)} className="px-4 py-2 rounded-lg bg-green-700 text-white text-sm font-medium hover:bg-green-800">Télécharger PDF</button>
             <button onClick={onClose} className="px-4 py-2 rounded-lg border border-gray-300 text-gray-600 text-sm hover:bg-gray-50">Fermer</button>
             {!traitement.envoyeAuDpo && (
               <button onClick={() => { const dpoId = dpoRequis ? Number(dpoSelection) : undefined; if (dpoRequis && !dpoSelection) return; onEnvoyer(traitement.idTraitement, dpoId); onClose(); }}

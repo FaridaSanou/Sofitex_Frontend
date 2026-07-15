@@ -307,7 +307,7 @@ function UtilisateurMetierDashboard() {
     <div className="flex h-screen bg-gray-100 font-sans">
       <UMSidebar activeSection={activeSection} onNavigate={handleNavigate} sidebarOpen={sidebarOpen} onToggle={() => setSidebarOpen(o => !o)} onLogout={handleLogout} navItems={navItems} />
       <div className="flex-1 flex flex-col overflow-hidden">
-        <UMHeader activeSection={activeSection} sidebarOpen={sidebarOpen} onToggleSidebar={() => setSidebarOpen(o => !o)} newSessionCount={newSessionCount} onNewSessionClick={() => { setNewSessionCount(0); setActiveSection("sessions"); }} demandesEnAttente={demandesEnAttente} onDemandesClick={() => setActiveSection("demandes")} />
+        <UMHeader activeSection={activeSection} sidebarOpen={sidebarOpen} onToggleSidebar={() => setSidebarOpen(o => !o)} newSessionCount={newSessionCount} onNewSessionClick={() => { setNewSessionCount(0); setActiveSection("sessions"); }} demandesEnAttente={demandesEnAttente} onDemandesClick={() => setActiveSection("demandes")} utilisateurId={utilisateurMetierId} />
         <main className="flex-1 overflow-y-auto p-6">
           {activeSection === "dashboard" && <UMDashboard stats={stats} traitements={traitements} onNewTraitement={() => setShowCreer(true)} onDetailTraitement={setDetailTraitement} />}
           {activeSection === "sessions" && <UMSessionsSection sessions={sessions} traitements={traitements} onDetailTraitement={setDetailTraitement} />}

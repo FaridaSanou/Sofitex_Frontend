@@ -62,7 +62,7 @@ export default function DpoTraitementsSection({
                   <td className="px-5 py-4">
                     <div className="flex items-center justify-center gap-2">
                       <button onClick={() => onDetail(t)} className="px-3 py-1 bg-green-100 text-green-700 rounded-lg text-xs font-medium hover:bg-green-200">Voir</button>
-                      <button onClick={() => onCreateDeclaration(t)} className="px-3 py-1 bg-purple-100 text-purple-700 rounded-lg text-xs font-medium hover:bg-purple-200">Déclaration</button>
+                      <button onClick={() => onCreateDeclaration(t)} className={`px-3 py-1 rounded-lg text-xs font-medium hover:bg-purple-200 ${t.declarationId ? "bg-amber-100 text-amber-700" : "bg-purple-100 text-purple-700"}`}>{t.declarationId ? "Modifier" : "Déclaration"}</button>
                     </div>
                   </td>
                 </tr>

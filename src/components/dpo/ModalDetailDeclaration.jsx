@@ -1,6 +1,7 @@
 import { formatDate } from "../../utils/date";
+import { telechargerDeclarationPdf } from "../../utils/pdf";
 
-export default function ModalDetailDeclaration({ declaration, onClose }) {
+export default function ModalDetailDeclaration({ declaration, onClose, onModifier, onSupprimer }) {
   if (!declaration) return null;
   const Row = ({ label, value }) => (
     <div className="bg-gray-50 rounded-lg p-3"><p className="text-xs text-gray-500 font-semibold">{label}</p><p className="font-medium text-sm">{value || "—"}</p></div>
@@ -24,7 +25,16 @@ export default function ModalDetailDeclaration({ declaration, onClose }) {
             <Row label="Conservation" value={declaration.dureeConservation} />
             <Row label="Lieu de stockage" value={declaration.lieuStockage} />
           </div>
-          <button onClick={onClose} className="w-full mt-2 px-4 py-2 rounded-lg border border-gray-300 text-gray-600 text-sm hover:bg-gray-50">Fermer</button>
+          <div className="flex flex-wrap gap-2">
+            <button onClick={() => telechargerDeclarationPdf(declaration)} className="flex-1 px-4 py-2 rounded-lg bg-green-700 text-white text-sm font-medium hover:bg-green-800">Télécharger PDF</button>
+            {declaration.statut === "BROUILLON" && onModifier && (
+              <button onClick={() => { onModifier(declaration); onClose(); }} className="px-4 py-2 rounded-lg border border-green-600 text-green-700 text-sm font-semibold hover:bg-green-50">Modifier</button>
+            )}
+            {onSupprimer && (
+              <button onClick={() => { if (window.confirm(`Supprimer la déclaration #${declaration.idDeclaration} ?`)) { onSupprimer(declaration.idDeclaration); onClose(); } }} className="px-4 py-2 rounded-lg border border-red-400 text-red-600 text-sm font-semibold hover:bg-red-50">Supprimer</button>
+            )}
+            <button onClick={onClose} className="flex-1 px-4 py-2 rounded-lg border border-gray-300 text-gray-600 text-sm hover:bg-gray-50">Fermer</button>
+          </div>
         </div>
       </div>
     </div>

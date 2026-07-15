@@ -1,8 +1,8 @@
-export function StatCard({ label, value, color = "bg-green-700", sub }) {
+export function StatCard({ label, value, icon: Icon, color = "bg-green-700", sub }) {
   return (
     <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
       <div className={`w-10 h-10 ${color} rounded-xl flex items-center justify-center mb-3`}>
-        <span className="text-white font-bold text-lg">{value}</span>
+        {Icon && <Icon className="w-5 h-5 text-white" />}
       </div>
       <p className="text-2xl font-bold text-gray-800">{value}</p>
       <p className="text-sm font-medium text-gray-700">{label}</p>

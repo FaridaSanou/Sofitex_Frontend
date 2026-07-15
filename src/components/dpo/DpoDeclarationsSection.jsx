@@ -2,7 +2,7 @@ import { formatDate } from "../../utils/date";
 import { declarationStatutBadge } from "../ui/BadgeStatut";
 
 export default function DpoDeclarationsSection({
-  declarations, onNew, onDetail, onSoumettre,
+  declarations, onNew, onDetail, onSoumettre, onModifier,
 }) {
   return (
     <div className="space-y-4">
@@ -39,9 +39,12 @@ export default function DpoDeclarationsSection({
                     <div className="flex items-center justify-center gap-2">
                       <button onClick={() => onDetail(d)} className="px-3 py-1 bg-green-100 text-green-700 rounded-lg text-xs font-medium hover:bg-green-200">Voir</button>
                       {d.statut === "BROUILLON" && (
-                        <button onClick={() => onSoumettre(d)} className="px-3 py-1 bg-green-700 text-white rounded-lg text-xs font-medium hover:bg-green-800">
-                          Envoyer au DG
-                        </button>
+                        <>
+                          <button onClick={() => onModifier?.(d)} className="px-3 py-1 rounded-lg text-xs font-medium border border-green-600 text-green-700 hover:bg-green-50">Modifier</button>
+                          <button onClick={() => onSoumettre(d)} className="px-3 py-1 bg-green-700 text-white rounded-lg text-xs font-medium hover:bg-green-800">
+                            Envoyer au DG
+                          </button>
+                        </>
                       )}
                     </div>
                   </td>

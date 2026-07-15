@@ -52,7 +52,15 @@ export default function CreateAccount() {
           fonction: data.fonction, department: data.department,
         }),
       });
-      if (!response.ok) { setErrGlobal("Une erreur est survenue. Veuillez réessayer."); return; }
+      if (!response.ok) {
+        try {
+          const body = await response.json();
+          setErrGlobal(body.message || body.detail || "Une erreur est survenue. Veuillez réessayer.");
+        } catch {
+          setErrGlobal("Une erreur est survenue. Veuillez réessayer.");
+        }
+        return;
+      }
       setDone(true);
     } catch (e) {
       setErrGlobal("Impossible de contacter le serveur.");

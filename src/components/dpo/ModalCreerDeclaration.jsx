@@ -1,12 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import api from "../../services/api";
 import { Field, Input, Textarea, CheckField, SectionTitle } from "./DpoFormFields";
 
 const TYPES_DECLARATION = [
   { id: "NORMALE", label: "Déclaration Normale", desc: "Traitement standard de données" },
   { id: "AUTORISATION", label: "Demande d'Autorisation", desc: "Traitement nécessitant une autorisation" },
-  { id: "COLLECTE_SITE_INTERNET", label: "Collecte via Site Internet", desc: "Données collectées via formulaire web" },
-  { id: "SYSTEME_VIDEO_SURVEILLANCE", label: "Système de Vidéosurveillance", desc: "Surveillance par caméras" },
+  { id: "COLLECTE_SITE", label: "Collecte via Site Internet", desc: "Données collectées via formulaire web" },
+  { id: "VIDEO_SURVEILLANCE", label: "Système de Vidéosurveillance", desc: "Surveillance par caméras" },
 ];
 
 const initForm = {
@@ -55,36 +55,91 @@ const initForm = {
   localisationPictogrammes: "",
 };
 
-export default function ModalCreerDeclaration({ traitements, onClose, onSave, preFillTraitement }) {
+export default function ModalCreerDeclaration({ traitements, onClose, onSave, preFillTraitement, declarationToEdit }) {
   const [step, setStep] = useState(1);
   const [selectedTraitementId, setSelectedTraitementId] = useState("");
   const [typeDeclaration, setTypeDeclaration] = useState("");
+  const [editingDeclarationId, setEditingDeclarationId] = useState(null);
   const [form, setForm] = useState(initForm);
+  const [initialized, setInitialized] = useState(false);
+
+  const chargerDeclaration = useCallback((declarationId, callback) => {
+    api.get(`/declarations/${declarationId}`)
+      .then((res) => {
+        const d = res.data;
+        setForm(prev => ({
+          ...prev,
+          dateMiseEnOeuvre: d.dateMiseEnOeuvre || prev.dateMiseEnOeuvre,
+          responsableDeclaration: d.responsableDeclaration || prev.responsableDeclaration,
+          contactConfidentialite: d.contactConfidentialite || prev.contactConfidentialite,
+          secteur: d.secteur || prev.secteur,
+          denominationTraitement: d.denominationTraitement || prev.denominationTraitement,
+          finaliteTraitement: d.finaliteTraitement || prev.finaliteTraitement,
+          categoriesPersonnesConcernees: d.categoriesPersonnesConcernees || prev.categoriesPersonnesConcernees,
+          nombrePersonnesConcernees: d.nombrePersonnesConcernees || prev.nombrePersonnesConcernees,
+          typeTraitement: d.typeTraitement || prev.typeTraitement,
+        }));
+        if (callback) callback();
+      })
+      .catch(() => { if (callback) callback(); });
+  }, []);
+
+  const remplirDepuisTraitement = useCallback((traitement, prev) => ({
+    ...prev,
+    secteur: traitement.department || prev.secteur,
+    denominationTraitement: traitement.description || prev.denominationTraitement,
+    finaliteTraitement: traitement.texte || prev.finaliteTraitement,
+    dureeConservation: traitement.dureeConservation ? String(traitement.dureeConservation) + " mois" : prev.dureeConservation,
+    lieuStockage: traitement.lieuStockage || prev.lieuStockage,
+    nomPrenomResponsable: traitement.utilisateurMetierNom || prev.nomPrenomResponsable,
+    responsableDeclaration: traitement.utilisateurMetierNom || prev.responsableDeclaration,
+  }), []);
 
   useEffect(() => {
     if (!preFillTraitement) return;
     setSelectedTraitementId(String(preFillTraitement.idTraitement));
-    const baseFill = (prev) => ({
-      ...prev,
-      secteur: preFillTraitement.department || prev.secteur,
-      denominationTraitement: preFillTraitement.description || prev.denominationTraitement,
-      finaliteTraitement: preFillTraitement.texte || prev.finaliteTraitement,
-      dureeConservation: preFillTraitement.dureeConservation ? String(preFillTraitement.dureeConservation) + " mois" : prev.dureeConservation,
-      lieuStockage: preFillTraitement.lieuStockage || prev.lieuStockage,
-      nomPrenomResponsable: preFillTraitement.utilisateurMetierNom || prev.nomPrenomResponsable,
-      responsableDeclaration: preFillTraitement.utilisateurMetierNom || prev.responsableDeclaration,
-    });
     if (preFillTraitement.declarationId) {
-      api.get(`/declarations/${preFillTraitement.declarationId}`)
-        .then((res) => {
-          const d = res.data;
-          setForm(prev => ({ ...baseFill(prev), dateMiseEnOeuvre: d.dateMiseEnOeuvre || prev.dateMiseEnOeuvre, responsableDeclaration: d.responsableDeclaration || prev.responsableDeclaration, contactConfidentialite: d.contactConfidentialite || prev.contactConfidentialite, secteur: d.secteur || prev.secteur }));
-        })
-        .catch(() => setForm(baseFill));
+      setEditingDeclarationId(preFillTraitement.declarationId);
+      chargerDeclaration(preFillTraitement.declarationId, () => {});
     } else {
-      setForm(baseFill);
+      setEditingDeclarationId(null);
+      setForm(prev => remplirDepuisTraitement(preFillTraitement, prev));
     }
-  }, [preFillTraitement]);
+  }, [preFillTraitement, chargerDeclaration, remplirDepuisTraitement]);
+
+  useEffect(() => {
+    if (!declarationToEdit || initialized) return;
+    setInitialized(true);
+    setEditingDeclarationId(declarationToEdit.idDeclaration);
+    setTypeDeclaration(declarationToEdit.typeDeclaration);
+    setSelectedTraitementId(String(declarationToEdit.traitementId || ""));
+    setForm(prev => ({
+      ...prev,
+      secteur: declarationToEdit.secteur || prev.secteur,
+      denominationTraitement: declarationToEdit.denominationTraitement || prev.denominationTraitement,
+      finaliteTraitement: declarationToEdit.finaliteTraitement || prev.finaliteTraitement,
+      dateMiseEnOeuvre: declarationToEdit.dateMiseEnOeuvre || prev.dateMiseEnOeuvre,
+      responsableDeclaration: declarationToEdit.responsableDeclaration || prev.responsableDeclaration,
+      contactConfidentialite: declarationToEdit.contactConfidentialite || prev.contactConfidentialite,
+      dureeConservation: declarationToEdit.dureeConservation || prev.dureeConservation,
+      lieuStockage: declarationToEdit.lieuStockage || prev.lieuStockage,
+      nomPrenomResponsable: declarationToEdit.nomPrenomResponsable || prev.nomPrenomResponsable,
+    }));
+  }, [declarationToEdit, initialized]);
+
+  const handleTraitementChange = (e) => {
+    const id = e.target.value;
+    setSelectedTraitementId(id);
+    setTypeDeclaration("");
+    const traitement = traitements.find(t => t.idTraitement === parseInt(id));
+    if (traitement?.declarationId) {
+      setEditingDeclarationId(traitement.declarationId);
+      chargerDeclaration(traitement.declarationId, () => {});
+    } else {
+      setEditingDeclarationId(null);
+      setForm(prev => traitement ? remplirDepuisTraitement(traitement, initForm) : initForm);
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -92,7 +147,7 @@ export default function ModalCreerDeclaration({ traitements, onClose, onSave, pr
   };
 
   const selectedTraitement = traitements.find(t => t.idTraitement === parseInt(selectedTraitementId));
-  const handleSave = () => { onSave({ traitementId: parseInt(selectedTraitementId), typeDeclaration, ...form }); onClose(); };
+  const handleSave = () => { onSave({ declarationId: editingDeclarationId, traitementId: parseInt(selectedTraitementId), typeDeclaration, ...form }); onClose(); };
 
   const stepTitles = ["Traitement", "Type", "Identification", "Données & Sécurité", "Droits & Sous-traitance", "Spécifique"];
   const totalSteps = 6;
@@ -102,7 +157,7 @@ export default function ModalCreerDeclaration({ traitements, onClose, onSave, pr
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[92vh] flex flex-col">
         <div className="bg-green-800 text-white px-6 py-4 rounded-t-2xl flex justify-between items-center flex-shrink-0">
           <div>
-            <h3 className="font-bold text-lg">Nouvelle Déclaration CIL</h3>
+            <h3 className="font-bold text-lg">{editingDeclarationId ? "Modifier la Déclaration CIL" : "Nouvelle Déclaration CIL"}</h3>
             <p className="text-xs opacity-80">Étape {step}/{totalSteps} — {stepTitles[step - 1]}</p>
           </div>
           <button onClick={onClose} className="text-2xl leading-none">✕</button>
@@ -119,18 +174,23 @@ export default function ModalCreerDeclaration({ traitements, onClose, onSave, pr
             <div className="space-y-4">
               <SectionTitle title="Sélectionner le traitement associé" />
               <Field label="Traitement métier" required>
-                <select value={selectedTraitementId} onChange={e => setSelectedTraitementId(e.target.value)}
+                <select value={selectedTraitementId} onChange={handleTraitementChange}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400">
                   <option value="">-- Choisir un traitement --</option>
                   {traitements.map(t => (
-                    <option key={t.idTraitement} value={t.idTraitement}>{t.description} ({t.department})</option>
+                    <option key={t.idTraitement} value={t.idTraitement}>
+                      {t.description} ({t.department}){t.declarationId ? " (déjà une déclaration)" : ""}
+                    </option>
                   ))}
                 </select>
               </Field>
               {selectedTraitement && (
-                <div className="bg-green-50 border border-green-200 rounded-xl p-3 text-sm">
+                <div className={`rounded-xl p-3 text-sm ${editingDeclarationId ? "bg-amber-50 border border-amber-200" : "bg-green-50 border border-green-200"}`}>
                   <p><span className="font-bold">Traitement :</span> {selectedTraitement.description}</p>
                   <p><span className="font-bold">Département :</span> {selectedTraitement.department}</p>
+                  {editingDeclarationId && (
+                    <p className="mt-2 text-amber-700 font-medium">✏️ Ce traitement a déjà une déclaration brouillon (n°{editingDeclarationId}). Vous modifiez le brouillon existant.</p>
+                  )}
                 </div>
               )}
             </div>
@@ -301,7 +361,7 @@ export default function ModalCreerDeclaration({ traitements, onClose, onSave, pr
                 </>
               )}
 
-              {typeDeclaration === "COLLECTE_SITE_INTERNET" && (
+              {typeDeclaration === "COLLECTE_SITE" && (
                 <>
                   <SectionTitle title="Identification du Traitement" />
                   <div className="grid grid-cols-2 gap-3">
@@ -335,7 +395,7 @@ export default function ModalCreerDeclaration({ traitements, onClose, onSave, pr
                 </>
               )}
 
-              {typeDeclaration === "SYSTEME_VIDEO_SURVEILLANCE" && (
+              {typeDeclaration === "VIDEO_SURVEILLANCE" && (
                 <>
                   <SectionTitle title="Identification & Installation" />
                   <div className="grid grid-cols-2 gap-3">
@@ -385,7 +445,7 @@ export default function ModalCreerDeclaration({ traitements, onClose, onSave, pr
             </button>
           ) : (
             <button onClick={handleSave} className="px-6 py-2 bg-green-800 text-white rounded-lg text-sm font-bold hover:bg-green-900 shadow-md">
-              ✅ Valider la Déclaration
+              {editingDeclarationId ? "✅ Enregistrer la Déclaration" : "✅ Créer la Déclaration"}
             </button>
           )}
         </div>

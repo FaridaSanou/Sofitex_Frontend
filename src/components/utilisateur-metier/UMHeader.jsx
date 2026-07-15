@@ -1,10 +1,11 @@
-import { useState, useEffect, useRef } from "react";
+﻿import { useState, useEffect, useRef } from "react";
 import { Icon } from "../ui/Icon";
+import NotificationBell from "../ui/NotificationBell";
 
 const HEADER_TITLES = {
   dashboard: "Tableau de bord", sessions: "Sessions de collecte",
   traitements: "Mes Traitements", demandes: "Demandes des Usagers",
-  entrepot: "Entrepôt", historique: "Historique",
+  entrepot: "EntrepÃ´t", historique: "Historique",
 };
 
 function NotificationDropdown({ notifications, unreadCount, onMarkRead, onDemandesClick }) {
@@ -64,7 +65,7 @@ function NotificationDropdown({ notifications, unreadCount, onMarkRead, onDemand
                     <span className={`mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-semibold flex-shrink-0 ${typeStyle(n.typeNotification)}`}>
                       {n.typeNotification === "DEMANDE_MODIFICATION" ? "Modification"
                         : n.typeNotification === "DEMANDE_SUPPRESSION" ? "Suppression"
-                        : n.typeNotification === "CONFIRMATION" ? "Confirmé"
+                        : n.typeNotification === "CONFIRMATION" ? "ConfirmÃ©"
                         : n.typeNotification === "ALERTE" ? "Alerte"
                         : n.typeNotification}
                     </span>
@@ -91,7 +92,7 @@ function NotificationDropdown({ notifications, unreadCount, onMarkRead, onDemand
   );
 }
 
-export default function UMHeader({ activeSection, sidebarOpen, onToggleSidebar, newSessionCount, onNewSessionClick, demandesEnAttente, onDemandesClick, notifications, unreadCount, onMarkRead }) {
+export default function UMHeader({ activeSection, sidebarOpen, onToggleSidebar, newSessionCount, onNewSessionClick, demandesEnAttente, onDemandesClick, notifications, unreadCount, onMarkRead, utilisateurId }) {
   return (
     <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between flex-shrink-0">
       <div className="flex items-center gap-4">
@@ -118,6 +119,14 @@ export default function UMHeader({ activeSection, sidebarOpen, onToggleSidebar, 
           onMarkRead={onMarkRead}
           onDemandesClick={onDemandesClick}
         />
+        {utilisateurId ? (
+          <NotificationBell utilisateurId={utilisateurId} onNavigate={() => onDemandesClick?.()} />
+        ) : demandesEnAttente > 0 && (
+          <button onClick={onDemandesClick} className="relative p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg">
+            <Icon name="bell" className="w-5 h-5" />
+            <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center">{demandesEnAttente > 9 ? '9+' : demandesEnAttente}</span>
+          </button>
+        )}
       </div>
     </header>
   );

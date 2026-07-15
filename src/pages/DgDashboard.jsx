@@ -4,6 +4,7 @@ import { Icon } from "../components/ui/Icon";
 import { BadgeStatut } from "../components/ui/BadgeStatut";
 import { SimpleStatCard } from "../components/ui/StatCard";
 import Toast from "../components/ui/Toast";
+import NotificationBell from "../components/ui/NotificationBell";
 import DgSidebar from "../components/dg/DgSidebar";
 import ModalDecision from "../components/dg/ModalDecision";
 import { formatDate } from "../utils/date";
@@ -17,16 +18,27 @@ function DgDashboard() {
   const [toast, setToast] = useState(null);
   const [recherche, setRecherche] = useState("");
   const [filtreStatut, setFiltreStatut] = useState("tous");
+  const [dgUserId, setDgUserId] = useState(null);
 
   const showToast = (msg, type = "success") => {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 3500);
   };
 
-  useEffect(() => {
+  const fetchEnAttente = () => {
     api.get("/declarations/en-attente")
       .then(res => setDeclarations(res.data))
       .catch(() => { });
+  };
+
+  useEffect(() => {
+    fetchEnAttente();
+    const email = localStorage.getItem("email");
+    if (email) {
+      api.get("/verification/fonction", { params: { email } })
+        .then(res => { if (res.data?.userId) setDgUserId(Number(res.data.userId)); })
+        .catch(() => {});
+    }
   }, []);
 
   const handleValider = async (id) => {
@@ -60,8 +72,8 @@ function DgDashboard() {
   const TYPE_LABELS = {
     NORMALE: "Normale",
     AUTORISATION: "Autorisation",
-    COLLECTE_SITE_INTERNET: "Collecte site",
-    SYSTEME_VIDEO_SURVEILLANCE: "Vidéosurveillance",
+    COLLECTE_SITE: "Collecte site",
+    VIDEO_SURVEILLANCE: "Vidéosurveillance",
   };
 
   const headerTitles = {
@@ -89,7 +101,9 @@ function DgDashboard() {
               </p>
             </div>
           </div>
-          {enAttente > 0 && (
+          {dgUserId ? (
+            <NotificationBell utilisateurId={dgUserId} onNavigate={() => setActiveSection("declarations")} />
+          ) : enAttente > 0 && (
             <button onClick={() => setActiveSection("declarations")} className="relative p-2 text-gray-500 hover:bg-gray-100 rounded-lg">
               <Icon name="bell" className="w-5 h-5" />
               <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center">{enAttente > 9 ? "9+" : enAttente}</span>
@@ -143,8 +157,14 @@ function DgDashboard() {
               <div className="p-5 border-b border-gray-100 space-y-3">
                 <div className="flex flex-col sm:flex-row gap-3 justify-between items-start sm:items-center">
                   <h2 className="font-bold text-gray-800">Déclarations ({declarationsFiltrees.length})</h2>
-                  <input value={recherche} onChange={e => setRecherche(e.target.value)} placeholder="Rechercher..."
-                    className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 w-full sm:w-56" />
+                  <div className="flex gap-2">
+                    <button onClick={fetchEnAttente} className="px-3 py-2 text-xs font-semibold bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition flex items-center gap-1.5">
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                      Rafraîchir
+                    </button>
+                    <input value={recherche} onChange={e => setRecherche(e.target.value)} placeholder="Rechercher..."
+                      className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 w-full sm:w-56" />
+                  </div>
                 </div>
                 <div className="flex gap-2 flex-wrap">
                   {[{ key: "tous", label: "Toutes" }, { key: "EN_ATTENTE", label: "En attente" }].map(f => (
