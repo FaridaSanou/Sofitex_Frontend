@@ -48,7 +48,6 @@ export default function Login() {
       const home = {
         ROLE_ADMINISTRATEUR: "/dashboard",
         ROLE_DPO: "/dpo",
-        ROLE_CIL: "/cil",
         ROLE_DG: "/dg",
         ROLE_UTILISATEUR_METIER: "/metier",
       };

@@ -46,16 +46,6 @@ const ROLE_CONFIG = {
       { id: "historique", label: "Historique", icon: "donnees" },
     ],
   },
-  ROLE_CIL: {
-    label: "CIL",
-    initials: "C",
-    nav: [
-      { id: "dashboard", label: "Tableau de bord", icon: "dashboard" },
-      { id: "declarations", label: "Déclarations", icon: "declarations" },
-      { id: "plaintes", label: "Plaintes", icon: "plaintes" },
-      { id: "verification", label: "Vérification", icon: "verification" },
-    ],
-  },
   ROLE_DG: {
     label: "Directeur Général",
     initials: "D",

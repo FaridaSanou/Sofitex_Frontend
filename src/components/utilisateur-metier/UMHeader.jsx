@@ -5,7 +5,7 @@ import NotificationBell from "../ui/NotificationBell";
 const HEADER_TITLES = {
   dashboard: "Tableau de bord", sessions: "Sessions de collecte",
   traitements: "Mes Traitements", demandes: "Demandes des Usagers",
-  entrepot: "EntrepÃ´t", historique: "Historique",
+  entrepot: "Entrepôt", historique: "Historique",
 };
 
 function NotificationDropdown({ notifications, unreadCount, onMarkRead, onDemandesClick }) {
@@ -65,7 +65,7 @@ function NotificationDropdown({ notifications, unreadCount, onMarkRead, onDemand
                     <span className={`mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-semibold flex-shrink-0 ${typeStyle(n.typeNotification)}`}>
                       {n.typeNotification === "DEMANDE_MODIFICATION" ? "Modification"
                         : n.typeNotification === "DEMANDE_SUPPRESSION" ? "Suppression"
-                        : n.typeNotification === "CONFIRMATION" ? "ConfirmÃ©"
+                        : n.typeNotification === "CONFIRMATION" ? "Confirmé"
                         : n.typeNotification === "ALERTE" ? "Alerte"
                         : n.typeNotification}
                     </span>

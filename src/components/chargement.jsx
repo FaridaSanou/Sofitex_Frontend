@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-// import toast from 'react-hot-toast';
-import Compteinactif from "../components/chargement.jsx";
+
 
 
 const fonctionController = async (adresseEmail, navigate ) => {
@@ -30,7 +29,6 @@ const fonctionController = async (adresseEmail, navigate ) => {
     const ROUTES_PAR_TYPE = {
       "DG": "/dg",
       "DPO": "/dpo",
-      "CIL": "/cil",
       "Usager": "/tableau-de-bord/usager",
       "UTILISATEUR_METIER": "/metier",
     };

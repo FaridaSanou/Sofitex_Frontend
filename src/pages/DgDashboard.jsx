@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import api from "../services/api";
 import { Icon } from "../components/ui/Icon";
 import { BadgeStatut } from "../components/ui/BadgeStatut";
@@ -25,41 +25,72 @@ function DgDashboard() {
     setTimeout(() => setToast(null), 3500);
   };
 
-  const fetchEnAttente = () => {
+  const fetchEnAttente = useCallback(() => {
     api.get("/declarations/en-attente")
       .then(res => setDeclarations(res.data))
+      .catch(() => showToast("Impossible de charger les déclarations", "error"));
+  }, []);
+
+  // Historique réel côté backend : contient TOUTES les déclarations déjà
+  // traitées (par le DG lui-même, mais aussi par la CIL ensuite). C'est la
+  // seule façon pour le DG de voir un changement de statut fait par la CIL.
+  const fetchHistorique = useCallback(() => {
+    api.get("/declarations/historique-dg")
+      .then(res => setHistorique(res.data))
       .catch(() => { });
-  };
+  }, []);
 
   useEffect(() => {
     fetchEnAttente();
+    fetchHistorique();
     const email = localStorage.getItem("email");
     if (email) {
       api.get("/verification/fonction", { params: { email } })
         .then(res => { if (res.data?.userId) setDgUserId(Number(res.data.userId)); })
-        .catch(() => {});
+        .catch(() => { });
     }
-  }, []);
+  }, [fetchEnAttente, fetchHistorique]);
+
+  // Rafraîchissement automatique toutes les 30s : la CIL peut faire évoluer
+  // le statut d'une déclaration indépendamment du DG, qui doit le voir sans
+  // recharger la page.
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchEnAttente();
+      fetchHistorique();
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [fetchEnAttente, fetchHistorique]);
 
   const handleValider = async (id) => {
-    const res = await api.put(`/declarations/${id}/valider`);
-    const updated = res.data;
-    setDeclarations(prev => prev.filter(d => d.idDeclaration !== id));
-    setHistorique(prev => [{ ...updated, decidedAt: new Date().toISOString(), decision: "APPROUVEE_DG" }, ...prev]);
-    showToast("Déclaration validée avec succès !");
+    try {
+      await api.put(`/declarations/${id}/valider`);
+      setDeclarations(prev => prev.filter(d => d.idDeclaration !== id));
+      fetchHistorique(); // source de vérité = backend, pas de reconstruction locale
+      showToast("Déclaration validée avec succès !");
+    } catch (err) {
+      showToast(err.response?.data?.message || "Erreur lors de la validation", "error");
+      throw err; // relancée pour que ModalDecision garde loading=false et ne ferme pas la modal
+    }
   };
 
   const handleRejeter = async (id, commentaire) => {
-    const res = await api.put(`/declarations/${id}/rejeter`, { commentaire });
-    const updated = res.data;
-    setDeclarations(prev => prev.filter(d => d.idDeclaration !== id));
-    setHistorique(prev => [{ ...updated, decidedAt: new Date().toISOString(), decision: "REJETEE_DG" }, ...prev]);
-    showToast("Déclaration rejetée.");
+    try {
+      await api.put(`/declarations/${id}/rejeter`, { commentaire });
+      setDeclarations(prev => prev.filter(d => d.idDeclaration !== id));
+      fetchHistorique();
+      showToast("Déclaration rejetée.");
+    } catch (err) {
+      showToast(err.response?.data?.message || "Erreur lors du rejet", "error");
+      throw err;
+    }
   };
 
   const enAttente = declarations.length;
-  const valides = historique.filter(h => h.decision === "APPROUVEE_DG").length;
-  const rejetes = historique.filter(h => h.decision === "REJETEE_DG").length;
+  const valides = historique.filter(h => h.statut === "APPROUVEE_DG").length;
+  const rejetes = historique.filter(h => h.statut === "REJETEE_DG").length;
+  const valideesCil = historique.filter(h => h.statut === "VALIDEE_CIL").length;
+  const rejeteesCil = historique.filter(h => h.statut === "REJETEE_CIL").length;
 
   const declarationsFiltrees = declarations
     .filter(d => filtreStatut === "tous" ? true : d.statut === filtreStatut)
@@ -114,10 +145,12 @@ function DgDashboard() {
         <main className="flex-1 overflow-y-auto p-6">
           {activeSection === "dashboard" && (
             <div className="space-y-6">
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
                 <SimpleStatCard label="En attente de décision" value={enAttente} color="bg-yellow-600" borderColor="border-yellow-100" textColor="text-yellow-600" />
-                <SimpleStatCard label="Déclarations validées" value={valides} color="bg-green-600" borderColor="border-green-100" textColor="text-green-600" />
-                <SimpleStatCard label="Déclarations rejetées" value={rejetes} color="bg-red-500" borderColor="border-red-100" textColor="text-red-500" />
+                <SimpleStatCard label="En vérification CIL" value={valides} color="bg-blue-600" borderColor="border-blue-100" textColor="text-blue-600" />
+                <SimpleStatCard label="Rejetées DG" value={rejetes} color="bg-red-500" borderColor="border-red-100" textColor="text-red-500" />
+                <SimpleStatCard label="Validées CIL" value={valideesCil} color="bg-emerald-600" borderColor="border-emerald-100" textColor="text-emerald-600" />
+                <SimpleStatCard label="Déclaration non conforme" value={rejeteesCil} color="bg-rose-500" borderColor="border-rose-100" textColor="text-rose-500" />
               </div>
 
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
@@ -219,20 +252,20 @@ function DgDashboard() {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
                   <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
-                    <Icon name="check" className="w-4 h-4 text-green-600" /> Déclarations validées
+                    <Icon name="check" className="w-4 h-4 text-blue-600" /> En vérification CIL
                   </h3>
                   <div className="space-y-2">
-                    {historique.filter(h => h.decision === "APPROUVEE_DG").length === 0 && (
-                      <p className="text-sm text-gray-400 text-center py-4">Aucune déclaration validée</p>
+                    {historique.filter(h => h.statut === "APPROUVEE_DG").length === 0 && (
+                      <p className="text-sm text-gray-400 text-center py-4">Aucune déclaration approuvée</p>
                     )}
-                    {historique.filter(h => h.decision === "APPROUVEE_DG").map(d => (
-                      <div key={d.idDeclaration} className="flex items-center justify-between p-3 bg-green-50 rounded-xl">
+                    {historique.filter(h => h.statut === "APPROUVEE_DG").map(d => (
+                      <div key={d.idDeclaration} className="flex items-center justify-between p-3 bg-blue-50 rounded-xl">
                         <div>
                           <p className="font-semibold text-sm text-gray-800">{d.traitementDescription || `Déclaration #${d.idDeclaration}`}</p>
                           <p className="text-xs text-gray-400">{d.secteur || "—"} · {formatDate(d.dateSoumission)}</p>
                         </div>
-                        <span className="text-xs text-green-600 font-semibold flex items-center gap-1">
-                          <Icon name="check" className="w-3 h-3" /> Validée
+                        <span className="text-xs text-blue-600 font-semibold flex items-center gap-1">
+                          En vérification CIL
                         </span>
                       </div>
                     ))}
@@ -241,13 +274,35 @@ function DgDashboard() {
 
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
                   <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
-                    <Icon name="close" className="w-4 h-4 text-red-500" /> Déclarations rejetées
+                    <Icon name="check" className="w-4 h-4 text-emerald-600" /> Déclaration validée par la CIL
                   </h3>
                   <div className="space-y-2">
-                    {historique.filter(h => h.decision === "REJETEE_DG").length === 0 && (
+                    {historique.filter(h => h.statut === "VALIDEE_CIL").length === 0 && (
+                      <p className="text-sm text-gray-400 text-center py-4">Aucune déclaration validée par le CIL</p>
+                    )}
+                    {historique.filter(h => h.statut === "VALIDEE_CIL").map(d => (
+                      <div key={d.idDeclaration} className="flex items-center justify-between p-3 bg-green-50 rounded-xl">
+                        <div>
+                          <p className="font-semibold text-sm text-gray-800">{d.traitementDescription || `Déclaration #${d.idDeclaration}`}</p>
+                          <p className="text-xs text-gray-400">{d.secteur || "—"} · {formatDate(d.dateSoumission)}</p>
+                        </div>
+                        <span className="text-xs text-green-600 font-semibold flex items-center gap-1">
+                          <Icon name="check" className="w-3 h-3" /> Conforme
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+                  <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
+                    <Icon name="close" className="w-4 h-4 text-red-500" /> Déclaration rejetée
+                  </h3>
+                  <div className="space-y-2">
+                    {historique.filter(h => h.statut === "REJETEE_DG").length === 0 && (
                       <p className="text-sm text-gray-400 text-center py-4">Aucune déclaration rejetée</p>
                     )}
-                    {historique.filter(h => h.decision === "REJETEE_DG").map(d => (
+                    {historique.filter(h => h.statut === "REJETEE_DG").map(d => (
                       <div key={d.idDeclaration} className="flex items-center justify-between p-3 bg-red-50 rounded-xl">
                         <div>
                           <p className="font-semibold text-sm text-gray-800">{d.traitementDescription || `Déclaration #${d.idDeclaration}`}</p>
@@ -255,6 +310,28 @@ function DgDashboard() {
                         </div>
                         <span className="text-xs text-red-500 font-semibold flex items-center gap-1">
                           <Icon name="close" className="w-3 h-3" /> Rejetée
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+                  <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
+                    <Icon name="close" className="w-4 h-4 text-rose-500" /> Déclaration non conforme
+                  </h3>
+                  <div className="space-y-2">
+                    {historique.filter(h => h.statut === "REJETEE_CIL").length === 0 && (
+                      <p className="text-sm text-gray-400 text-center py-4">Aucune déclaration rejetée par le CIL</p>
+                    )}
+                    {historique.filter(h => h.statut === "REJETEE_CIL").map(d => (
+                      <div key={d.idDeclaration} className="flex items-center justify-between p-3 bg-rose-50 rounded-xl">
+                        <div>
+                          <p className="font-semibold text-sm text-gray-800">{d.traitementDescription || `Déclaration #${d.idDeclaration}`}</p>
+                          <p className="text-xs text-gray-400">{d.secteur || "—"} · {formatDate(d.dateSoumission)}</p>
+                        </div>
+                        <span className="text-xs text-rose-500 font-semibold flex items-center gap-1">
+                          <Icon name="close" className="w-3 h-3" /> Non conforme
                         </span>
                       </div>
                     ))}

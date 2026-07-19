@@ -7,8 +7,11 @@ export function BadgeStatut({ statut, envoyeAuDpo }) {
     REJETE: { label: "Rejeté", cls: "bg-red-100 text-red-700" },
     EN_COURS: { label: "En cours", cls: "bg-yellow-100 text-yellow-700" },
     EN_ATTENTE: { label: "En attente", cls: "bg-yellow-100 text-yellow-800" },
-    APPROUVEE_DG: { label: "Validée", cls: "bg-green-100 text-green-800" },
-    REJETEE_DG: { label: "Rejetée", cls: "bg-red-100 text-red-800" },
+    APPROUVEE_DG: { label: "Validée DG", cls: "bg-blue-100 text-blue-800" },
+    REJETEE_DG: { label: "Rejetée DG", cls: "bg-red-100 text-red-800" },
+    EN_VERIFICATION_CIL: { label: "En vérification", cls: "bg-orange-100 text-orange-800" },
+    VALIDEE_CIL: { label: "Validée CIL", cls: "bg-green-100 text-green-800" },
+    REJETEE_CIL: { label: "Rejetée CIL", cls: "bg-red-100 text-red-800" },
     APPROUVEE: { label: "Approuvée", cls: "bg-green-100 text-green-800" },
     REJETEE: { label: "Rejetée", cls: "bg-red-100 text-red-800" },
     ACTIF: { label: "Actif", cls: "bg-green-100 text-green-800" },
@@ -68,12 +71,25 @@ export function declarationStatutBadge(s) {
   const map = {
     BROUILLON: "bg-gray-200 text-gray-700",
     EN_ATTENTE: "bg-yellow-100 text-yellow-800",
-    APPROUVEE_DG: "bg-green-100 text-green-800",
+    APPROUVEE_DG: "bg-blue-100 text-blue-800",
     REJETEE_DG: "bg-red-100 text-red-800",
+    EN_VERIFICATION_CIL: "bg-orange-100 text-orange-800",
+    VALIDEE_CIL: "bg-green-100 text-green-800",
+    REJETEE_CIL: "bg-red-100 text-red-800",
     APPROUVEE: "bg-green-100 text-green-800",
     REJETEE: "bg-red-100 text-red-800",
   };
-  const labels = { BROUILLON: "Brouillon", EN_ATTENTE: "En attente", APPROUVEE_DG: "Approuvée DG", REJETEE_DG: "Rejetée DG", APPROUVEE: "Approuvée", REJETEE: "Rejetée" };
+  const labels = {
+    BROUILLON: "Brouillon",
+    EN_ATTENTE: "En attente",
+    APPROUVEE_DG: "Approuvée DG",
+    REJETEE_DG: "Rejetée DG",
+    EN_VERIFICATION_CIL: "En vérification",
+    VALIDEE_CIL: "Validée CIL",
+    REJETEE_CIL: "Rejetée CIL",
+    APPROUVEE: "Approuvée",
+    REJETEE: "Rejetée",
+  };
   return <span className={`px-2 py-1 rounded-full text-xs font-semibold ${map[s] || "bg-gray-100"}`}>{labels[s] || s}</span>;
 }
 
