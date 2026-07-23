@@ -172,7 +172,7 @@ export default function ModalCreerTraitement({ onClose, onSave, sessions, onSave
               <div><label className="block text-sm font-semibold text-gray-700 mb-1">Session de collecte</label>
                 <select value={form.sessionCollecteId} onChange={e => set("sessionCollecteId", e.target.value)} className={inp}>
                   <option value="">-- Aucune session --</option>
-                  {sessions.map(s => <option key={s.idSession} value={s.idSession}>{s.description || `Session #${s.idSession}`}</option>)}
+                  {sessions.sort((a, b) => (a.nomSession || a.description || "").localeCompare(b.nomSession || b.description || "")).map(s => <option key={s.idSession} value={s.idSession}>{s.nomSession || s.description || `Session #${s.idSession}`}</option>)}
                 </select>
               </div>
             </div>

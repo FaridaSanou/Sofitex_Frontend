@@ -100,11 +100,11 @@ function DpoDashboard() {
   };
 
   const fetchSessions = useCallback(() => {
-    api.get("/sessions").then(res => setSessions(res.data)).catch(() => {});
+    api.get("/sessions").then(res => { const sorted = [...res.data].sort((a, b) => (a.nomSession || a.description || "").localeCompare(b.nomSession || b.description || "")); setSessions(sorted); }).catch(() => {});
   }, []);
 
   const fetchTraitements = useCallback(() => {
-    api.get("/traitements").then(res => setTraitements(res.data)).catch(() => {});
+    api.get("/traitements").then(res => { const sorted = [...res.data].sort((a, b) => (a.nom || a.description || "").localeCompare(b.nom || b.description || "")); setTraitements(sorted); }).catch(() => {});
   }, []);
 
   const fetchDeclarations = useCallback(() => {
@@ -114,7 +114,7 @@ function DpoDashboard() {
   }, []);
 
   const fetchDemandes = useCallback(() => {
-    api.get("/demandes").then(res => setDemandes(res.data)).catch(() => {});
+    api.get("/demandes/pour-dpo").then(res => setDemandes(res.data)).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -195,9 +195,9 @@ function DpoDashboard() {
   const traitementsToShow = traitements.filter(t => {
     if (traitementFilterMode === "parSession" && selectedSessionId) return t.sessionCollecteId === Number(selectedSessionId);
     return true;
-  });
+  }).sort((a, b) => (a.nom || a.description || "").localeCompare(b.nom || b.description || ""));
 
-  const demandesEnAttente = demandes.filter(d => d.statutDemande === "EN_COURS").length;
+  const demandesEnAttente = demandes.filter(d => d.statutDemande === "EN_COURS" || d.statutDemande === "EN_ATTENTE").length;
 
   const broUillonCount = declarations.filter(d => d.statut === "BROUILLON").length;
 
@@ -255,32 +255,68 @@ function DpoDashboard() {
                 ))}
               </div>
 
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="font-bold text-gray-800">Activité récente</h2>
-                </div>
-                <div className="space-y-3">
-                  {declarations.slice(0, 5).map(d => (
-                    <div key={d.idDeclaration} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition cursor-pointer"
-                      onClick={() => setDetailDeclaration(d)}>
-                      <div>
-                        <p className="font-semibold text-sm text-gray-800">{d.traitementDescription || d.denominationTraitement || `Déclaration #${d.idDeclaration}`}</p>
-                        <p className="text-xs text-gray-400">{d.secteur || "—"}</p>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+                  <div className="flex justify-between items-center mb-4">
+                    <h2 className="font-bold text-gray-800">Déclarations récentes</h2>
+                  </div>
+                  <div className="space-y-3">
+                    {declarations.slice(0, 5).map(d => (
+                      <div key={d.idDeclaration} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition cursor-pointer"
+                        onClick={() => setDetailDeclaration(d)}>
+                        <div>
+                          <p className="font-semibold text-sm text-gray-800">{d.traitementDescription || d.denominationTraitement || `Déclaration #${d.idDeclaration}`}</p>
+                          <p className="text-xs text-gray-400">{d.secteur || "—"}</p>
+                        </div>
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+                          d.statut === "BROUILLON" ? "bg-gray-200 text-gray-700" :
+                          d.statut === "EN_ATTENTE" ? "bg-yellow-100 text-yellow-800" :
+                          d.statut === "VALIDEE_CIL" ? "bg-green-100 text-green-800" :
+                          "bg-gray-100 text-gray-600"
+                        }`}>{d.statut}</span>
                       </div>
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-                        d.statut === "BROUILLON" ? "bg-gray-200 text-gray-700" :
-                        d.statut === "EN_ATTENTE" ? "bg-yellow-100 text-yellow-800" :
-                        d.statut === "VALIDEE_CIL" ? "bg-green-100 text-green-800" :
-                        "bg-gray-100 text-gray-600"
-                      }`}>{d.statut}</span>
-                    </div>
-                  ))}
-                  {declarations.length === 0 && (
-                    <div className="py-8 text-center text-gray-400 text-sm">
-                      <Icon name="check" className="w-8 h-8 mx-auto mb-2 text-green-400" />
-                      Aucune activité récente.
-                    </div>
-                  )}
+                    ))}
+                    {declarations.length === 0 && (
+                      <div className="py-8 text-center text-gray-400 text-sm">
+                        <Icon name="check" className="w-8 h-8 mx-auto mb-2 text-green-400" />
+                        Aucune déclaration.
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+                  <div className="flex justify-between items-center mb-4">
+                    <h2 className="font-bold text-gray-800">Demandes usagers récentes</h2>
+                    {demandesEnAttente > 0 && (
+                      <button onClick={() => setActiveSection("demandes")} className="text-xs text-green-700 hover:text-green-900 font-semibold">
+                        Voir tout →
+                      </button>
+                    )}
+                  </div>
+                  <div className="space-y-3">
+                    {demandes.slice(0, 5).map(d => (
+                      <div key={d.idDemande || d.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition cursor-pointer"
+                        onClick={() => setActiveSection("demandes")}>
+                        <div>
+                          <p className="font-semibold text-sm text-gray-800">{d.usagerNomComplet || d.usagerNom || d.usager || "—"}</p>
+                          <p className="text-xs text-gray-400">{d.typeDemande || d.type || "—"} · {d.traitementNom || d.descriptionDemande || d.detail || "—"}</p>
+                        </div>
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+                          (d.statutDemande || d.statut) === "EN_COURS" ? "bg-yellow-100 text-yellow-800" :
+                          (d.statutDemande || d.statut) === "ACCEPTEE" ? "bg-green-100 text-green-800" :
+                          (d.statutDemande || d.statut) === "REJETEE" ? "bg-red-100 text-red-800" :
+                          "bg-gray-100 text-gray-600"
+                        }`}>{(d.statutDemande || d.statut) === "EN_COURS" ? "En attente" : (d.statutDemande || d.statut)}</span>
+                      </div>
+                    ))}
+                    {demandes.length === 0 && (
+                      <div className="py-8 text-center text-gray-400 text-sm">
+                        <Icon name="check" className="w-8 h-8 mx-auto mb-2 text-green-400" />
+                        Aucune demande usager.
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

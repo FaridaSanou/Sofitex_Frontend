@@ -15,13 +15,13 @@ export default function VerificationGuard({ children }) {
         const res = await fetch(`http://localhost:8080/api/verification/fonction?email=${email}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        if (!res.ok) { setAutorise(true); return; }
+        if (!res.ok) { window.location.href = "/"; return; }
         const data = await res.json();
-        if (data.demandeRejetee === "true") {
+        if (data.demandeRejetee === true || data.demandeRejetee === "true") {
           window.location.href = `/compte-inactif?statut=rejetee&motif=${encodeURIComponent(data.motifRejet || "")}`;
           return;
         }
-        if (data.demandeEnAttente === "true") {
+        if (data.demandeEnAttente === true || data.demandeEnAttente === "true") {
           window.location.href = "/compte-inactif?statut=en_attente";
           return;
         }

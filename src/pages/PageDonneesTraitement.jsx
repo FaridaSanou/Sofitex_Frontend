@@ -354,9 +354,9 @@ export default function PageDonneesTraitement() {
                           <div className="flex gap-3 justify-end pt-2">
                             <button onClick={() => { setShowCreerPersonne(false); setResultatsRecherche([]); }}
                               className="px-4 py-2 rounded-lg border border-gray-300 text-gray-600 text-sm hover:bg-gray-50">Retour</button>
-                            <button onClick={handleCreerPersonne} disabled={creationEnCours || !nouveauNom.trim() || !nouveauPrenom.trim()}
+                            <button onClick={handleCreerPersonne} disabled={!nouveauNom.trim() || !nouveauPrenom.trim()}
                               className="px-5 py-2 rounded-lg bg-green-700 text-white text-sm font-semibold hover:bg-green-800 disabled:opacity-40 flex items-center gap-2">
-                              {creationEnCours ? "Création..." : <><Check className="w-4 h-4" /> Créer</>}
+                              <><Check className="w-4 h-4" /> Créer</>
                             </button>
                           </div>
                         </>
@@ -426,9 +426,9 @@ export default function PageDonneesTraitement() {
                   </label>
                   <div className="flex gap-3">
                     <button onClick={resetAjout} className="flex-1 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50">Annuler</button>
-                    <button onClick={handleImportExcel} disabled={!fichier || importing}
+                    <button onClick={handleImportExcel} disabled={!fichier}
                       className="flex-1 py-2 bg-green-700 text-white rounded-lg text-sm font-semibold hover:bg-green-800 disabled:opacity-40">
-                      {importing ? "Importation..." : "Importer"}
+                      Importer
                     </button>
                   </div>
                 </div>
@@ -490,9 +490,9 @@ export default function PageDonneesTraitement() {
 
             <div className="border-t border-gray-100 px-6 py-4 flex justify-between">
               <button onClick={() => setShowImportEntrepot(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50">Fermer</button>
-              <button onClick={handleAttacherEntrepot} disabled={selectedIds.size === 0 || attaching}
+              <button onClick={handleAttacherEntrepot} disabled={selectedIds.size === 0}
                 className="px-5 py-2 bg-green-600 text-white rounded-xl text-sm font-semibold hover:bg-green-700 disabled:opacity-40 flex items-center gap-2">
-                {attaching ? "Rattachement..." : <><Download className="w-4 h-4" /> Rattacher ({selectedIds.size})</>}
+                <><Download className="w-4 h-4" /> Rattacher ({selectedIds.size})</>
               </button>
             </div>
           </div>

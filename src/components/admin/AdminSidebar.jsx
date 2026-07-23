@@ -47,7 +47,7 @@ export default function AdminSidebar({ sidebarOpen, activeTab, setActiveTab, sta
             </div>
           )}
           {sidebarOpen && (
-            <button onClick={() => { localStorage.removeItem("token"); window.location.href = "/"; }}
+            <button onClick={() => { ["token","role","email","userId","dpoId","utilisateurMetierId"].forEach(k => localStorage.removeItem(k)); window.location.href = "/"; }}
               className="text-green-300 hover:text-white">
               <Icon name="logout" className="w-4 h-4" />
             </button>

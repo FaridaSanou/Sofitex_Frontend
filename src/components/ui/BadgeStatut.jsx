@@ -94,7 +94,13 @@ export function declarationStatutBadge(s) {
 }
 
 export function demandeStatutBadge(s) {
-  if (s === "EN_ATTENTE") return <span className="px-2 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800">En attente</span>;
-  if (s === "TRAITE") return <span className="px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">Traitée</span>;
-  return <span className="px-2 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">{s}</span>;
+  const map = {
+    EN_COURS: { label: "En attente", cls: "bg-yellow-100 text-yellow-800" },
+    EN_ATTENTE: { label: "En attente", cls: "bg-yellow-100 text-yellow-800" },
+    ACCEPTEE: { label: "Acceptée", cls: "bg-green-100 text-green-800" },
+    REJETEE: { label: "Rejetée", cls: "bg-red-100 text-red-800" },
+    TRAITE: { label: "Traitée", cls: "bg-green-100 text-green-800" },
+  };
+  const s2 = map[s] || { label: s, cls: "bg-gray-100 text-gray-600" };
+  return <span className={`px-2 py-1 rounded-full text-xs font-semibold ${s2.cls}`}>{s2.label}</span>;
 }

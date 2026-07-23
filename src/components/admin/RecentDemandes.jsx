@@ -17,7 +17,7 @@ export default function RecentDemandes({ demandes, setActiveTab, handleValider, 
           <div key={d.idDemande} className="flex items-center justify-between px-6 py-4 hover:bg-gray-50 transition">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 bg-green-100 rounded-full flex items-center justify-center">
-                <span className="text-green-700 font-bold text-sm">{(d.prenom ?? "?")[0].toUpperCase()}</span>
+                <span className="text-green-700 font-bold text-sm">{(d.prenom || "?")[0].toUpperCase()}</span>
               </div>
               <div>
                 <p className="text-sm font-semibold text-gray-800">{d.prenom} {d.nom}</p>

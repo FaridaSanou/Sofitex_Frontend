@@ -126,8 +126,8 @@ export default function ModalAjouterDonnees({ traitement, onClose, onSaveManuel,
                     <div><label className="block text-sm font-semibold text-gray-700 mb-1">Téléphone</label><input value={nouveauTelephone} onChange={e => setNouveauTelephone(e.target.value)} placeholder="01 23 45 67 89" className={inp} /></div>
                     <div className="flex gap-3 justify-end pt-2">
                       <button onClick={() => { setShowCreerPersonne(false); setResultatsRecherche([]); }} className="px-4 py-2 rounded-lg border border-gray-300 text-gray-600 text-sm hover:bg-gray-50">Retour</button>
-                      <button onClick={handleCreerPersonne} disabled={creationEnCours || !nouveauNom.trim() || !nouveauPrenom.trim()} className="px-5 py-2 rounded-lg bg-green-700 text-white text-sm font-semibold hover:bg-green-800 disabled:opacity-40 flex items-center gap-2">
-                        {creationEnCours ? "Création..." : <><Check className="w-4 h-4" /> Créer la personne</>}
+                      <button onClick={handleCreerPersonne} disabled={!nouveauNom.trim() || !nouveauPrenom.trim()} className="px-5 py-2 rounded-lg bg-green-700 text-white text-sm font-semibold hover:bg-green-800 disabled:opacity-40 flex items-center gap-2">
+                        <><Check className="w-4 h-4" /> Créer la personne</>
                       </button>
                     </div>
                   </>
@@ -155,8 +155,8 @@ export default function ModalAjouterDonnees({ traitement, onClose, onSaveManuel,
                 </div>
                 <div className="flex justify-end gap-3 pt-2">
                   <button onClick={onClose} className="px-4 py-2 rounded-lg border border-gray-300 text-gray-600 text-sm hover:bg-gray-50">Annuler</button>
-                  <button onClick={handleSubmitManuel} disabled={loading || !typeDonneeId || !valeur.trim()} className="px-5 py-2 rounded-lg bg-green-700 text-white text-sm font-semibold hover:bg-green-800 disabled:opacity-40 flex items-center gap-2">
-                    {loading ? "En cours..." : <><Check className="w-4 h-4" /> Ajouter</>}
+                  <button onClick={handleSubmitManuel} disabled={!typeDonneeId || !valeur.trim()} className="px-5 py-2 rounded-lg bg-green-700 text-white text-sm font-semibold hover:bg-green-800 disabled:opacity-40 flex items-center gap-2">
+                    <><Check className="w-4 h-4" /> Ajouter</>
                   </button>
                 </div>
               </>
@@ -209,8 +209,8 @@ export default function ModalAjouterDonnees({ traitement, onClose, onSaveManuel,
         </div>
         <div className="border-t border-gray-200 px-6 py-4 flex items-center justify-between">
           <button onClick={onClose} className="px-4 py-2 rounded-lg border border-gray-300 text-gray-600 text-sm hover:bg-gray-50">Fermer</button>
-          <button onClick={handleSubmitExcel} disabled={loading || !fichier} className="px-5 py-2 rounded-lg bg-green-700 text-white text-sm font-semibold hover:bg-green-800 disabled:opacity-40 flex items-center gap-2">
-            {loading ? "Import en cours..." : <><Upload className="w-4 h-4" /> Importer</>}
+          <button onClick={handleSubmitExcel} disabled={!fichier} className="px-5 py-2 rounded-lg bg-green-700 text-white text-sm font-semibold hover:bg-green-800 disabled:opacity-40 flex items-center gap-2">
+            <><Upload className="w-4 h-4" /> Importer</>
           </button>
         </div>
       </div>

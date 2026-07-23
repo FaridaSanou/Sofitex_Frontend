@@ -66,6 +66,7 @@ function UtilisateurMetierDashboard() {
   const [expandedTraitementId, setExpandedTraitementId] = useState(null);
   const [traitementDonneesMap, setTraitementDonneesMap] = useState({});
   const [traitementDonneesLoading, setTraitementDonneesLoading] = useState({});
+  const [dposList, setDposList] = useState([]);
 
   const showToast = (msg, type = "success") => {
     setToast({ msg, type });
@@ -75,13 +76,13 @@ function UtilisateurMetierDashboard() {
   // Résolution de l'utilisateurMetierId : localStorage direct, sinon retombe
   // sur userId (même id, héritage JOINED côté backend), sinon /verification/fonction.
   useEffect(() => {
-    api.get("/sessions").then(res => { setSessions(res.data); setPreviousSessionCount(res.data.length); }).catch(() => { });
+    api.get("/sessions").then(res => { const sorted = [...res.data].sort((a, b) => (a.nomSession || a.description || "").localeCompare(b.nomSession || b.description || "")); setSessions(sorted); setPreviousSessionCount(sorted.length); }).catch(() => { });
 
     const storedId = localStorage.getItem("utilisateurMetierId") || localStorage.getItem("userId");
     if (storedId) {
       localStorage.setItem("utilisateurMetierId", String(storedId));
       setUtilisateurMetierId(Number(storedId));
-      api.get(`/traitements/utilisateur-metier/${storedId}`).then(res => setTraitements(res.data)).catch(err => console.error(err));
+      api.get(`/traitements/utilisateur-metier/${storedId}`).then(res => { const sorted = [...res.data].sort((a, b) => (a.nom || a.description || "").localeCompare(b.nom || b.description || "")); setTraitements(sorted); }).catch(err => console.error(err));
     } else {
       const email = localStorage.getItem("email");
       if (email) {
@@ -89,10 +90,11 @@ function UtilisateurMetierDashboard() {
           const id = res.data.utilisateurMetierId;
           if (id) { localStorage.setItem("utilisateurMetierId", String(id)); setUtilisateurMetierId(Number(id)); return api.get(`/traitements/utilisateur-metier/${id}`); }
           throw new Error("no id");
-        }).then(res => { if (res) setTraitements(res.data); }).catch(err => console.error(err));
+        }).then(res => { if (res) { const sorted = [...res.data].sort((a, b) => (a.nom || a.description || "").localeCompare(b.nom || b.description || "")); setTraitements(sorted); } }).catch(err => console.error(err));
       }
     }
     api.get("/entrepot").then(res => setEntrepotData(res.data)).catch(() => { });
+    api.get("/dpos").then(res => setDposList(res.data)).catch(() => { });
   }, []);
 
   // --- Demandes usagers : source unique de vérité = l'API ---
@@ -113,9 +115,10 @@ function UtilisateurMetierDashboard() {
   useEffect(() => {
     const interval = setInterval(() => {
       api.get("/sessions").then(res => {
-        setSessions(res.data);
-        if (res.data.length > previousSessionCount) setNewSessionCount(prev => prev + (res.data.length - previousSessionCount));
-        setPreviousSessionCount(res.data.length);
+        const sorted = [...res.data].sort((a, b) => (a.nomSession || a.description || "").localeCompare(b.nomSession || b.description || ""));
+        setSessions(sorted);
+        if (sorted.length > previousSessionCount) setNewSessionCount(prev => prev + (sorted.length - previousSessionCount));
+        setPreviousSessionCount(sorted.length);
       }).catch(() => { });
     }, 30000);
     return () => clearInterval(interval);
@@ -177,16 +180,19 @@ function UtilisateurMetierDashboard() {
     });
   };
 
-  const dposDisponibles = sessions.reduce((acc, s) => {
-    if (s.dpoId && !acc.find(d => d.dpoId === s.dpoId)) acc.push({ dpoId: s.dpoId, dpoNomComplet: s.dpoNomComplet || `DPO #${s.dpoId}` });
-    return acc;
-  }, []);
+  const dposDisponibles = dposList.length > 0
+    ? dposList.map(d => ({ dpoId: d.dpoId, dpoNomComplet: d.nomComplet || `DPO #${d.dpoId}` }))
+    : sessions.reduce((acc, s) => {
+        if (s.dpoId && !acc.find(d => d.dpoId === s.dpoId)) acc.push({ dpoId: s.dpoId, dpoNomComplet: s.dpoNomComplet || `DPO #${s.dpoId}` });
+        return acc;
+      }, []);
 
-  const handleEnvoyer = (id, dpoIdOverride) => {
+  const handleEnvoyer = (id) => {
     const t = traitements.find(t => t.idTraitement === id);
-    const dpoId = dpoIdOverride ?? (t?.sessionCollecteId ? sessions.find(s => s.idSession === t.sessionCollecteId)?.dpoId : null);
-    if (!dpoId) { showToast("Aucun DPO trouvé. Ouvrez le détail pour en sélectionner un.", "error"); return; }
-    api.patch(`/traitements/${id}/envoyer-dpo`, null, { params: { dpoId } }).then(res => {
+    const dpoId = t?.sessionCollecteId ? sessions.find(s => s.idSession === t.sessionCollecteId)?.dpoId : null;
+    const dpoIdFinal = dpoId || (dposDisponibles.length === 1 ? dposDisponibles[0].dpoId : null);
+    if (!dpoIdFinal) { showToast("Aucun DPO trouvé.", "error"); return; }
+    api.patch(`/traitements/${id}/envoyer-dpo`, null, { params: { dpoId: dpoIdFinal } }).then(res => {
       setTraitements(prev => prev.map(t => t.idTraitement === id ? res.data : t));
       showToast("Traitement envoyé au DPO !");
     }).catch(err => showToast(err.response?.data?.message || "Erreur lors de l'envoi au DPO", "error"));
@@ -237,7 +243,7 @@ function UtilisateurMetierDashboard() {
   // --- Traitement réel des demandes usagers (accepter / rejeter) ---
   const handleAccepterDemande = (id) => {
     api.put(`/demandes/${id}/accepter`).then(res => {
-      setDemandes(prev => prev.map(d => d.id === id ? mapDemande(res.data) : d));
+      setDemandes(prev => prev.map(d => d.idDemande === id ? mapDemande(res.data) : d));
       setDetailDemande(null);
       // La donnée a été réellement modifiée/supprimée en base : on invalide
       // le cache local pour forcer un rechargement frais au prochain affichage.
@@ -252,7 +258,7 @@ function UtilisateurMetierDashboard() {
 
   const handleRejeterDemande = (id, motifRejet) => {
     api.put(`/demandes/${id}/rejeter`, { motifRejet }).then(res => {
-      setDemandes(prev => prev.map(d => d.id === id ? mapDemande(res.data) : d));
+      setDemandes(prev => prev.map(d => d.idDemande === id ? mapDemande(res.data) : d));
       setDetailDemande(null);
       showToast("Demande rejetée.");
     }).catch(err => {
@@ -280,10 +286,10 @@ function UtilisateurMetierDashboard() {
 
   const demandesEnAttente = demandes.filter(d => d.statut === "EN_COURS").length;
   const traitementsFiltres = traitements.filter(t => {
-    if (recherche && !t.description?.toLowerCase().includes(recherche.toLowerCase()) && !t.department?.toLowerCase().includes(recherche.toLowerCase())) return false;
+    if (recherche && !t.nom?.toLowerCase().includes(recherche.toLowerCase()) && !t.description?.toLowerCase().includes(recherche.toLowerCase()) && !t.department?.toLowerCase().includes(recherche.toLowerCase())) return false;
     if (traitementFilterMode === "parSession" && selectedSessionId) return t.sessionCollecteId === Number(selectedSessionId);
     return true;
-  });
+  }).sort((a, b) => (a.nom || a.description || "").localeCompare(b.nom || b.description || ""));
 
   const stats = [
     { label: "Sessions en cours", value: sessions.filter(s => s.statutSession === "EN_COURS").length, icon: "calendar", color: "bg-green-50 border-green-200" },
@@ -315,7 +321,7 @@ function UtilisateurMetierDashboard() {
             <UMTraitementsSection traitementsFiltres={traitementsFiltres} recherche={recherche} onRechercheChange={setRecherche} traitementFilterMode={traitementFilterMode} setTraitementFilterMode={setTraitementFilterMode} selectedSessionId={selectedSessionId} setSelectedSessionId={setSelectedSessionId} sessions={sessions} onNew={() => setShowCreer(true)} expandedTraitementId={expandedTraitementId} onToggleExpand={chargerDonneesTraitement} traitementDonneesMap={traitementDonneesMap} traitementDonneesLoading={traitementDonneesLoading} onDetail={setDetailTraitement} onDonnees={(t) => { navigate(`/traitements/${t.idTraitement}/donnees`, { state: { traitement: t } }); }} onEnvoyer={handleEnvoyer} />
           )}
           {activeSection === "demandes" && <UMDemandesSection demandes={demandes} demandesEnAttente={demandesEnAttente} onTraiter={setDetailDemande} />}
-          {activeSection === "entrepot" && <UMEntrepotSection entrepotData={entrepotData} entrepotRecherche={entrepotRecherche} onRechercheChange={setEntrepotRecherche} traitements={traitements} onAjouterDonnees={(t) => { setTraitementPourDonnees(t); setShowAjouterDonnees(true); }} />}
+          {activeSection === "entrepot" && <UMEntrepotSection entrepotData={entrepotData} entrepotRecherche={entrepotRecherche} onRechercheChange={setEntrepotRecherche} traitements={traitements} onAjouterDonnees={(t) => { setTraitementPourDonnees(t); setShowAjouterDonnees(true); }} onRefresh={refreshEntrepot} />}
           {activeSection === "historique" && <UMHistoriqueSection traitementsEnvoyesDpo={traitements.filter(t => t.envoyeAuDpo === true)} demandesTraitees={demandes.filter(d => d.statut === "ACCEPTEE" || d.statut === "REJETEE")} sessionsTerminees={sessions.filter(s => s.statutSession === "TERMINEE")} />}
         </main>
       </div>

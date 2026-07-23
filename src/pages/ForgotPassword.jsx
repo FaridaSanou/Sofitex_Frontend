@@ -61,16 +61,15 @@ export default function ForgotPassword() {
                 className={`w-full h-10 px-3 rounded-lg border text-sm outline-none bg-white/70 ${erreur ? "border-red-300 bg-red-50" : "border-gray-300 focus:border-green-500"}`}
               />
             </div>
-            <button type="submit" disabled={loading}
+            <button type="submit"
               style={{
                 width: "100%", height: "40px",
                 background: "linear-gradient(135deg, #15803d, #166534)",
                 border: "none", borderRadius: "10px",
                 color: "white", fontSize: "14px", fontWeight: 500,
-                cursor: loading ? "not-allowed" : "pointer",
-                opacity: loading ? 0.6 : 1,
+                cursor: "pointer",
               }}>
-              {loading ? "Envoi en cours..." : "Envoyer le lien"}
+              Envoyer le lien
             </button>
           </form>
         )}

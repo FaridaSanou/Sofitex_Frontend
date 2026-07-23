@@ -24,6 +24,7 @@ export default function Login() {
     const e2 = valider();
     if (Object.keys(e2).length) { setErreurs(e2); return; }
     setLoading(true);
+    setErreurs({});
     try {
       const response = await fetch("http://localhost:8080/api/auth/login", {
         method: "POST",
@@ -54,7 +55,6 @@ export default function Login() {
       window.location.href = home[data.role] || "/dashboard";
     } catch (err) {
       setErreurs({ global: "Impossible de contacter le serveur" });
-    } finally {
       setLoading(false);
     }
   };
@@ -103,16 +103,15 @@ export default function Login() {
             <a href="/mot-de-passe-oublie" className="text-sm text-green-700 hover:underline font-medium">Mot de passe oublié ?</a>
           </div>
 
-          <button type="submit" disabled={loading}
+          <button type="submit"
             style={{
               width: "100%", height: "40px",
               background: "linear-gradient(135deg, #15803d, #166534)",
               border: "none", borderRadius: "10px",
               color: "white", fontSize: "14px", fontWeight: 500,
-              cursor: loading ? "not-allowed" : "pointer",
-              opacity: loading ? 0.6 : 1,
+              cursor: "pointer",
             }}>
-            {loading ? "Connexion en cours..." : "Se connecter"}
+            Se connecter
           </button>
         </form>
 

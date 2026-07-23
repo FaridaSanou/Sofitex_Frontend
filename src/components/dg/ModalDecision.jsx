@@ -36,7 +36,7 @@ export default function ModalDecision({ declaration, onClose, onValider, onRejet
             <h3 className="font-bold text-lg">Décision sur la déclaration</h3>
             <p className="text-green-300 text-xs">#{declaration.idDeclaration} — {declaration.traitementDescription || declaration.typeDeclaration}</p>
           </div>
-          <button onClick={onClose} className="text-green-300 hover:text-white" disabled={loading}>
+           <button onClick={onClose} className="text-green-300 hover:text-white">
             <Icon name="close" className="w-5 h-5" />
           </button>
         </div>
@@ -103,10 +103,10 @@ export default function ModalDecision({ declaration, onClose, onValider, onRejet
               </div>
 
               <div className="flex gap-3 justify-end pt-2">
-                <button onClick={onClose} className="px-4 py-2 rounded-lg border border-gray-300 text-gray-600 text-sm hover:bg-gray-50" disabled={loading}>Annuler</button>
-                <button onClick={handleConfirm} disabled={!action || loading || (action === "REJETE" && !commentaire.trim())}
-                  className={`px-5 py-2 rounded-lg text-white text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed transition-all ${loading ? "bg-gray-400" : action === "REJETE" ? "bg-red-500 hover:bg-red-600" : "bg-green-700 hover:bg-green-800"}`}>
-                  {loading ? "Traitement..." : action === "VALIDE" ? <><Icon name="check" className="w-4 h-4 mr-1.5" />Confirmer la validation</> : action === "REJETE" ? <><Icon name="close" className="w-4 h-4 mr-1.5" />Confirmer le rejet</> : "Choisir une décision"}
+                <button onClick={onClose} className="px-4 py-2 rounded-lg border border-gray-300 text-gray-600 text-sm hover:bg-gray-50">Annuler</button>
+                <button onClick={handleConfirm} disabled={!action || (action === "REJETE" && !commentaire.trim())}
+                  className={`px-5 py-2 rounded-lg text-white text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed transition-all ${action === "REJETE" ? "bg-red-500 hover:bg-red-600" : "bg-green-700 hover:bg-green-800"}`}>
+                  {action === "VALIDE" ? <><Icon name="check" className="w-4 h-4 mr-1.5" />Confirmer la validation</> : action === "REJETE" ? <><Icon name="close" className="w-4 h-4 mr-1.5" />Confirmer le rejet</> : "Choisir une décision"}
                 </button>
               </div>
             </>

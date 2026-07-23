@@ -17,7 +17,7 @@ export default function UMSessionsSection({ sessions, traitements, onDetailTrait
           <table className="w-full text-sm">
             <thead className="bg-green-50 text-green-800">
               <tr>
-                <th className="px-4 py-3 text-left font-semibold">Description</th>
+                <th className="px-4 py-3 text-left font-semibold">Nom</th>
                 <th className="px-4 py-3 text-left font-semibold">Type</th>
                 <th className="px-4 py-3 text-left font-semibold">Dates</th>
                 <th className="px-4 py-3 text-left font-semibold">Statut</th>
@@ -30,7 +30,7 @@ export default function UMSessionsSection({ sessions, traitements, onDetailTrait
                 const nbTraitements = s.nombreTraitements ?? traitementsParSession(s.idSession).length;
                 return (
                   <tr key={s.idSession} className="hover:bg-green-50 transition-colors">
-                    <td className="px-4 py-3 font-medium text-gray-800">{s.description || `Session #${s.idSession}`}</td>
+                    <td className="px-4 py-3 font-medium text-gray-800">{s.nomSession || s.description || `Session #${s.idSession}`}</td>
                     <td className="px-4 py-3">
                       <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">{s.typeCollecte === "EN_LIGNE" ? "En ligne" : "Terrain"}</span>
                     </td>
@@ -64,13 +64,13 @@ export default function UMSessionsSection({ sessions, traitements, onDetailTrait
       {selectedSessionDetail && (
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="p-4 border-b border-gray-100 bg-green-50">
-            <h3 className="font-bold text-green-800">Traitements liés à la session : {selectedSessionDetail.description || `#${selectedSessionDetail.idSession}`}</h3>
+            <h3 className="font-bold text-green-800">Traitements liés à la session : {selectedSessionDetail.nomSession || selectedSessionDetail.description || `#${selectedSessionDetail.idSession}`}</h3>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-4 py-3 text-left font-semibold text-gray-500">Description</th>
+                  <th className="px-4 py-3 text-left font-semibold text-gray-500">Nom</th>
                   <th className="px-4 py-3 text-left font-semibold text-gray-500">Département</th>
                   <th className="px-4 py-3 text-left font-semibold text-gray-500">Statut</th>
                   <th className="px-4 py-3 text-center font-semibold text-gray-500">Action</th>
@@ -79,7 +79,7 @@ export default function UMSessionsSection({ sessions, traitements, onDetailTrait
               <tbody className="divide-y divide-gray-100">
                 {traitementsParSession(selectedSessionDetail.idSession).map(t => (
                   <tr key={t.idTraitement} className="hover:bg-green-50 transition-colors">
-                    <td className="px-4 py-3 font-medium text-gray-800">{t.description}</td>
+                    <td className="px-4 py-3 font-medium text-gray-800">{t.nom || t.description}</td>
                     <td className="px-4 py-3 text-gray-600">{t.department}</td>
                     <td className="px-4 py-3"><BadgeStatut statut={t.statut} envoyeAuDpo={t.envoyeAuDpo} /></td>
                     <td className="px-4 py-3 text-center">

@@ -6,6 +6,7 @@ export default function AdminHeader({ activeTab, sidebarOpen, setSidebarOpen, on
     dashboard: "Tableau de bord",
     demandes: "Demandes d'accès",
     utilisateurs: "Gestion des utilisateurs",
+    historique: "Journal d'audit",
   };
   return (
     <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between flex-shrink-0">

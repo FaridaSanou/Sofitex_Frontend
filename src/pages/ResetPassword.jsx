@@ -111,16 +111,15 @@ export default function ResetPassword() {
               )}
             </div>
 
-            <button type="submit" disabled={loading}
+            <button type="submit"
               style={{
                 width: "100%", height: "40px",
                 background: "linear-gradient(135deg, #15803d, #166534)",
                 border: "none", borderRadius: "10px",
                 color: "white", fontSize: "14px", fontWeight: 500,
-                cursor: loading ? "not-allowed" : "pointer",
-                opacity: loading ? 0.6 : 1,
+                cursor: "pointer",
               }}>
-              {loading ? "Réinitialisation..." : "Réinitialiser le mot de passe"}
+              Réinitialiser le mot de passe
             </button>
           </form>
         )}

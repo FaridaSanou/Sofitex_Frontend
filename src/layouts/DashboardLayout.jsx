@@ -74,10 +74,7 @@ export default function DashboardLayout({ children, activeTab, setActiveTab, bad
   const config = ROLE_CONFIG[role] || ROLE_CONFIG.ROLE_ADMINISTRATEUR;
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("role");
-    localStorage.removeItem("email");
-    localStorage.removeItem("dpoId");
+    ["token","role","email","userId","dpoId","utilisateurMetierId"].forEach(k => localStorage.removeItem(k));
     window.location.href = "/";
   };
 

@@ -177,9 +177,9 @@ export default function ModalCreerDeclaration({ traitements, onClose, onSave, pr
                 <select value={selectedTraitementId} onChange={handleTraitementChange}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400">
                   <option value="">-- Choisir un traitement --</option>
-                  {traitements.map(t => (
+                  {traitements.sort((a, b) => (a.nom || a.description || "").localeCompare(b.nom || b.description || "")).map(t => (
                     <option key={t.idTraitement} value={t.idTraitement}>
-                      {t.description} ({t.department}){t.declarationId ? " (déjà une déclaration)" : ""}
+                      {t.nom || t.description} ({t.department}){t.declarationId ? " (déjà une déclaration)" : ""}
                     </option>
                   ))}
                 </select>

@@ -35,7 +35,7 @@ export default function UMTraitementsSection({
               <label className="block text-xs font-medium text-gray-500 mb-1">Session</label>
               <select value={selectedSessionId} onChange={e => setSelectedSessionId(e.target.value)} className="h-8 px-2 rounded-lg border border-gray-300 text-xs">
                 <option value="">Sélectionner...</option>
-                {sessions.map(s => (<option key={s.idSession} value={s.idSession}>{s.description || `Session #${s.idSession}`}</option>))}
+                {sessions.map(s => (<option key={s.idSession} value={s.idSession}>{s.nomSession || s.description || `Session #${s.idSession}`}</option>))}
               </select>
             </div>
           )}
@@ -46,7 +46,7 @@ export default function UMTraitementsSection({
           <thead className="bg-green-50 text-green-800">
             <tr>
               <th className="px-4 py-3 text-left font-semibold">#</th>
-              <th className="px-4 py-3 text-left font-semibold">Description</th>
+               <th className="px-4 py-3 text-left font-semibold">Nom</th>
               <th className="px-4 py-3 text-left font-semibold">Département</th>
               <th className="px-4 py-3 text-left font-semibold">Conservation</th>
               <th className="px-4 py-3 text-left font-semibold">Date fin</th>
@@ -58,9 +58,9 @@ export default function UMTraitementsSection({
             {traitementsFiltres.map(t => (
               <tr key={t.idTraitement} className="hover:bg-green-50 transition-colors">
                 <td className="px-4 py-3 text-gray-400 text-xs">#{t.idTraitement}</td>
-                <td className="px-4 py-3 font-medium text-gray-800">{t.description}</td>
+                <td className="px-4 py-3 font-medium text-gray-800">{t.nom || t.description}</td>
                 <td className="px-4 py-3 text-gray-600">{t.department}</td>
-                <td className="px-4 py-3 text-gray-600">{t.dureeConservation} mois</td>
+                <td className="px-4 py-3 text-gray-600">{t.dureeConservation ? `${t.dureeConservation} mois` : "—"}</td>
                 <td className="px-4 py-3 text-gray-600">{formatDate(t.dateFin)}</td>
                 <td className="px-4 py-3"><BadgeStatut statut={t.statut} envoyeAuDpo={t.envoyeAuDpo} /></td>
                 <td className="px-4 py-3">

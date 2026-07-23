@@ -25,9 +25,9 @@ export default function DpoTraitementsSection({
             <label className="block text-sm font-medium text-gray-700 mb-1">Session de collecte</label>
             <select value={selectedSessionId} onChange={(e) => setSelectedSessionId(e.target.value)} className="w-full h-10 px-3 rounded-lg border border-gray-300 text-sm">
               <option value="">Sélectionner une session...</option>
-              {sessions.map((s) => (
+                  {sessions.map((s) => (
                 <option key={s.idSession} value={s.idSession}>
-                  {s.description || `Session #${s.idSession}`} - {s.typeCollecte}
+                  {s.nomSession || s.description || `Session #${s.idSession}`} - {s.typeCollecte}
                 </option>
               ))}
             </select>
@@ -39,7 +39,7 @@ export default function DpoTraitementsSection({
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-100">
-                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Description</th>
+                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Nom</th>
                 <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Département</th>
                 <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Session</th>
                 <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Données</th>
@@ -51,7 +51,7 @@ export default function DpoTraitementsSection({
               {traitementsToShow.map((t) => (
                 <tr key={t.idTraitement} className="hover:bg-gray-50 transition">
                   <td className="px-5 py-4">
-                    <p className="font-semibold text-gray-800">{t.description || `Traitement #${t.idTraitement}`}</p>
+                    <p className="font-semibold text-gray-800">{t.nom || t.description || `Traitement #${t.idTraitement}`}</p>
                   </td>
                   <td className="px-5 py-4 text-gray-600 text-sm">{t.department || "—"}</td>
                   <td className="px-5 py-4 text-gray-600 text-sm">#{t.sessionCollecteId || "Sans session"}</td>

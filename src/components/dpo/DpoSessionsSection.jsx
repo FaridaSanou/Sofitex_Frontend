@@ -58,7 +58,7 @@ export default function DpoSessionsSection({
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-100">
-                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Session</th>
+                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Nom</th>
                 <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Type</th>
                 <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Dates</th>
                 <th className="text-center px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Traitements</th>
@@ -71,7 +71,7 @@ export default function DpoSessionsSection({
               {sessions.map((s) => (
                 <tr key={s.idSession} className="hover:bg-gray-50 transition">
                   <td className="px-5 py-4">
-                    <p className="font-semibold text-gray-800">{s.description || `Session #${s.idSession}`}</p>
+                    <p className="font-semibold text-gray-800">{s.nomSession || s.description || `Session #${s.idSession}`}</p>
                     <p className="text-xs text-gray-400">{s.lieu || "—"}</p>
                   </td>
                   <td className="px-5 py-4">

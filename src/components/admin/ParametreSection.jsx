@@ -1,6 +1,5 @@
 import { useState } from "react";
 import api from "../../services/api";
-import Toast from "../ui/Toast";
 
 export default function ParametreSection() {
   const [nom, setNom] = useState("");
@@ -88,7 +87,6 @@ export default function ParametreSection() {
           </button>
         </form>
       </div>
-      <Toast toast={toast} />
     </div>
   );
 }

@@ -23,7 +23,7 @@ export default function DemandesTable({ demandesFiltered, loading, setDetailModa
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
-                          <span className="text-green-700 font-bold text-xs">{(d.prenom ?? "?")[0].toUpperCase()}</span>
+                          <span className="text-green-700 font-bold text-xs">{(d.prenom || "?")[0].toUpperCase()}</span>
                         </div>
                         <div>
                           <p className="font-semibold text-gray-800">{d.prenom} {d.nom}</p>

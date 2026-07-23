@@ -232,9 +232,9 @@ export default function CreateAccount() {
 
                     {typeChoisi === "DPO" && (
                       <div className="grid grid-cols-2 gap-4 mb-4">
-                        <Field label="Organisme" error={errors.organisme}>
-                          <input placeholder="Ex : Ministère de la santé" className={inputCls(errors.organisme)}
-                            {...register("organisme", { required: "Champ requis" })} />
+                        <Field label="Département" error={errors.department}>
+                          <input placeholder="Ex : Département IT" className={inputCls(errors.department)}
+                            {...register("department", { required: "Champ requis" })} />
                         </Field>
                         <Field label="Téléphone professionnel" error={errors.telProfessionnel}>
                           <input type="tel" placeholder="Ex : +226 70 00 00 00" className={inputCls(errors.telProfessionnel)}
@@ -298,16 +298,15 @@ export default function CreateAccount() {
                         }}>
                         ← Retour aux informations
                       </button>
-                      <button type="submit" disabled={loading}
+                      <button type="submit"
                         style={{
                           flex: 1, height: "40px",
                           background: "linear-gradient(135deg, #15803d, #166534)",
                           border: "none", borderRadius: "10px",
                           color: "white", fontSize: "14px", fontWeight: 500,
-                          cursor: loading ? "not-allowed" : "pointer",
-                          opacity: loading ? 0.6 : 1,
+                          cursor: "pointer",
                         }}>
-                        {loading ? "Envoi en cours..." : "✓ Créer le compte"}
+                        ✓ Créer le compte
                       </button>
                     </div>
                   </>

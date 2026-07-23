@@ -4,7 +4,7 @@ import { formatDate } from "../../utils/date";
 import api from "../../services/api";
 import ModalAjouterDonnees from "./ModalAjouterDonnees";
 
-export default function UMEntrepotSection({ entrepotData, entrepotRecherche, onRechercheChange, traitements, onAjouterDonnees }) {
+export default function UMEntrepotSection({ entrepotData, entrepotRecherche, onRechercheChange, traitements, onAjouterDonnees, onRefresh }) {
   const [showModal, setShowModal] = useState(false);
   const [etape, setEtape] = useState("menu"); // "menu" | "manuel" | "excel"
   const [selectedTraitement, setSelectedTraitement] = useState("");
@@ -31,7 +31,7 @@ export default function UMEntrepotSection({ entrepotData, entrepotRecherche, onR
       setShowModal(false);
       setExcelFile(null);
       setEtape("menu");
-      window.location.reload();
+      onRefresh?.();
     } catch {
       alert("Erreur lors de l'import Excel.");
     } finally {
@@ -140,7 +140,7 @@ export default function UMEntrepotSection({ entrepotData, entrepotRecherche, onR
                 <p className="text-sm text-gray-500 mb-4">Sélectionnez le traitement destinataire :</p>
                 <select value={resolvedId} onChange={e => setSelectedTraitement(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-4">
                   <option value="">-- Sélectionner un traitement --</option>
-                  {traitements.map(t => (<option key={t.idTraitement} value={t.idTraitement}>{t.description || t.nom || `#${t.idTraitement}`}</option>))}
+                  {traitements.sort((a, b) => (a.nom || a.description || "").localeCompare(b.nom || b.description || "")).map(t => (<option key={t.idTraitement} value={t.idTraitement}>{t.nom || t.description || `#${t.idTraitement}`}</option>))}
                 </select>
                 <div className="flex gap-3">
                   <button onClick={() => setEtape("menu")} className="flex-1 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50">Retour</button>

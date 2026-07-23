@@ -23,7 +23,7 @@ export default function UMDashboard({ stats, traitements, onNewTraitement, onDet
           {traitements.slice(0, 3).map(t => (
             <div key={t.idTraitement} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl hover:bg-green-50 transition-all cursor-pointer" onClick={() => onDetailTraitement(t)}>
               <div>
-                <p className="font-semibold text-sm text-gray-800">{t.description}</p>
+                <p className="font-semibold text-sm text-gray-800">{t.nom || t.description}</p>
                 <p className="text-xs text-gray-400">{t.department} · {formatDate(t.dateCreation)}</p>
               </div>
               <BadgeStatut statut={t.statut} envoyeAuDpo={t.envoyeAuDpo} />
