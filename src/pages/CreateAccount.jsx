@@ -82,7 +82,10 @@ export default function CreateAccount() {
         }}>
         <div className="px-6 py-4 text-center"
           style={{ background: "linear-gradient(135deg, #15803d, #166534)" }}>
-          <img src={logoImage} alt="Logo" className="w-10 h-10 object-contain mx-auto mb-1" />
+          <div className="w-16 h-16 rounded-full mx-auto mb-2 p-1"
+            style={{ background: "rgba(255,255,255,1)", border: "2px solid rgba(255,255,255,0.6)" }}>
+            <img src={logoImage} alt="Logo" className="w-full h-full object-contain rounded-full" />
+          </div>
           <h1 className="text-xl font-semibold text-white">Créer un compte</h1>
           <p className="text-green-100 text-sm mt-1">Remplissez les informations pour accéder à la plateforme</p>
         </div>

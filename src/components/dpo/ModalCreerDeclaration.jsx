@@ -59,6 +59,7 @@ export default function ModalCreerDeclaration({ traitements, onClose, onSave, pr
   const [step, setStep] = useState(1);
   const [selectedTraitementId, setSelectedTraitementId] = useState("");
   const [typeDeclaration, setTypeDeclaration] = useState("");
+  const [originalTypeDeclaration, setOriginalTypeDeclaration] = useState("");
   const [editingDeclarationId, setEditingDeclarationId] = useState(null);
   const [form, setForm] = useState(initForm);
   const [initialized, setInitialized] = useState(false);
@@ -67,18 +68,31 @@ export default function ModalCreerDeclaration({ traitements, onClose, onSave, pr
     api.get(`/declarations/${declarationId}`)
       .then((res) => {
         const d = res.data;
-        setForm(prev => ({
-          ...prev,
-          dateMiseEnOeuvre: d.dateMiseEnOeuvre || prev.dateMiseEnOeuvre,
-          responsableDeclaration: d.responsableDeclaration || prev.responsableDeclaration,
-          contactConfidentialite: d.contactConfidentialite || prev.contactConfidentialite,
-          secteur: d.secteur || prev.secteur,
-          denominationTraitement: d.denominationTraitement || prev.denominationTraitement,
-          finaliteTraitement: d.finaliteTraitement || prev.finaliteTraitement,
-          categoriesPersonnesConcernees: d.categoriesPersonnesConcernees || prev.categoriesPersonnesConcernees,
-          nombrePersonnesConcernees: d.nombrePersonnesConcernees || prev.nombrePersonnesConcernees,
-          typeTraitement: d.typeTraitement || prev.typeTraitement,
-        }));
+        if (d.typeDeclaration) {
+          setTypeDeclaration(d.typeDeclaration);
+          setOriginalTypeDeclaration(d.typeDeclaration);
+        }
+        setForm(prev => {
+          // La déclaration retournée par l'API contient toutes les valeurs du
+          // brouillon. Les recopier dynamiquement évite de perdre des champs
+          // lorsque le DPO ouvre « Modifier » depuis un traitement.
+          const next = { ...prev };
+          Object.keys(initForm).forEach((key) => {
+            if (d[key] !== null && d[key] !== undefined) {
+              next[key] = d[key];
+            }
+          });
+
+          // Noms différents entre le formulaire et le DTO de réponse.
+          if (d.modeTransfert !== null && d.modeTransfert !== undefined) {
+            next.modeTransfertVideo = d.modeTransfert;
+          }
+          if (d.modalitesDiffusionResultats !== null && d.modalitesDiffusionResultats !== undefined) {
+            next.modalitesDiffusionResultatsAuto = d.modalitesDiffusionResultats;
+          }
+
+          return next;
+        });
         if (callback) callback();
       })
       .catch(() => { if (callback) callback(); });
@@ -87,12 +101,19 @@ export default function ModalCreerDeclaration({ traitements, onClose, onSave, pr
   const remplirDepuisTraitement = useCallback((traitement, prev) => ({
     ...prev,
     secteur: traitement.department || prev.secteur,
-    denominationTraitement: traitement.description || prev.denominationTraitement,
+    denominationTraitement: traitement.denomination || prev.denominationTraitement,
     finaliteTraitement: traitement.texte || prev.finaliteTraitement,
     dureeConservation: traitement.dureeConservation ? String(traitement.dureeConservation) + " mois" : prev.dureeConservation,
     lieuStockage: traitement.lieuStockage || prev.lieuStockage,
-    nomPrenomResponsable: traitement.utilisateurMetierNom || prev.nomPrenomResponsable,
+    nomPrenomResponsable: traitement.nomPrenomResponsable || prev.nomPrenomResponsable,
     responsableDeclaration: traitement.utilisateurMetierNom || prev.responsableDeclaration,
+    certificationSecurite: traitement.certificationSecurite || prev.certificationSecurite,
+    nombrePersonnesConcernees: traitement.nombrePersonnesConcernees ? String(traitement.nombrePersonnesConcernees) : prev.nombrePersonnesConcernees,
+    origineDonnees: traitement.origineDonnees || prev.origineDonnees,
+    categoriesDonnees: traitement.categoriesDonnees || prev.categoriesDonnees,
+    dateMiseEnOeuvre: traitement.dateMiseEnOeuvre || prev.dateMiseEnOeuvre,
+    fonctionResponsable: traitement.fonctionResponsable || prev.fonctionResponsable,
+    contactConfidentialite: traitement.contactConfidentialite || prev.contactConfidentialite,
   }), []);
 
   useEffect(() => {
@@ -112,6 +133,7 @@ export default function ModalCreerDeclaration({ traitements, onClose, onSave, pr
     setInitialized(true);
     setEditingDeclarationId(declarationToEdit.idDeclaration);
     setTypeDeclaration(declarationToEdit.typeDeclaration);
+    setOriginalTypeDeclaration(declarationToEdit.typeDeclaration);
     setSelectedTraitementId(String(declarationToEdit.traitementId || ""));
     setForm(prev => ({
       ...prev,
@@ -124,6 +146,7 @@ export default function ModalCreerDeclaration({ traitements, onClose, onSave, pr
       dureeConservation: declarationToEdit.dureeConservation || prev.dureeConservation,
       lieuStockage: declarationToEdit.lieuStockage || prev.lieuStockage,
       nomPrenomResponsable: declarationToEdit.nomPrenomResponsable || prev.nomPrenomResponsable,
+      fonctionResponsable: declarationToEdit.fonctionResponsable || prev.fonctionResponsable,
     }));
   }, [declarationToEdit, initialized]);
 
@@ -147,7 +170,7 @@ export default function ModalCreerDeclaration({ traitements, onClose, onSave, pr
   };
 
   const selectedTraitement = traitements.find(t => t.idTraitement === parseInt(selectedTraitementId));
-  const handleSave = () => { onSave({ declarationId: editingDeclarationId, traitementId: parseInt(selectedTraitementId), typeDeclaration, ...form }); onClose(); };
+  const handleSave = () => { onSave({ declarationId: editingDeclarationId, traitementId: parseInt(selectedTraitementId), typeDeclaration, originalTypeDeclaration, ...form }); onClose(); };
 
   const stepTitles = ["Traitement", "Type", "Identification", "Données & Sécurité", "Droits & Sous-traitance", "Spécifique"];
   const totalSteps = 6;

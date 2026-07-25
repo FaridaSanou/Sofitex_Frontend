@@ -49,7 +49,7 @@ export default function UMTraitementsSection({
                <th className="px-4 py-3 text-left font-semibold">Nom</th>
               <th className="px-4 py-3 text-left font-semibold">Département</th>
               <th className="px-4 py-3 text-left font-semibold">Conservation</th>
-              <th className="px-4 py-3 text-left font-semibold">Date fin</th>
+              <th className="px-4 py-3 text-left font-semibold">Date création</th>
               <th className="px-4 py-3 text-left font-semibold">Statut</th>
               <th className="px-4 py-3 text-left font-semibold">Actions</th>
             </tr>
@@ -61,7 +61,7 @@ export default function UMTraitementsSection({
                 <td className="px-4 py-3 font-medium text-gray-800">{t.nom || t.description}</td>
                 <td className="px-4 py-3 text-gray-600">{t.department}</td>
                 <td className="px-4 py-3 text-gray-600">{t.dureeConservation ? `${t.dureeConservation} mois` : "—"}</td>
-                <td className="px-4 py-3 text-gray-600">{formatDate(t.dateFin)}</td>
+                <td className="px-4 py-3 text-gray-600">{formatDate(t.dateCreation)}</td>
                 <td className="px-4 py-3"><BadgeStatut statut={t.statut} envoyeAuDpo={t.envoyeAuDpo} /></td>
                 <td className="px-4 py-3">
                   <div className="flex gap-2">

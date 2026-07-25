@@ -87,8 +87,8 @@ export default function DashboardLayout({ children, activeTab, setActiveTab, bad
           </div>
           {sidebarOpen && (
             <div>
-              <p className="font-bold text-sm leading-tight">Sofitex</p>
-              <p className="text-green-300 text-xs">Plateforme CIL</p>
+              <p className="font-bold text-sm leading-tight">SOFITEX</p>
+              <p className="text-green-300 text-xs">Gestion des données à caractère personnel</p>
             </div>
           )}
         </div>

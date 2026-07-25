@@ -16,7 +16,7 @@ export default function EnAttente() {
 
   if (statut === "rejetee") {
     return (
-      <AuthCard title="Plateforme CIL" subtitle="Sofitex — Gestion des données personnelles" logo={logo}>
+      <AuthCard title="SOFITEX" subtitle="Gestion des données à caractère personnel" logo={logo}>
         <div className="p-8 text-center">
           <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-5">
             <svg className="w-10 h-10 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -53,7 +53,7 @@ export default function EnAttente() {
   }
 
   return (
-    <AuthCard title="Plateforme CIL" subtitle="Sofitex — Gestion des données personnelles" logo={logo}>
+    <AuthCard title="SOFITEX" subtitle="Gestion des données à caractère personnel" logo={logo}>
       <div className="p-8 text-center">
         <div className="w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-5">
           <svg className="w-10 h-10 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -16,7 +16,7 @@ export default function DgSidebar({ sidebarOpen, activeSection, setActiveSection
         {sidebarOpen && (
           <div>
             <p className="font-bold text-sm leading-tight">Direction Générale</p>
-            <p className="text-green-400 text-xs">SOFITEX · Plateforme CIL</p>
+            <p className="text-green-400 text-xs">SOFITEX · Gestion des données à caractère personnel</p>
           </div>
         )}
       </div>

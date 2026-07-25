@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, Plus, Search, Upload, FileSpreadsheet, Database, Check, X, FileUp, Download } from "lucide-react";
+import { ArrowLeft, Plus, Search, Upload, FileSpreadsheet, Database, Check, X, FileUp, Download, User } from "lucide-react";
 import { formatDate } from "../utils/date";
 import api from "../services/api";
 import Toast from "../components/ui/Toast";
@@ -78,6 +78,13 @@ export default function PageDonneesTraitement() {
     || d.personneNomComplet?.toLowerCase().includes(recherche.toLowerCase())
     || d.typeDonneeNom?.toLowerCase().includes(recherche.toLowerCase())
     || d.valeur?.toLowerCase().includes(recherche.toLowerCase()));
+
+  const donneesParPersonne = filtered.reduce((acc, d) => {
+    const cle = d.personneNomComplet || "Personne inconnue";
+    if (!acc[cle]) acc[cle] = [];
+    acc[cle].push(d);
+    return acc;
+  }, {});
 
   // --- Ajout manuel ---
   const handleRechercherPersonne = () => {
@@ -237,26 +244,35 @@ export default function PageDonneesTraitement() {
           ) : filtered.length === 0 ? (
             <p className="text-center text-gray-400 text-sm py-12">Aucune donnée trouvée</p>
           ) : (
-            <table className="w-full text-sm">
-              <thead className="bg-green-50 text-green-800">
-                <tr>
-                  <th className="px-4 py-3 text-left font-semibold">Personne</th>
-                  <th className="px-4 py-3 text-left font-semibold">Type</th>
-                  <th className="px-4 py-3 text-left font-semibold">Valeur</th>
-                  <th className="px-4 py-3 text-left font-semibold">Date</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {filtered.map(d => (
-                  <tr key={d.idDonnee} className="hover:bg-green-50">
-                    <td className="px-4 py-3 font-medium text-gray-800">{d.personneNomComplet || "—"}</td>
-                    <td className="px-4 py-3 text-gray-600">{d.typeDonneeNom}</td>
-                    <td className="px-4 py-3 text-gray-600">{d.valeur}</td>
-                    <td className="px-4 py-3 text-xs text-gray-500">{formatDate(d.dateCollecte)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div className="p-4 space-y-4">
+              {Object.entries(donneesParPersonne).map(([nomPersonne, dados]) => (
+                <div key={nomPersonne} className="border border-gray-200 rounded-xl overflow-hidden">
+                  <div className="bg-green-50 px-4 py-3 flex items-center gap-2 border-b border-green-100">
+                    <User className="w-4 h-4 text-green-600" />
+                    <span className="font-semibold text-green-800 text-sm">{nomPersonne}</span>
+                    <span className="text-xs text-green-600 ml-auto">{dados.length} donnée(s)</span>
+                  </div>
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-gray-500 border-b border-gray-100">
+                        <th className="px-4 py-2 text-left font-medium text-xs">Type</th>
+                        <th className="px-4 py-2 text-left font-medium text-xs">Valeur</th>
+                        <th className="px-4 py-2 text-left font-medium text-xs">Date</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {dados.map(d => (
+                        <tr key={d.idDonnee} className="hover:bg-gray-50">
+                          <td className="px-4 py-2 text-gray-600">{d.typeDonneeNom}</td>
+                          <td className="px-4 py-2 text-gray-800 font-medium">{d.valeur}</td>
+                          <td className="px-4 py-2 text-xs text-gray-500">{formatDate(d.dateCollecte)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ))}
+            </div>
           )}
         </div>
       </main>

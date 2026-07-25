@@ -66,7 +66,10 @@ function UtilisateurMetierDashboard() {
   const [expandedTraitementId, setExpandedTraitementId] = useState(null);
   const [traitementDonneesMap, setTraitementDonneesMap] = useState({});
   const [traitementDonneesLoading, setTraitementDonneesLoading] = useState({});
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [dposList, setDposList] = useState([]);
+  const [dpoIdOverride, setDpoIdOverride] = useState(null);
 
   const showToast = (msg, type = "success") => {
     setToast({ msg, type });
@@ -96,6 +99,11 @@ function UtilisateurMetierDashboard() {
     api.get("/entrepot").then(res => setEntrepotData(res.data)).catch(() => { });
     api.get("/dpos").then(res => setDposList(res.data)).catch(() => { });
   }, []);
+
+  useEffect(() => {
+    if (!utilisateurMetierId) return;
+    api.get(`/notifications/${utilisateurMetierId}/non-lues`).then(res => { setNotifications(res.data); setUnreadCount(res.data.length); }).catch(() => {});
+  }, [utilisateurMetierId]);
 
   // --- Demandes usagers : source unique de vérité = l'API ---
   const fetchDemandes = useCallback(() => {
@@ -145,10 +153,10 @@ function UtilisateurMetierDashboard() {
       categoriesDonnees: payload.categorie_personnes || "",
       nombrePersonnesConcernees: payload.nombre_personnes || 0,
     };
+
     const declarationData = {
       denominationTraitement: payload.nom || payload.denomination || "",
       finaliteTraitement: payload.finalite || "",
-      typeTraitement: payload.type_traitement || "",
       categoriesPersonnesConcernees: payload.categorie_personnes || "",
     };
 
@@ -189,10 +197,9 @@ function UtilisateurMetierDashboard() {
 
   const handleEnvoyer = (id) => {
     const t = traitements.find(t => t.idTraitement === id);
-    const dpoId = t?.sessionCollecteId ? sessions.find(s => s.idSession === t.sessionCollecteId)?.dpoId : null;
-    const dpoIdFinal = dpoId || (dposDisponibles.length === 1 ? dposDisponibles[0].dpoId : null);
-    if (!dpoIdFinal) { showToast("Aucun DPO trouvé.", "error"); return; }
-    api.patch(`/traitements/${id}/envoyer-dpo`, null, { params: { dpoId: dpoIdFinal } }).then(res => {
+    const dpoId = dpoIdOverride ?? (t?.sessionCollecteId ? sessions.find(s => s.idSession === t.sessionCollecteId)?.dpoId : null);
+    if (!dpoId) { showToast("Aucun DPO trouvé. Ouvrez le détail pour en sélectionner un.", "error"); return Promise.resolve(); }
+    return api.patch(`/traitements/${id}/envoyer-dpo`, null, { params: { dpoId } }).then(res => {
       setTraitements(prev => prev.map(t => t.idTraitement === id ? res.data : t));
       showToast("Traitement envoyé au DPO !");
     }).catch(err => showToast(err.response?.data?.message || "Erreur lors de l'envoi au DPO", "error"));
@@ -284,6 +291,24 @@ function UtilisateurMetierDashboard() {
     }
   };
 
+  const handleDetailTraitement = async (t) => {
+    let merged = { ...t };
+    if (t.declarationId) {
+      try {
+        const res = await api.get(`/declarations/${t.declarationId}`);
+        const decl = res.data;
+        merged = {
+          ...merged,
+          ...decl,
+          nomPrenomResponsable: decl.responsableDeclaration || t.nomPrenomResponsable,
+        };
+      } catch {
+        /* fallback to traitement data */
+      }
+    }
+    setDetailTraitement(merged);
+  };
+
   const demandesEnAttente = demandes.filter(d => d.statut === "EN_COURS").length;
   const traitementsFiltres = traitements.filter(t => {
     if (recherche && !t.nom?.toLowerCase().includes(recherche.toLowerCase()) && !t.description?.toLowerCase().includes(recherche.toLowerCase()) && !t.department?.toLowerCase().includes(recherche.toLowerCase())) return false;
@@ -309,19 +334,34 @@ function UtilisateurMetierDashboard() {
 
   const handleNavigate = (id) => { setActiveSection(id); if (id === "sessions") setNewSessionCount(0); };
 
+  const handleMarkRead = (id) => {
+    api.patch(`/notifications/${id}/lire`).then(() => {
+      setNotifications(prev => prev.filter(n => n.idNotification !== id));
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    }).catch(() => {});
+  };
+
+  const handleMarkAllRead = () => {
+    if (!utilisateurMetierId) return;
+    api.patch(`/notifications/${utilisateurMetierId}/lire-tout`).then(() => {
+      setNotifications(prev => prev.map(n => ({ ...n, statut: "LUE" })));
+      setUnreadCount(0);
+    }).catch(() => {});
+  };
+
   return (
     <div className="flex h-screen bg-gray-100 font-sans">
       <UMSidebar activeSection={activeSection} onNavigate={handleNavigate} sidebarOpen={sidebarOpen} onToggle={() => setSidebarOpen(o => !o)} onLogout={handleLogout} navItems={navItems} />
       <div className="flex-1 flex flex-col overflow-hidden">
-        <UMHeader activeSection={activeSection} sidebarOpen={sidebarOpen} onToggleSidebar={() => setSidebarOpen(o => !o)} newSessionCount={newSessionCount} onNewSessionClick={() => { setNewSessionCount(0); setActiveSection("sessions"); }} demandesEnAttente={demandesEnAttente} onDemandesClick={() => setActiveSection("demandes")} utilisateurId={utilisateurMetierId} />
+        <UMHeader activeSection={activeSection} sidebarOpen={sidebarOpen} onToggleSidebar={() => setSidebarOpen(o => !o)} newSessionCount={newSessionCount} onNewSessionClick={() => { setNewSessionCount(0); setActiveSection("sessions"); }} onDemandesClick={() => setActiveSection("demandes")} notifications={notifications} unreadCount={unreadCount} onMarkRead={handleMarkRead} onMarkAllRead={handleMarkAllRead} />
         <main className="flex-1 overflow-y-auto p-6">
-          {activeSection === "dashboard" && <UMDashboard stats={stats} traitements={traitements} onNewTraitement={() => setShowCreer(true)} onDetailTraitement={setDetailTraitement} />}
-          {activeSection === "sessions" && <UMSessionsSection sessions={sessions} traitements={traitements} onDetailTraitement={setDetailTraitement} />}
+          {activeSection === "dashboard" && <UMDashboard stats={stats} traitements={traitements} onNewTraitement={() => setShowCreer(true)} onDetailTraitement={handleDetailTraitement} />}
+          {activeSection === "sessions" && <UMSessionsSection sessions={sessions} traitements={traitements} onDetailTraitement={handleDetailTraitement} />}
           {activeSection === "traitements" && (
-            <UMTraitementsSection traitementsFiltres={traitementsFiltres} recherche={recherche} onRechercheChange={setRecherche} traitementFilterMode={traitementFilterMode} setTraitementFilterMode={setTraitementFilterMode} selectedSessionId={selectedSessionId} setSelectedSessionId={setSelectedSessionId} sessions={sessions} onNew={() => setShowCreer(true)} expandedTraitementId={expandedTraitementId} onToggleExpand={chargerDonneesTraitement} traitementDonneesMap={traitementDonneesMap} traitementDonneesLoading={traitementDonneesLoading} onDetail={setDetailTraitement} onDonnees={(t) => { navigate(`/traitements/${t.idTraitement}/donnees`, { state: { traitement: t } }); }} onEnvoyer={handleEnvoyer} />
+            <UMTraitementsSection traitementsFiltres={traitementsFiltres} recherche={recherche} onRechercheChange={setRecherche} traitementFilterMode={traitementFilterMode} setTraitementFilterMode={setTraitementFilterMode} selectedSessionId={selectedSessionId} setSelectedSessionId={setSelectedSessionId} sessions={sessions} onNew={() => setShowCreer(true)} expandedTraitementId={expandedTraitementId} onToggleExpand={chargerDonneesTraitement} traitementDonneesMap={traitementDonneesMap} traitementDonneesLoading={traitementDonneesLoading} onDetail={handleDetailTraitement} onDonnees={(t) => { navigate(`/traitements/${t.idTraitement}/donnees`, { state: { traitement: t } }); }} onEnvoyer={handleEnvoyer} />
           )}
           {activeSection === "demandes" && <UMDemandesSection demandes={demandes} demandesEnAttente={demandesEnAttente} onTraiter={setDetailDemande} />}
-          {activeSection === "entrepot" && <UMEntrepotSection entrepotData={entrepotData} entrepotRecherche={entrepotRecherche} onRechercheChange={setEntrepotRecherche} traitements={traitements} onAjouterDonnees={(t) => { setTraitementPourDonnees(t); setShowAjouterDonnees(true); }} onRefresh={refreshEntrepot} />}
+          {activeSection === "entrepot" && <UMEntrepotSection entrepotData={entrepotData} entrepotRecherche={entrepotRecherche} onRechercheChange={setEntrepotRecherche} traitements={traitements} />}
           {activeSection === "historique" && <UMHistoriqueSection traitementsEnvoyesDpo={traitements.filter(t => t.envoyeAuDpo === true)} demandesTraitees={demandes.filter(d => d.statut === "ACCEPTEE" || d.statut === "REJETEE")} sessionsTerminees={sessions.filter(s => s.statutSession === "TERMINEE")} />}
         </main>
       </div>

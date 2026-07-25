@@ -1,11 +1,29 @@
 import { useState } from "react";
 import { BadgeStatut } from "../ui/BadgeStatut";
 import { formatDateTime } from "../../utils/date";
+import api from "../../services/api";
 
 export default function UMSessionsSection({ sessions, traitements, onDetailTraitement }) {
   const [selectedSessionDetail, setSelectedSessionDetail] = useState(null);
+  const [sessionTraitements, setSessionTraitements] = useState([]);
+  const [loadingSession, setLoadingSession] = useState(false);
 
-  const traitementsParSession = (sessionId) => traitements.filter(t => t.sessionCollecteId === Number(sessionId));
+  const handleToggleSession = (s) => {
+    if (selectedSessionDetail?.idSession === s.idSession) {
+      setSelectedSessionDetail(null);
+      setSessionTraitements([]);
+      return;
+    }
+    setSelectedSessionDetail(s);
+    setLoadingSession(true);
+    api.get(`/traitements/session/${s.idSession}`)
+      .then(res => setSessionTraitements(res.data))
+      .catch(() => {
+        const local = traitements.filter(t => t.sessionCollecteId === Number(s.idSession));
+        setSessionTraitements(local);
+      })
+      .finally(() => setLoadingSession(false));
+  };
 
   return (
     <div className="space-y-4">
@@ -27,7 +45,7 @@ export default function UMSessionsSection({ sessions, traitements, onDetailTrait
             </thead>
             <tbody className="divide-y divide-gray-100">
               {sessions.map(s => {
-                const nbTraitements = s.nombreTraitements ?? traitementsParSession(s.idSession).length;
+                const nbTraitements = s.nombreTraitements ?? 0;
                 return (
                   <tr key={s.idSession} className="hover:bg-green-50 transition-colors">
                     <td className="px-4 py-3 font-medium text-gray-800">{s.nomSession || s.description || `Session #${s.idSession}`}</td>
@@ -45,7 +63,7 @@ export default function UMSessionsSection({ sessions, traitements, onDetailTrait
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-600">{s.dpoNomComplet || "—"}</td>
                     <td className="px-4 py-3 text-center">
-                      <button onClick={() => setSelectedSessionDetail(selectedSessionDetail?.idSession === s.idSession ? null : s)}
+                      <button onClick={() => handleToggleSession(s)}
                         className="px-3 py-1 bg-green-100 text-green-700 rounded-lg text-xs font-medium hover:bg-green-200">
                         {nbTraitements} traitement{nbTraitements !== 1 ? "s" : ""} {selectedSessionDetail?.idSession === s.idSession ? "▲" : "▼"}
                       </button>
@@ -62,36 +80,49 @@ export default function UMSessionsSection({ sessions, traitements, onDetailTrait
       </div>
 
       {selectedSessionDetail && (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="p-4 border-b border-gray-100 bg-green-50">
-            <h3 className="font-bold text-green-800">Traitements liés à la session : {selectedSessionDetail.nomSession || selectedSessionDetail.description || `#${selectedSessionDetail.idSession}`}</h3>
+        <div className="bg-white rounded-2xl shadow-sm border border-green-200 overflow-hidden">
+          <div className="p-4 border-b border-green-100 bg-green-50 flex items-center gap-3">
+            <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
+              {loadingSession ? "..." : sessionTraitements.length}
+            </div>
+            <div>
+              <h3 className="font-bold text-green-800">Traitements liés à la session</h3>
+              <p className="text-xs text-green-600">{selectedSessionDetail.description || `Session #${selectedSessionDetail.idSession}`}</p>
+            </div>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-4 py-3 text-left font-semibold text-gray-500">Nom</th>
-                  <th className="px-4 py-3 text-left font-semibold text-gray-500">Département</th>
-                  <th className="px-4 py-3 text-left font-semibold text-gray-500">Statut</th>
-                  <th className="px-4 py-3 text-center font-semibold text-gray-500">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {traitementsParSession(selectedSessionDetail.idSession).map(t => (
-                  <tr key={t.idTraitement} className="hover:bg-green-50 transition-colors">
-                    <td className="px-4 py-3 font-medium text-gray-800">{t.nom || t.description}</td>
-                    <td className="px-4 py-3 text-gray-600">{t.department}</td>
-                    <td className="px-4 py-3"><BadgeStatut statut={t.statut} envoyeAuDpo={t.envoyeAuDpo} /></td>
-                    <td className="px-4 py-3 text-center">
-                      <button onClick={() => onDetailTraitement(t)} className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-lg hover:bg-green-200">Voir</button>
-                    </td>
+            {loadingSession ? (
+              <div className="py-8 text-center text-gray-400 text-sm">Chargement...</div>
+            ) : (
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-3 text-left font-semibold text-gray-500">Nom du traitement</th>
+                    <th className="px-4 py-3 text-left font-semibold text-gray-500">Département</th>
+                    <th className="px-4 py-3 text-left font-semibold text-gray-500">Statut</th>
+                    <th className="px-4 py-3 text-center font-semibold text-gray-500">Action</th>
                   </tr>
-                ))}
-                {traitementsParSession(selectedSessionDetail.idSession).length === 0 && (
-                  <tr><td colSpan={4} className="py-8 text-center text-gray-400 text-sm">Aucun traitement lié à cette session</td></tr>
-                )}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {sessionTraitements.map(t => (
+                    <tr key={t.idTraitement} className="hover:bg-green-50 transition-colors">
+                      <td className="px-4 py-3">
+                        <p className="font-medium text-gray-800">{t.description || t.nom || "—"}</p>
+                        {t.texte && <p className="text-xs text-gray-400 mt-0.5 truncate max-w-[250px]">{t.texte}</p>}
+                      </td>
+                      <td className="px-4 py-3 text-gray-600">{t.department || "—"}</td>
+                      <td className="px-4 py-3"><BadgeStatut statut={t.statut} envoyeAuDpo={t.envoyeAuDpo} /></td>
+                      <td className="px-4 py-3 text-center">
+                        <button onClick={() => onDetailTraitement(t)} className="text-xs bg-green-100 text-green-700 px-3 py-1.5 rounded-lg hover:bg-green-200 font-medium">Voir détails</button>
+                      </td>
+                    </tr>
+                  ))}
+                  {sessionTraitements.length === 0 && (
+                    <tr><td colSpan={4} className="py-8 text-center text-gray-400 text-sm">Aucun traitement lié à cette session</td></tr>
+                  )}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
       )}

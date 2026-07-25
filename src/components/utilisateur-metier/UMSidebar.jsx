@@ -11,7 +11,7 @@ export default function UMSidebar({ activeSection, onNavigate, sidebarOpen, onLo
         {sidebarOpen && (
           <div>
             <p className="font-bold text-sm leading-tight">SOFITEX</p>
-            <p className="text-green-300 text-xs">Plateforme CIL</p>
+            <p className="text-green-300 text-xs">Gestion des données à caractère personnel</p>
           </div>
         )}
       </div>

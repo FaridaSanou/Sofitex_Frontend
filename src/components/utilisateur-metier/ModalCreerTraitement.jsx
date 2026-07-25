@@ -2,8 +2,6 @@ import { useState, useEffect } from "react";
 import { Plus, Check, FileUp } from "lucide-react";
 import api from "../../services/api";
 
-const DIRECTIONS = ["DSI", "DRH", "Direction Commerciale", "Direction Financière", "Direction Générale", "Direction Technique", "Direction Qualité", "Direction Logistique", "Direction Juridique", "Autre"];
-const ORIGINES = ["Directement auprès des personnes (formulaires en ligne, papier)", "Via des objets connectés ou capteurs", "Importation de fichiers externes ou bases de données existantes"];
 const inp = "w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-600";
 
 export default function ModalCreerTraitement({ onClose, onSave, sessions, onSaveManuel, onSaveExcel, initialData }) {
@@ -34,7 +32,7 @@ export default function ModalCreerTraitement({ onClose, onSave, sessions, onSave
   const [form, setForm] = useState({
     nom: initialData?.description || initialData?.nom || "", finalite: initialData?.texte || "", denomination: "",
     date_mise_en_oeuvre: initialData?.dateMiseEnOeuvre || "",
-    type_traitement: "", duree_conservation: initialData?.dureeConservation ? String(initialData.dureeConservation) : "",
+    duree_conservation: initialData?.dureeConservation ? String(initialData.dureeConservation) : "",
     nombre_personnes: initialData?.nombrePersonnesConcernees ? String(initialData.nombrePersonnesConcernees) : "",
     categorie_personnes: initialData?.categoriesDonnees || "", origine_donnees: initialData?.origineDonnees || "",
     lieu_stockage: initialData?.lieuStockage || "",
@@ -77,21 +75,21 @@ export default function ModalCreerTraitement({ onClose, onSave, sessions, onSave
     onSaveManuel({ valeur: valeur.trim(), typeDonneeId: Number(typeDonneeId), traitementId: traitementCree.idTraitement, personneId: personneSelectionnee.id, dateCollecte: new Date().toISOString() }, () => setLoadingData(false));
   };
 
-  const etape1Ok = form.nom && form.finalite && form.type_traitement;
-  const etape2Ok = form.duree_conservation && form.categorie_personnes;
+  const etape1Ok = form.nom && form.finalite;
+  const etape2Ok = form.duree_conservation;
   const etape3Ok = form.responsable_nom && form.responsable_email;
   const canNext = etape === 1 ? etape1Ok : etape === 2 ? etape2Ok : etape === 3 ? etape3Ok : false;
 
   const buildPayload = () => ({
     nom: form.nom, finalite: form.finalite, denomination: form.denomination,
-    date_mise_en_oeuvre: form.date_mise_en_oeuvre || null, type_traitement: form.type_traitement,
+    date_mise_en_oeuvre: form.date_mise_en_oeuvre || null,
     duree_conservation: parseInt(form.duree_conservation) || 0,
     nombre_personnes: form.nombre_personnes ? parseInt(form.nombre_personnes) : 0,
     categorie_personnes: form.categorie_personnes, origine_donnees: form.origine_donnees,
     lieu_stockage: form.lieu_stockage,
     sessionCollecteId: form.sessionCollecteId ? parseInt(form.sessionCollecteId) : null,
-    responsable_nom: form.responsable_nom, responsable_departement: form.responsable_departement,
-    responsable_fonction: form.responsable_fonction, responsable_email: form.responsable_email,
+    nomPrenomResponsable: form.responsable_nom, responsable_departement: form.responsable_departement,
+    fonctionResponsable: form.responsable_fonction, responsable_email: form.responsable_email,
     creePar: creePar,
   });
 
@@ -106,8 +104,14 @@ export default function ModalCreerTraitement({ onClose, onSave, sessions, onSave
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-screen overflow-y-auto">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto">
         <div className="px-8 pt-8 pb-0">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-lg font-bold text-gray-800">{isEdit ? "Modifier le traitement" : "Créer un traitement"}</h2>
+            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100 transition-colors">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+          </div>
           <div className="flex items-center justify-between relative mb-2">
             {steps.map((s, i) => {
               const stepNum = i + 1;
@@ -139,12 +143,6 @@ export default function ModalCreerTraitement({ onClose, onSave, sessions, onSave
               <div><label className="block text-sm font-semibold text-gray-700 mb-1">Dénomination du traitement</label><input value={form.denomination} onChange={e => set("denomination", e.target.value)} placeholder="Ex: Traitement des données salariales" className={inp} /></div>
               <div className="grid grid-cols-2 gap-3">
                 <div><label className="block text-sm font-semibold text-gray-700 mb-1">Date de mise en œuvre</label><input type="date" value={form.date_mise_en_oeuvre} onChange={e => set("date_mise_en_oeuvre", e.target.value)} className={inp} /></div>
-                <div><label className="block text-sm font-semibold text-gray-700 mb-1">Type de traitement <span className="text-red-500">*</span></label>
-                  <select value={form.type_traitement} onChange={e => set("type_traitement", e.target.value)} className={inp}>
-                    <option value="">-- Sélectionner --</option>
-                    {["Collecte", "Enregistrement", "Organisation", "Conservation", "Consultation", "Utilisation", "Communication", "Diffusion", "Effacement"].map(t => <option key={t} value={t}>{t}</option>)}
-                  </select>
-                </div>
               </div>
             </div>
           )}
@@ -157,22 +155,16 @@ export default function ModalCreerTraitement({ onClose, onSave, sessions, onSave
                 <div><label className="block text-sm font-semibold text-gray-700 mb-1">Nombre de personnes concernées</label><input type="number" min="0" value={form.nombre_personnes} onChange={e => set("nombre_personnes", e.target.value)} placeholder="Ex: 500" className={inp} /></div>
               </div>
               <div><label className="block text-sm font-semibold text-gray-700 mb-1">Catégorie de personnes concernées <span className="text-red-500">*</span></label>
-                <select value={form.categorie_personnes} onChange={e => set("categorie_personnes", e.target.value)} className={inp}>
-                  <option value="">-- Sélectionner --</option>
-                  {["Employés SOFITEX", "Producteurs de coton", "Clients", "Fournisseurs / Sous-traitants", "Visiteurs", "Candidats à l'embauche", "Usagers externes"].map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
+                <input value={form.categorie_personnes} onChange={e => set("categorie_personnes", e.target.value)} placeholder="Ex: Employés, Clients, Fournisseurs..." className={inp} />
               </div>
               <div><label className="block text-sm font-semibold text-gray-700 mb-1">Origine des données</label>
-                <select value={form.origine_donnees} onChange={e => set("origine_donnees", e.target.value)} className={inp}>
-                  <option value="">-- Sélectionner --</option>
-                  {ORIGINES.map(o => <option key={o} value={o}>{o}</option>)}
-                </select>
+                <input value={form.origine_donnees} onChange={e => set("origine_donnees", e.target.value)} placeholder="Ex: Formulaires en ligne, objets connectés..." className={inp} />
               </div>
               <div><label className="block text-sm font-semibold text-gray-700 mb-1">Lieu de stockage</label><input value={form.lieu_stockage} onChange={e => set("lieu_stockage", e.target.value)} placeholder="Ex: Serveur interne DSI, Cloud AWS..." className={inp} /></div>
               <div><label className="block text-sm font-semibold text-gray-700 mb-1">Session de collecte</label>
                 <select value={form.sessionCollecteId} onChange={e => set("sessionCollecteId", e.target.value)} className={inp}>
                   <option value="">-- Aucune session --</option>
-                  {sessions.sort((a, b) => (a.nomSession || a.description || "").localeCompare(b.nomSession || b.description || "")).map(s => <option key={s.idSession} value={s.idSession}>{s.nomSession || s.description || `Session #${s.idSession}`}</option>)}
+                  {sessions.filter(s => s.statutSession !== "TERMINEE").map(s => <option key={s.idSession} value={s.idSession}>{s.description || `Session #${s.idSession}`}</option>)}
                 </select>
               </div>
             </div>
@@ -188,10 +180,7 @@ export default function ModalCreerTraitement({ onClose, onSave, sessions, onSave
               <div><label className="block text-sm font-semibold text-gray-700 mb-1">Nom et prénom du responsable <span className="text-red-500">*</span></label><input value={form.responsable_nom} onChange={e => set("responsable_nom", e.target.value)} placeholder="Ex: Ouedraogo Amadou" className={inp} /></div>
               <div className="grid grid-cols-2 gap-3">
                 <div><label className="block text-sm font-semibold text-gray-700 mb-1">Département</label>
-                  <select value={form.responsable_departement} onChange={e => set("responsable_departement", e.target.value)} className={inp}>
-                    <option value="">-- Sélectionner --</option>
-                    {DIRECTIONS.map(d => <option key={d} value={d}>{d}</option>)}
-                  </select>
+                  <input value={form.responsable_departement} onChange={e => set("responsable_departement", e.target.value)} placeholder="Ex: DSI, DRH, Direction Commerciale..." className={inp} />
                 </div>
                 <div><label className="block text-sm font-semibold text-gray-700 mb-1">Fonction</label><input value={form.responsable_fonction} onChange={e => set("responsable_fonction", e.target.value)} placeholder="Ex: Responsable RH" className={inp} /></div>
               </div>
