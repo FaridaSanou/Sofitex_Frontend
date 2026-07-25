@@ -63,6 +63,7 @@ export default function ModalCreerDeclaration({ traitements, onClose, onSave, pr
   const [editingDeclarationId, setEditingDeclarationId] = useState(null);
   const [form, setForm] = useState(initForm);
   const [initialized, setInitialized] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const chargerDeclaration = useCallback((declarationId, callback) => {
     api.get(`/declarations/${declarationId}`)
@@ -170,7 +171,15 @@ export default function ModalCreerDeclaration({ traitements, onClose, onSave, pr
   };
 
   const selectedTraitement = traitements.find(t => t.idTraitement === parseInt(selectedTraitementId));
-  const handleSave = () => { onSave({ declarationId: editingDeclarationId, traitementId: parseInt(selectedTraitementId), typeDeclaration, originalTypeDeclaration, ...form }); onClose(); };
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await onSave({ declarationId: editingDeclarationId, traitementId: parseInt(selectedTraitementId), typeDeclaration, originalTypeDeclaration, ...form });
+    } finally {
+      setSaving(false);
+      onClose();
+    }
+  };
 
   const stepTitles = ["Traitement", "Type", "Identification", "Données & Sécurité", "Droits & Sous-traitance", "Spécifique"];
   const totalSteps = 6;
@@ -467,8 +476,9 @@ export default function ModalCreerDeclaration({ traitements, onClose, onSave, pr
               Suivant →
             </button>
           ) : (
-            <button onClick={handleSave} className="px-6 py-2 bg-green-800 text-white rounded-lg text-sm font-bold hover:bg-green-900 shadow-md">
-              {editingDeclarationId ? "✅ Enregistrer la Déclaration" : "✅ Créer la Déclaration"}
+            <button onClick={handleSave} disabled={saving}
+              className="px-6 py-2 bg-green-800 text-white rounded-lg text-sm font-bold hover:bg-green-900 shadow-md disabled:opacity-40 disabled:cursor-not-allowed">
+              {saving ? "Enregistrement..." : editingDeclarationId ? "✅ Enregistrer la Déclaration" : "✅ Créer la Déclaration"}
             </button>
           )}
         </div>

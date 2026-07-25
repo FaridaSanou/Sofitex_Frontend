@@ -176,97 +176,91 @@ export default function DpoDashboard() {
   const INTEGER_FIELDS = ["nombrePersonnesConcernees", "nombrePersonnesTransfert", "nombreTotalCameras"];
 
   const handleCreateDeclaration = (data) => {
-    const { declarationId, traitementId, typeDeclaration, originalTypeDeclaration, ...formData } = data;
-    const dateSoumission = new Date().toISOString().split("T")[0];
-    const sanitized = { ...formData };
-    for (const key of INTEGER_FIELDS) {
-      if (sanitized[key] === "" || sanitized[key] === undefined || sanitized[key] === null) {
-        sanitized[key] = null;
-      } else {
-        const n = parseInt(sanitized[key], 10);
-        sanitized[key] = isNaN(n) ? null : n;
+    return new Promise((resolve, reject) => {
+      const { declarationId, traitementId, typeDeclaration, originalTypeDeclaration, ...formData } = data;
+      const dateSoumission = new Date().toISOString().split("T")[0];
+      const sanitized = { ...formData };
+      for (const key of INTEGER_FIELDS) {
+        if (sanitized[key] === "" || sanitized[key] === undefined || sanitized[key] === null) {
+          sanitized[key] = null;
+        } else {
+          const n = parseInt(sanitized[key], 10);
+          sanitized[key] = isNaN(n) ? null : n;
+        }
       }
-    }
-    const payload = { ...sanitized, dateSoumission, traitementId: parseInt(traitementId), responsableDeclaration: formData.nomPrenomResponsable || "" };
+      const payload = { ...sanitized, dateSoumission, traitementId: parseInt(traitementId), responsableDeclaration: formData.nomPrenomResponsable || "" };
 
-    const endpointMap = {
-      NORMALE: "/declarations/normale",
-      AUTORISATION: "/declarations/autorisation",
-      COLLECTE_SITE: "/declarations/collecte-site",
-      VIDEO_SURVEILLANCE: "/declarations/video-surveillance",
-    };
-    const updateSuffixes = {
-      NORMALE: "/normale",
-      AUTORISATION: "/autorisation",
-      COLLECTE_SITE: "/collecte-site",
-      VIDEO_SURVEILLANCE: "/video-surveillance",
-    };
+      const endpointMap = {
+        NORMALE: "/declarations/normale",
+        AUTORISATION: "/declarations/autorisation",
+        COLLECTE_SITE: "/declarations/collecte-site",
+        VIDEO_SURVEILLANCE: "/declarations/video-surveillance",
+      };
+      const updateSuffixes = {
+        NORMALE: "/normale",
+        AUTORISATION: "/autorisation",
+        COLLECTE_SITE: "/collecte-site",
+        VIDEO_SURVEILLANCE: "/video-surveillance",
+      };
 
-    const refreshAfterSave = () => {
-      const storedId = localStorage.getItem("dpoId");
-      if (storedId) {
-        fetchDeclarations(storedId);
-        api.get(`/traitements/dpo/${storedId}`).then(r => { if (r.data) setAllTraitements(r.data); }).catch(() => {});
-      }
-    };
+      const refreshAfterSave = () => {
+        const storedId = localStorage.getItem("dpoId");
+        if (storedId) {
+          fetchDeclarations(storedId);
+          api.get(`/traitements/dpo/${storedId}`).then(r => { if (r.data) setAllTraitements(r.data); }).catch(() => {});
+        }
+      };
 
-    const addLocal = (editingId) => {
-      if (editingId) {
-        setDeclarations((prev) => {
-          const exists = prev.some(d => d.idDeclaration === editingId);
-          return exists
-            ? prev.map(d => d.idDeclaration === editingId ? { ...d, ...payload, statut: "EN_ATTENTE", denominationTraitement: payload.denominationTraitement || d.denominationTraitement } : d)
-            : [{ idDeclaration: editingId, typeDeclaration, ...payload, statut: "EN_ATTENTE", denominationTraitement: payload.denominationTraitement, origineDeclaration: "MANUELLE", dateSoumission }, ...prev];
-        });
-        refreshAfterSave();
-        showToast("Déclaration mise à jour (hors ligne)");
-      } else {
-        setDeclarations((prev) => [...prev, {
-          idDeclaration: Date.now(), typeDeclaration, traitementId: parseInt(traitementId),
-          traitementDescription: formData.denominationTraitement || "Nouvelle déclaration",
-          denominationTraitement: formData.denominationTraitement, dateSoumission, statut: "EN_ATTENTE",
-          secteur: formData.secteur, responsableDeclaration: formData.nomPrenomResponsable,
-          dureeConservation: formData.dureeConservation, lieuStockage: formData.lieuStockage,
-          origineDeclaration: "MANUELLE",
-        }]);
-        showToast("Déclaration créée (hors ligne)");
-      }
-    };
-
-    if (declarationId && typeDeclaration && originalTypeDeclaration && typeDeclaration !== originalTypeDeclaration) {
-      api.delete(`/declarations/${declarationId}`)
-        .then(() => {
-          const endpoint = endpointMap[typeDeclaration];
-          return api.post(endpoint, payload);
-        })
-        .then((res) => {
-          setDeclarations((prev) => [res.data, ...prev.filter(d => d.idDeclaration !== declarationId)]);
-          refreshAfterSave();
-          showToast("Déclaration recréée avec le type " + typeDeclaration + " !");
-        })
-        .catch((err) => { console.error("DELETE+POST error:", err.response?.status, err.response?.data); addLocal(null); });
-    } else if (declarationId) {
-      const suffix = updateSuffixes[typeDeclaration] || "";
-      api.put(`/declarations/${declarationId}${suffix}`, payload)
-        .then((res) => {
-          setDeclarations((prev) => {
-            const exists = prev.some(d => d.idDeclaration === declarationId);
-            return exists ? prev.map(d => d.idDeclaration === declarationId ? res.data : d) : [res.data, ...prev];
+      if (declarationId && typeDeclaration && originalTypeDeclaration && typeDeclaration !== originalTypeDeclaration) {
+        api.delete(`/declarations/${declarationId}`)
+          .then(() => api.post(endpointMap[typeDeclaration], payload))
+          .then((res) => {
+            setDeclarations((prev) => [res.data, ...prev.filter(d => d.idDeclaration !== declarationId)]);
+            refreshAfterSave();
+            showToast("Déclaration recréée avec le type " + typeDeclaration + " !");
+            resolve();
+          })
+          .catch((err) => {
+            console.error("DELETE+POST error:", err.response?.status, err.response?.data);
+            showToast("Erreur lors de la recréation", "error");
+            reject(err);
           });
-          refreshAfterSave();
-          showToast("✅ Déclaration mise à jour !");
-        })
-        .catch((err) => { console.error("PUT declaration error:", err.response?.status, err.response?.data, "URL:", `/declarations/${declarationId}${suffix}`); addLocal(declarationId); });
-    } else {
-      const endpoint = endpointMap[typeDeclaration];
-      if (endpoint) {
-        api.post(endpoint, payload)
-          .then((res) => { setDeclarations((prev) => [res.data, ...prev]); showToast("✅ Déclaration créée !"); refreshAfterSave(); })
-          .catch(() => addLocal(null));
+      } else if (declarationId) {
+        const suffix = updateSuffixes[typeDeclaration] || "";
+        api.put(`/declarations/${declarationId}${suffix}`, payload)
+          .then((res) => {
+            setDeclarations((prev) => {
+              const exists = prev.some(d => d.idDeclaration === declarationId);
+              return exists ? prev.map(d => d.idDeclaration === declarationId ? res.data : d) : [res.data, ...prev];
+            });
+            refreshAfterSave();
+            showToast("✅ Déclaration mise à jour !");
+            resolve();
+          })
+          .catch((err) => {
+            console.error("PUT declaration error:", err.response?.status, err.response?.data, "URL:", `/declarations/${declarationId}${suffix}`);
+            showToast("Erreur lors de la mise à jour", "error");
+            reject(err);
+          });
       } else {
-        addLocal(null);
+        const endpoint = endpointMap[typeDeclaration];
+        if (endpoint) {
+          api.post(endpoint, payload)
+            .then((res) => {
+              setDeclarations((prev) => [res.data, ...prev]);
+              showToast("✅ Déclaration créée !");
+              refreshAfterSave();
+              resolve();
+            })
+            .catch((err) => {
+              showToast("Erreur lors de la création", "error");
+              reject(err);
+            });
+        } else {
+          reject(new Error("No endpoint"));
+        }
       }
-    }
+    });
   };
 
   const handleSoumettreAuDG = async (declaration) => {

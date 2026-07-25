@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { Icon } from "../ui/Icon";
 import { formatDate } from "../../utils/date";
 
@@ -94,7 +95,7 @@ export default function ModalDecision({ declaration, onClose, onValider, onRejet
     { id: "specifique", label: "Spécifique" },
   ];
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[92vh] flex flex-col">
         <div className="bg-green-900 text-white px-6 py-4 rounded-t-2xl flex justify-between items-center flex-shrink-0 sticky top-0 z-10">
@@ -392,6 +393,7 @@ export default function ModalDecision({ declaration, onClose, onValider, onRejet
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

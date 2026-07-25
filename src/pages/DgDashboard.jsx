@@ -26,7 +26,7 @@ function DgDashboard() {
   };
 
   const fetchEnAttente = useCallback(() => {
-    api.get("/declarations/en-attente")
+    return api.get("/declarations/en-attente")
       .then(res => setDeclarations(res.data))
       .catch(() => showToast("Impossible de charger les déclarations", "error"));
   }, []);
@@ -35,7 +35,7 @@ function DgDashboard() {
   // traitées (par le DG lui-même, mais aussi par la CIL ensuite). C'est la
   // seule façon pour le DG de voir un changement de statut fait par la CIL.
   const fetchHistorique = useCallback(() => {
-    api.get("/declarations/historique-dg")
+    return api.get("/declarations/historique-dg")
       .then(res => setHistorique(res.data))
       .catch(() => { });
   }, []);
@@ -65,20 +65,20 @@ function DgDashboard() {
   const handleValider = async (id) => {
     try {
       await api.put(`/declarations/${id}/valider`);
-      setDeclarations(prev => prev.filter(d => d.idDeclaration !== id));
-      fetchHistorique(); // source de vérité = backend, pas de reconstruction locale
+      await fetchEnAttente();
+      await fetchHistorique();
       showToast("Déclaration validée avec succès !");
     } catch (err) {
       showToast(err.response?.data?.message || "Erreur lors de la validation", "error");
-      throw err; // relancée pour que ModalDecision garde loading=false et ne ferme pas la modal
+      throw err;
     }
   };
 
   const handleRejeter = async (id, commentaire) => {
     try {
       await api.put(`/declarations/${id}/rejeter`, { commentaire });
-      setDeclarations(prev => prev.filter(d => d.idDeclaration !== id));
-      fetchHistorique();
+      await fetchEnAttente();
+      await fetchHistorique();
       showToast("Déclaration rejetée.");
     } catch (err) {
       showToast(err.response?.data?.message || "Erreur lors du rejet", "error");
